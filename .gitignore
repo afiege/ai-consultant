@@ -1,0 +1,105 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+.venv
+
+# FastAPI / uvicorn
+*.log
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+database/*.db
+database/*.db-journal
+database/*.db-wal
+database/*.db-shm
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# React / Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+dist/
+dist-ssr/
+*.local
+
+# Frontend build
+frontend/dist/
+frontend/build/
+
+# Uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Exported PDFs
+backend/exports/*
+!backend/exports/.gitkeep
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+*.cover
+.hypothesis/
+
+# Misc
+*.bak
+*.tmp
+.cache/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# Evaluation results (may contain session data)
+evaluation/results/
+!evaluation/results/.gitkeep
+
+# Claude Code settings (optional - remove if you want to share settings)
+.claude/
+
+# Lock files
+*.lock.*.odt#
+.~lock.*
+*.odt

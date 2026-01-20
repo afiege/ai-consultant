@@ -1,0 +1,443 @@
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Session endpoints
+export const sessionAPI = {
+  create: (data) => api.post('/api/sessions/', data),
+  get: (sessionUuid) => api.get(`/api/sessions/${sessionUuid}`),
+  update: (sessionUuid, data) => api.put(`/api/sessions/${sessionUuid}`, data),
+  delete: (sessionUuid) => api.delete(`/api/sessions/${sessionUuid}`),
+  list: (skip = 0, limit = 100) => api.get('/api/sessions/', { params: { skip, limit } }),
+};
+
+// Company info endpoints
+export const companyInfoAPI = {
+  submitText: (sessionUuid, data) =>
+    api.post(`/api/sessions/${sessionUuid}/company-info/text`, data),
+  uploadFile: (sessionUuid, formData) =>
+    api.post(`/api/sessions/${sessionUuid}/company-info/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  crawlWeb: (sessionUuid, data) =>
+    api.post(`/api/sessions/${sessionUuid}/company-info/crawl`, data),
+  getAll: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/company-info`),
+  delete: (sessionUuid, infoId) =>
+    api.delete(`/api/sessions/${sessionUuid}/company-info/${infoId}`),
+};
+
+// 6-3-5 method endpoints
+export const sixThreeFiveAPI = {
+  start: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/six-three-five/start`),
+  skip: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/six-three-five/skip`),
+  join: (sessionUuid, data) =>
+    api.post(`/api/sessions/${sessionUuid}/six-three-five/join`, data),
+  getStatus: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/six-three-five/status`),
+  getMySheet: (sessionUuid, participantUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/six-three-five/my-sheet/${participantUuid}`),
+  submitIdeas: (sessionUuid, participantUuid, data) =>
+    api.post(`/api/sessions/${sessionUuid}/six-three-five/ideas?participant_uuid=${participantUuid}`, data),
+  advanceRound: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/six-three-five/advance-round`),
+  getIdeas: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/six-three-five/ideas`),
+  submitManualIdeas: (sessionUuid, ideas) =>
+    api.post(`/api/sessions/${sessionUuid}/six-three-five/manual-ideas`, ideas),
+};
+
+// Prioritization endpoints
+export const prioritizationAPI = {
+  submitVote: (sessionUuid, data) =>
+    api.post(`/api/sessions/${sessionUuid}/prioritization/vote`, data),
+  getStatus: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/prioritization/status`),
+  getResults: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/prioritization/results`),
+};
+
+// Consultation endpoints
+export const consultationAPI = {
+  start: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/start`),
+  sendMessage: (sessionUuid, content) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/message`, { content }),
+  // Save user message without AI response (user answering questions)
+  saveMessage: (sessionUuid, content) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/message/save`, { content }),
+  getMessages: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/consultation/messages`),
+  getFindings: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/consultation/findings`),
+  summarize: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/summarize`),
+
+  // Streaming endpoints using fetch (SSE)
+  startStream: async (sessionUuid, onChunk, onDone, onError) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/start/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else if (data.startsWith('{')) {
+              // JSON status message
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.status === 'already_started') {
+                  onError?.('Consultation already started');
+                }
+              } catch (e) {
+                // Not JSON, treat as content
+                onChunk?.(data);
+              }
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+
+  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/message/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+
+  // Request AI response based on current conversation (no new user message)
+  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/request-response/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else if (data.startsWith('{')) {
+              // JSON status/error message
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.error) {
+                  onError?.(parsed.error);
+                }
+              } catch (e) {
+                onChunk?.(data);
+              }
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+};
+
+// Business Case endpoints (Step 5)
+export const businessCaseAPI = {
+  start: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/business-case/start`),
+  sendMessage: (sessionUuid, content) =>
+    api.post(`/api/sessions/${sessionUuid}/business-case/message`, { content }),
+  saveMessage: (sessionUuid, content) =>
+    api.post(`/api/sessions/${sessionUuid}/business-case/message/save`, { content }),
+  getMessages: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/business-case/messages`),
+  getFindings: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/business-case/findings`),
+  extract: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/business-case/extract`),
+
+  // Streaming endpoints using fetch (SSE)
+  startStream: async (sessionUuid, onChunk, onDone, onError) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/start/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else if (data.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.status === 'already_started') {
+                  onError?.('Business case already started');
+                }
+              } catch (e) {
+                onChunk?.(data);
+              }
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+
+  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/message/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+
+  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/request-response/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else if (data.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.error) {
+                  onError?.(parsed.error);
+                }
+              } catch (e) {
+                onChunk?.(data);
+              }
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+};
+
+// Export endpoints
+export const exportAPI = {
+  generatePDF: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/export/pdf`),
+  downloadPDF: (sessionUuid, exportId) =>
+    api.get(`/api/sessions/${sessionUuid}/export/pdf/${exportId}`, {
+      responseType: 'blob',
+    }),
+};
+
+// Session backup/restore endpoints
+export const sessionBackupAPI = {
+  exportBackup: async (sessionUuid) => {
+    const response = await api.get(`/api/sessions/${sessionUuid}/backup`);
+    // Trigger download
+    const blob = new Blob([JSON.stringify(response.data, null, 2)], {
+      type: 'application/json',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `session-backup-${sessionUuid.slice(0, 8)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    return response.data;
+  },
+  restoreBackup: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/api/sessions/restore', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+};
+
+// Expert settings endpoints
+export const expertSettingsAPI = {
+  get: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/expert-settings`),
+  update: (sessionUuid, settings) =>
+    api.put(`/api/sessions/${sessionUuid}/expert-settings`, settings),
+  getDefaults: () =>
+    api.get('/api/sessions/expert-settings/defaults'),
+  getMetadata: () =>
+    api.get('/api/sessions/expert-settings/metadata'),
+  getLLMProviders: () =>
+    api.get('/api/sessions/expert-settings/llm-providers'),
+  testLLM: (config) =>
+    api.post('/api/sessions/expert-settings/test-llm', config),
+  resetPrompt: (sessionUuid, promptKey) =>
+    api.post(`/api/sessions/${sessionUuid}/expert-settings/reset-prompt/${promptKey}`),
+  resetAll: (sessionUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/expert-settings/reset-all`),
+};
+
+export default api;

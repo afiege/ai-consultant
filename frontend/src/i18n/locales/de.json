@@ -1,0 +1,403 @@
+{
+  "common": {
+    "save": "Speichern",
+    "saveChanges": "Änderungen speichern",
+    "saving": "Speichern...",
+    "cancel": "Abbrechen",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "back": "Zurück",
+    "next": "Weiter",
+    "delete": "Löschen",
+    "submit": "Absenden",
+    "submitting": "Wird gesendet...",
+    "send": "Senden",
+    "reset": "Zurücksetzen",
+    "skip": "Überspringen",
+    "continue": "Fortfahren",
+    "close": "Schließen",
+    "yes": "Ja",
+    "no": "Nein",
+    "optional": "Optional",
+    "required": "Erforderlich",
+    "exportReport": "Bericht exportieren",
+    "saveSession": "Sitzung speichern"
+  },
+  "home": {
+    "title": "KI & Digitalisierungsberater",
+    "subtitle": "Ihr Leitfaden für KI und digitale Transformation im Mittelstand",
+    "companyName": "Firmenname",
+    "companyNameOptional": "Firmenname (Optional)",
+    "companyNamePlaceholder": "Geben Sie Ihren Firmennamen ein",
+    "startButton": "Neue Beratung starten",
+    "creating": "Sitzung wird erstellt...",
+    "duration": "Der Beratungsprozess dauert in der Regel 30-60 Minuten, je nach Teamgröße.",
+    "llmConfig": {
+      "title": "KI-Konfiguration",
+      "configured": "Konfiguriert",
+      "hint": "Klicken Sie, um Ihren KI-Anbieter zu konfigurieren (erforderlich für KI-unterstütztes Brainstorming)"
+    },
+    "features": {
+      "step1Title": "Unternehmensübersicht",
+      "step1Desc": "Erfassen Sie Unternehmensinformationen durch Text, Dateien oder Web-Crawling",
+      "step2Title": "Interaktives Brainstorming",
+      "step2Desc": "Kollaborative 6-3-5 Methode mit bis zu 6 Teilnehmern",
+      "step3Title": "Ideenpriorisierung",
+      "step3Desc": "Gemeinsames Bewerten und Priorisieren der generierten Ideen",
+      "step4Title": "Business Understanding",
+      "step4Desc": "CRISP-DM-geführte Beratung zur Definition von Zielen und Planung Ihres KI-Projekts"
+    },
+    "restoreSession": {
+      "description": "Oder eine zuvor gespeicherte Sitzung fortsetzen:",
+      "button": "Gespeicherte Sitzung laden",
+      "restoring": "Wird wiederhergestellt..."
+    }
+  },
+  "step1": {
+    "title": "Schritt 1: Unternehmensübersicht",
+    "subtitle": "Stellen Sie Informationen über Ihr Unternehmen bereit - durch Text, Dokumenten-Upload oder Website-Crawling",
+    "backHome": "Zurück zur Startseite",
+    "continueStep2": "Weiter zu Schritt 2",
+    "explanation": {
+      "title": "Warum wir diese Informationen benötigen",
+      "description": "Das Verständnis Ihres Unternehmens hilft uns, relevante KI- und Digitalisierungsideen zu entwickeln, die auf Ihre spezifische Situation zugeschnitten sind. Je mehr Kontext Sie liefern, desto besser werden die Empfehlungen.",
+      "bullet1": "Teilen Sie Ihr Geschäftsmodell - welche Produkte oder Dienstleistungen bieten Sie an?",
+      "bullet2": "Beschreiben Sie Ihre Kunden und Ihren Zielmarkt",
+      "bullet3": "Nennen Sie aktuelle Herausforderungen im Tagesgeschäft",
+      "bullet4": "Geben Sie Informationen über Ihre Teamgröße und Hauptprozesse an",
+      "tip": "Sie benötigen kein technisches Wissen! Beschreiben Sie Ihr Unternehmen einfach so, wie Sie es einem neuen Kollegen erklären würden."
+    },
+    "textForm": {
+      "title": "Textinformationen hinzufügen",
+      "label": "Beschreiben Sie Ihr Unternehmen",
+      "placeholder": "Geben Sie Informationen zu Ihrem Unternehmen ein, wie z.B.:\n- Geschäftsmodell und Hauptprodukte/-dienstleistungen\n- Zielmarkt und Kundensegmente\n- Wichtige Leistungskennzahlen (KPIs)\n- Aktuelle Herausforderungen und Chancen\n- Strategische Ziele und Vision\n- Teamgröße und -struktur",
+      "hint": "Geben Sie so viele Details wie möglich an, damit wir Ihr Unternehmen besser verstehen.",
+      "submit": "Informationen hinzufügen",
+      "adding": "Wird gespeichert..."
+    },
+    "fileUpload": {
+      "title": "Dokument hochladen",
+      "dragDrop": "Zum Hochladen klicken oder Datei hierher ziehen",
+      "dropHere": "Datei hier ablegen...",
+      "supportedFormats": "PDF, DOCX, DOC oder TXT (max. 10MB)",
+      "uploading": "Hochladen",
+      "rejected": "Datei abgelehnt:",
+      "supportedTypes": "Unterstützte Dateitypen:",
+      "typePdf": "PDF-Dokumente (.pdf)",
+      "typeWord": "Word-Dokumente (.docx, .doc)",
+      "typeText": "Textdateien (.txt)"
+    },
+    "webCrawl": {
+      "title": "Firmenwebsite crawlen",
+      "urlLabel": "Website-URL",
+      "urlPlaceholder": "https://www.beispiel.de",
+      "hint": "Geben Sie die Website Ihres Unternehmens oder eine Seite mit relevanten Informationen ein (Über uns, Firmenprofil, etc.)",
+      "crawlButton": "Website crawlen",
+      "crawling": "Crawling läuft...",
+      "tip": "Tipp: Der Crawler extrahiert den Seitentitel, die Meta-Beschreibung, Überschriften und den Hauptinhalt. Für beste Ergebnisse geben Sie einen Link zu Ihrer \"Über uns\"- oder Firmenprofil-Seite an."
+    },
+    "companyInfo": {
+      "title": "Gesammelte Informationen",
+      "empty": "Noch keine Unternehmensinformationen hinzugefügt",
+      "addInfo": "Fügen Sie Informationen über die obigen Formulare hinzu",
+      "source": "Quelle",
+      "sourceText": "Texteingabe",
+      "sourceFile": "Datei-Upload",
+      "sourceWeb": "Web-Crawling"
+    }
+  },
+  "step2": {
+    "title": "Schritt 2: 6-3-5 Brainstorming",
+    "subtitle": "Interaktive Brainstorming-Sitzung mit KI-Assistenten",
+    "backStep1": "Zurück zu Schritt 1",
+    "explanation": {
+      "title": "Was ist 6-3-5 Brainstorming?",
+      "description": "Die 6-3-5 Methode ist eine bewährte Kreativitätstechnik: 6 Teilnehmer schreiben jeweils 3 Ideen in 5 Minuten, dann geben sie ihr Blatt an die nächste Person weiter, die auf diesen Ideen aufbaut. So entsteht in nur 30 Minuten eine reiche Ideensammlung.",
+      "bullet1": "Keine Idee ist zu klein oder zu verrückt - Quantität zählt mehr als Perfektion",
+      "bullet2": "KI-Assistenten füllen leere Plätze und bringen zusätzliche Perspektiven ein",
+      "bullet3": "In jeder Runde sehen Sie vorherige Ideen als Inspiration für neues Denken",
+      "bullet4": "Keine Sorge, wenn Sie kein KI-Experte sind - alltägliche Prozessverbesserungen zählen auch!",
+      "tip": "Denken Sie an wiederkehrende Aufgaben, Kommunikationsengpässe oder Bereiche, in denen Sie sich bessere Daten oder schnellere Entscheidungen wünschen."
+    },
+    "share": {
+      "title": "Teilnehmer einladen",
+      "scanQR": "Scannen Sie diesen QR-Code, um der Sitzung beizutreten",
+      "orCopyLink": "Oder teilen Sie diesen Link:",
+      "copy": "Kopieren",
+      "copied": "Kopiert!"
+    },
+    "join": {
+      "title": "Brainstorming-Sitzung beitreten",
+      "description": "Geben Sie Ihren Namen ein, um der 6-3-5 Brainstorming-Sitzung beizutreten. KI-Assistenten füllen die verbleibenden Plätze auf (bis zu 6 Teilnehmer insgesamt).",
+      "sessionStarted": "Die Sitzung hat bereits begonnen. Sie können zu diesem Zeitpunkt nicht mehr beitreten.",
+      "namePlaceholder": "Geben Sie Ihren Namen ein",
+      "nameLabel": "Ihr Name",
+      "joinButton": "Sitzung beitreten",
+      "joining": "Beitritt läuft...",
+      "sessionFull": "Sitzung voll",
+      "participants": "Aktuelle Teilnehmer",
+      "humanCount": "{{count}} Mensch(en)",
+      "aiCount": "{{count}} KI-Assistent(en)",
+      "howItWorks": "So funktioniert es:",
+      "rule1": "Mindestens 1 Teilnehmer zum Starten erforderlich",
+      "rule2": "KI-Assistenten füllen verbleibende Plätze (max. 6 insgesamt)",
+      "rule3": "Jede Runde dauert 5 Minuten",
+      "rule4": "3 Ideen pro Runde generieren",
+      "rule5": "Blätter rotieren zwischen Teilnehmern"
+    },
+    "session": {
+      "startButton": "Brainstorming-Sitzung starten",
+      "starting": "Sitzung wird gestartet...",
+      "aiNote": "KI-Assistenten werden hinzugefügt, um auf 6 Teilnehmer aufzufüllen",
+      "skipButton": "6-3-5 Sitzung überspringen",
+      "skipNote": "Sie können das Brainstorming überspringen und Ideen manuell in Schritt 4 eingeben",
+      "skipConfirm": "Sind Sie sicher, dass Sie die 6-3-5 Brainstorming-Sitzung überspringen möchten? Alle bisher erstellten Ideen bleiben erhalten, aber Sie fahren mit dem nächsten Schritt fort."
+    },
+    "progress": {
+      "round": "Runde {{current}} von {{total}}",
+      "submitted": "{{count}} / {{total}} Teilnehmer haben eingereicht",
+      "timeRemaining": "Verbleibende Zeit",
+      "allSubmitted": "Alle Teilnehmer haben ihre Ideen eingereicht!",
+      "advanceRound": "Weiter zu Runde {{next}}",
+      "completeSession": "Sitzung abschließen & weiter zu Schritt 3",
+      "skipRemaining": "Verbleibende Runden überspringen"
+    },
+    "ideaSheet": {
+      "sheetNumber": "Blatt #{{number}}",
+      "roundOf": "Runde {{current}} von {{total}}",
+      "previousIdeas": "Bisherige Ideen auf diesem Blatt:",
+      "roundLabel": "Runde {{number}}",
+      "yourIdeasFor": "Ihre Ideen für Runde {{round}}:",
+      "idea": "Idee {{number}}",
+      "ideaPlaceholder": "Geben Sie Ihre Idee ein...",
+      "submitIdeas": "Ideen einreichen",
+      "submitting": "Wird eingereicht...",
+      "submittedMessage": "Sie haben Ihre Ideen für diese Runde eingereicht!",
+      "waitingForOthers": "Warten auf andere Teilnehmer..."
+    },
+    "complete": {
+      "title": "Brainstorming abgeschlossen!",
+      "message": "Großartige Arbeit! Alle Ideen wurden gesammelt.",
+      "continueButton": "Weiter zur Ideenpriorisierung"
+    }
+  },
+  "step3": {
+    "title": "Schritt 3: Ideenpriorisierung",
+    "subtitle": "Verteilen Sie Ihre {{points}} Punkte auf Ihre Lieblingsideen",
+    "backStep2": "Zurück zu Schritt 2",
+    "skipToConsultation": "Zur Beratung springen",
+    "explanation": {
+      "title": "Warum Ideen priorisieren?",
+      "description": "Nicht alle Ideen sind gleich wertvoll oder umsetzbar für Ihr Unternehmen. Durch das Abstimmen über Ideen identifizieren wir, welche Möglichkeiten bei Ihrem Team am meisten Anklang finden und näher untersucht werden sollten.",
+      "bullet1": "Sie haben 3 Punkte zu verteilen - geben Sie mehr Punkte für Ideen, die Sie am vielversprechendsten finden",
+      "bullet2": "Berücksichtigen Sie sowohl Wirkung (wie viel Wert könnte es schaffen?) als auch Machbarkeit (können Sie es tatsächlich umsetzen?)",
+      "bullet3": "Die bestbewertete Idee wird der Fokus für die detaillierte Beratung in den nächsten Schritten sein",
+      "tip": "Vertrauen Sie Ihrem Bauchgefühl! Sie kennen Ihr Unternehmen am besten. Die technische Machbarkeit kann später bewertet werden."
+    },
+    "noIdeas": {
+      "title": "Keine Ideen zu priorisieren",
+      "message": "Sie haben die 6-3-5 Brainstorming-Sitzung übersprungen, ohne Ideen zu erstellen. Sie können direkt zum Beratungsschritt gehen, wo Sie Ideen manuell eingeben können.",
+      "continueButton": "Weiter zur Beratung (Schritt 4)"
+    },
+    "voting": {
+      "pointsRemaining": "Verbleibende Punkte:",
+      "clickToAdd": "Klicken Sie +, um Punkte zu Ideen hinzuzufügen, die Ihnen gefallen",
+      "submitVotes": "Stimmen abgeben",
+      "submitting": "Wird abgegeben...",
+      "allocateAll": "Bitte vergeben Sie alle {{total}} Punkte. Sie haben noch {{remaining}} übrig.",
+      "noParticipant": "Kein Teilnehmer gefunden. Bitte gehen Sie zurück zu Schritt 2 und treten Sie zuerst der Sitzung bei."
+    },
+    "results": {
+      "votesRecorded": "Ihre Stimmen wurden aufgezeichnet! Hier sind die aktuellen Ergebnisse:",
+      "topIdea": "Top-Idee",
+      "topIdeas": "Top-Ideen",
+      "points": "Punkte",
+      "allRanked": "Alle Ideen im Ranking",
+      "by": "von",
+      "round": "Runde"
+    },
+    "continueStep4": "Weiter zur Beratung (Schritt 4)"
+  },
+  "step4": {
+    "title": "Schritt 4: Business Understanding",
+    "subtitle": "CRISP-DM-geführte Beratung zur Definition von Geschäftszielen und Planung Ihres KI-Projekts",
+    "backStep3": "Zurück zu Schritt 3",
+    "continueStep5": "Weiter zum Business Case (Schritt 5)",
+    "continueExport": "Weiter zum Export",
+    "skipExport": "Zum Export springen",
+    "explanation": {
+      "title": "Was ist CRISP-DM?",
+      "description": "CRISP-DM (Cross-Industry Standard Process for Data Mining) ist ein weit verbreitetes Framework für die Planung von KI- und Datenprojekten. Wir führen Sie durch die Phase 'Business Understanding' - den entscheidenden ersten Schritt, der sicherstellt, dass Ihr KI-Projekt echte Geschäftsanforderungen erfüllt.",
+      "bullet1": "Wir klären Ihre Geschäftsziele - wie sieht Erfolg für dieses Projekt aus?",
+      "bullet2": "Wir bewerten Ihre aktuelle Situation - Ressourcen, Einschränkungen und Datenverfügbarkeit",
+      "bullet3": "Wir übersetzen Geschäftsziele in technische KI-Ziele",
+      "bullet4": "Wir skizzieren einen realistischen Projektplan mit klaren Phasen",
+      "tip": "Beantworten Sie die Fragen so ehrlich wie möglich. Es gibt keine falschen Antworten - das Ziel ist, Ihre spezifische Situation zu verstehen."
+    },
+    "manualEntry": {
+      "title": "Manuelle Ideeneingabe erforderlich",
+      "message": "Bitte geben Sie mindestens eine Idee ein, um mit der Beratung fortzufahren.",
+      "ideaLabel": "Idee {{number}}",
+      "ideaPlaceholder": "Geben Sie Ihre Idee ein...",
+      "submitIdeas": "Ideen einreichen",
+      "atLeastOne": "Bitte geben Sie mindestens eine Idee ein"
+    },
+    "chat": {
+      "focus": "Fokus:",
+      "startMessage": "Der KI-Berater führt Sie durch die CRISP-DM Business-Understanding-Phase und stellt Ihnen eine Frage nach der anderen.",
+      "startButton": "Beratung starten",
+      "starting": "Wird gestartet...",
+      "thinking": "Denkt nach...",
+      "messagePlaceholder": "Ihre Antwort eingeben...",
+      "requestAiResponse": "KI-Antwort anfordern",
+      "generateSummary": "Zusammenfassung & Erkenntnisse generieren",
+      "generatingSummary": "Zusammenfassung wird generiert..."
+    },
+    "findings": {
+      "crispDmTitle": "CRISP-DM Business Understanding",
+      "crispDmSubtitle": "Wichtige Ergebnisse der Business-Understanding-Phase",
+      "businessObjectives": "Geschäftsziele",
+      "businessObjectivesPlaceholder": "Ziele, Erfolgskriterien und Geschäftskontext",
+      "situationAssessment": "Situationsbewertung",
+      "situationPlaceholder": "Ressourcen, Einschränkungen, Risiken und Datenverfügbarkeit",
+      "aiGoals": "KI/Data-Mining-Ziele",
+      "aiGoalsPlaceholder": "Technische Ziele, die mit den Geschäftszielen übereinstimmen",
+      "projectPlan": "Projektplan",
+      "projectPlanPlaceholder": "Umsetzungsphasen und Zeitrahmen",
+      "ideas": "Ideen",
+      "moreIdeas": "...und {{count}} weitere"
+    }
+  },
+  "expertSettings": {
+    "title": "Experteneinstellungen",
+    "expertMode": "Expertenmodus",
+    "expertModeDesc": "Aktivieren Sie die Anpassung von KI-Prompts, Sprache und LLM-Anbieter",
+    "llmConfig": {
+      "title": "LLM-Konfiguration",
+      "provider": "Anbieter-Voreinstellung",
+      "selectProvider": "-- Anbieter auswählen --",
+      "model": "Modell",
+      "selectModel": "-- Modell auswählen --",
+      "apiKey": "API-Schlüssel",
+      "apiKeyPlaceholder": "API-Schlüssel eingeben (leer lassen für bestehenden)",
+      "apiKeyNote": "Ihr API-Schlüssel wird verschlüsselt und sicher pro Sitzung gespeichert.",
+      "apiBase": "API-Basis-URL (optional)",
+      "apiBasePlaceholder": "z.B. https://chat-ai.academiccloud.de/v1",
+      "testConnection": "Verbindung testen",
+      "testing": "Teste...",
+      "testMissingFields": "Bitte wählen Sie zuerst ein Modell und geben Sie einen API-Schlüssel ein.",
+      "testFailed": "Verbindungstest fehlgeschlagen. Bitte überprüfen Sie Ihre Einstellungen."
+    },
+    "language": {
+      "title": "Sprache",
+      "note": "Bei Sprachwechsel werden die Standard-Prompts für diese Sprache geladen. Ihre benutzerdefinierten Prompts bleiben separat erhalten.",
+      "english": "English",
+      "german": "Deutsch"
+    },
+    "prompts": {
+      "title": "Prompt-Vorlagen",
+      "resetAll": "Alle auf Standard zurücksetzen",
+      "resetConfirm": "Alle Prompts auf Standard zurücksetzen?",
+      "tabs": {
+        "system": "System",
+        "round1": "Runde 1",
+        "rounds26": "Runden 2-6",
+        "consultation": "Beratung",
+        "summary": "Zusammenf."
+      },
+      "brainstormingSystem": "Brainstorming System-Prompt",
+      "brainstormingSystemDesc": "Legt die KI-Rolle und den Kontext für die 6-3-5 Brainstorming-Sitzung fest",
+      "round1Prompt": "Runde 1 Prompt",
+      "round1Desc": "Anweisungen zur Ideengenerierung in der ersten Runde (leeres Blatt)",
+      "subsequentRounds": "Folgerunden",
+      "subsequentDesc": "Anweisungen zum Aufbauen auf vorherigen Ideen in den Runden 2-6",
+      "consultationSystem": "Beratungs-System",
+      "consultationDesc": "Legt die Rolle des KI-Beraters und die Ziele für das Interview fest",
+      "summaryExtraction": "Zusammenfassungs-Extraktion",
+      "summaryDesc": "Prompt zur Extraktion strukturierter Erkenntnisse aus der Beratung",
+      "variables": "Verfügbare Variablen:",
+      "resetPrompt": "Auf Standard zurücksetzen",
+      "customized": "Angepasst"
+    }
+  },
+  "step5": {
+    "title": "Schritt 5: Business Case Berechnung",
+    "subtitle": "Bewerten Sie Ihr KI-Projekt mit dem 5-Stufen-Wertrahmen",
+    "backStep4": "Zurück zu Schritt 4",
+    "continueExport": "Weiter zum Export",
+    "explanation": {
+      "title": "Einen Business Case erstellen",
+      "description": "Ein solider Business Case hilft Ihnen, das Management zu überzeugen und Investitionen in KI zu rechtfertigen. Wir nutzen den 5-Stufen-Wertrahmen, um den potenziellen Nutzen Ihres Projekts zu quantifizieren.",
+      "bullet1": "Budgetersatz: Kann KI externe Dienstleistungen ersetzen, für die Sie derzeit bezahlen?",
+      "bullet2": "Prozesseffizienz: Wird KI Zeit bei Routineaufgaben sparen?",
+      "bullet3": "Projektbeschleunigung: Kann KI die Entwicklung oder Markteinführung beschleunigen?",
+      "bullet4": "Risikominderung: Wird KI helfen, kostspielige Fehler oder Qualitätsprobleme zu vermeiden?",
+      "bullet5": "Strategische Skalierung: Kann KI Ihnen helfen zu wachsen, ohne die Kosten proportional zu erhöhen?",
+      "tip": "Machen Sie sich keine Sorgen um genaue Zahlen. Grobe Schätzungen ('Pi mal Daumen') sind in diesem Stadium völlig in Ordnung."
+    },
+    "chat": {
+      "contextTitle": "Kontext aus vorherigen Schritten",
+      "companyProfile": "Unternehmensprofil",
+      "focusIdea": "Fokus-Idee",
+      "crispDmSummary": "CRISP-DM Business Understanding",
+      "startMessage": "Der KI-Berater hilft Ihnen bei der Entwicklung eines Business Case mit dem 5-Stufen-Wertrahmen.",
+      "startButton": "Business-Case-Analyse starten",
+      "starting": "Wird gestartet...",
+      "thinking": "Analysiert...",
+      "messagePlaceholder": "Ihre Antwort eingeben...",
+      "extractFindings": "Business Case extrahieren",
+      "extracting": "Wird extrahiert..."
+    },
+    "findings": {
+      "title": "Business Case Indikation",
+      "subtitle": "5-Stufen-Wertrahmen Analyse",
+      "classification": "Klassifizierung",
+      "classificationPlaceholder": "Welche Wertstufe(n) gelten für dieses Projekt",
+      "calculation": "Überschlagsrechnung",
+      "calculationPlaceholder": "Geschätzter jährlicher monetärer Nutzen",
+      "validationQuestions": "Validierungsfragen",
+      "validationPlaceholder": "Fragen zur Stärkung des Business Case",
+      "managementPitch": "Management-Pitch",
+      "managementPitchPlaceholder": "Ein-Satz Executive Statement"
+    },
+    "framework": {
+      "title": "5 Wertstufen",
+      "level1": "Budgetersatz",
+      "level2": "Prozesseffizienz",
+      "level3": "Projektbeschleunigung",
+      "level4": "Risikominderung",
+      "level5": "Strategische Skalierung"
+    }
+  },
+  "export": {
+    "title": "Bericht exportieren",
+    "subtitle": "Erstellen und laden Sie Ihren Beratungsbericht herunter",
+    "reportTitle": "Beratungsbericht",
+    "reportIncludes": "Ihr Bericht enthält:",
+    "executiveSummary": "Zusammenfassung (CRISP-DM Geschäftsverständnis)",
+    "businessCaseSection": "Business Case Indikation",
+    "implementationRoadmap": "Umsetzungsfahrplan",
+    "appendixCompany": "Anhang A: Unternehmensübersicht",
+    "appendixIdeas": "Anhang B: Brainstorming-Ideen",
+    "appendixPrioritization": "Anhang C: Priorisierungsergebnisse",
+    "appendixTranscript": "Anhang D: Beratungsprotokoll",
+    "appendixBusinessCase": "Anhang E: Business Case Protokoll",
+    "generateButton": "PDF erstellen & herunterladen",
+    "generating": "PDF wird erstellt...",
+    "success": "PDF erfolgreich erstellt! Überprüfen Sie Ihre Downloads.",
+    "backToBusinessCase": "Zurück zum Business Case",
+    "backToConsultation": "Zurück zur Beratung",
+    "startNew": "Neue Sitzung starten"
+  },
+  "errors": {
+    "failedToLoad": "Laden fehlgeschlagen",
+    "failedToSave": "Speichern fehlgeschlagen",
+    "failedToSubmit": "Absenden fehlgeschlagen",
+    "failedToStart": "Starten fehlgeschlagen",
+    "failedToJoin": "Beitreten fehlgeschlagen",
+    "sessionNotFound": "Sitzung nicht gefunden",
+    "networkError": "Netzwerkfehler. Bitte versuchen Sie es erneut.",
+    "failedToGeneratePDF": "PDF-Erstellung fehlgeschlagen",
+    "failedToRestore": "Sitzung konnte nicht wiederhergestellt werden. Bitte überprüfen Sie das Dateiformat."
+  }
+}

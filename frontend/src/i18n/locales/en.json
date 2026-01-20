@@ -1,0 +1,403 @@
+{
+  "common": {
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "Error",
+    "back": "Back",
+    "next": "Next",
+    "delete": "Delete",
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "send": "Send",
+    "reset": "Reset",
+    "skip": "Skip",
+    "continue": "Continue",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional",
+    "required": "Required",
+    "exportReport": "Export Report",
+    "saveSession": "Save Session"
+  },
+  "home": {
+    "title": "AI & Digitalization Consultant",
+    "subtitle": "Your SME's guide to AI and digital transformation",
+    "companyName": "Company Name",
+    "companyNameOptional": "Company Name (Optional)",
+    "companyNamePlaceholder": "Enter your company name",
+    "startButton": "Start New Consultation",
+    "creating": "Creating Session...",
+    "duration": "The consultation process typically takes 30-60 minutes depending on team size.",
+    "llmConfig": {
+      "title": "AI Configuration",
+      "configured": "Configured",
+      "hint": "Click to configure your AI provider (required for AI-assisted brainstorming)"
+    },
+    "features": {
+      "step1Title": "Company Overview",
+      "step1Desc": "Gather company information through text, files, or web crawling",
+      "step2Title": "Interactive Brainstorming",
+      "step2Desc": "Collaborative 6-3-5 method with up to 6 participants",
+      "step3Title": "Idea Prioritization",
+      "step3Desc": "Rank and prioritize generated ideas collaboratively",
+      "step4Title": "Business Understanding",
+      "step4Desc": "CRISP-DM guided consultation to define objectives and plan your AI project"
+    },
+    "restoreSession": {
+      "description": "Or continue a previously saved session:",
+      "button": "Load Saved Session",
+      "restoring": "Restoring..."
+    }
+  },
+  "step1": {
+    "title": "Step 1: Company Overview",
+    "subtitle": "Provide information about your company through text, document uploads, or website crawling",
+    "backHome": "Back to Home",
+    "continueStep2": "Continue to Step 2",
+    "explanation": {
+      "title": "Why we need this information",
+      "description": "Understanding your company helps us generate relevant AI and digitalization ideas tailored to your specific situation. The more context you provide, the better the recommendations will be.",
+      "bullet1": "Share your business model - what products or services do you offer?",
+      "bullet2": "Describe your customers and target market",
+      "bullet3": "Mention current challenges you face in daily operations",
+      "bullet4": "Include information about your team size and main processes",
+      "tip": "You don't need technical knowledge! Just describe your business as you would to a new colleague."
+    },
+    "textForm": {
+      "title": "Add Text Information",
+      "label": "Describe your company",
+      "placeholder": "Enter information about your company, such as:\n- Business model and main products/services\n- Target market and customer segments\n- Key performance indicators (KPIs)\n- Current challenges and opportunities\n- Strategic goals and vision\n- Team size and structure",
+      "hint": "Provide as much detail as possible to help us understand your company.",
+      "submit": "Add Information",
+      "adding": "Saving..."
+    },
+    "fileUpload": {
+      "title": "Upload Document",
+      "dragDrop": "Click to upload or drag and drop",
+      "dropHere": "Drop the file here...",
+      "supportedFormats": "PDF, DOCX, DOC, or TXT (max 10MB)",
+      "uploading": "Uploading",
+      "rejected": "File rejected:",
+      "supportedTypes": "Supported file types:",
+      "typePdf": "PDF documents (.pdf)",
+      "typeWord": "Word documents (.docx, .doc)",
+      "typeText": "Text files (.txt)"
+    },
+    "webCrawl": {
+      "title": "Crawl Company Website",
+      "urlLabel": "Website URL",
+      "urlPlaceholder": "https://www.example.com",
+      "hint": "Enter your company's website or a page with relevant information (About Us, Company Profile, etc.)",
+      "crawlButton": "Crawl Website",
+      "crawling": "Crawling...",
+      "tip": "Tip: The crawler will extract the page title, meta description, headings, and main content. For best results, provide a link to your \"About Us\" or company profile page."
+    },
+    "companyInfo": {
+      "title": "Collected Information",
+      "empty": "No company information added yet",
+      "addInfo": "Add information using the forms above",
+      "source": "Source",
+      "sourceText": "Text Input",
+      "sourceFile": "File Upload",
+      "sourceWeb": "Web Crawl"
+    }
+  },
+  "step2": {
+    "title": "Step 2: 6-3-5 Brainstorming",
+    "subtitle": "Interactive brainstorming session with AI assistants",
+    "backStep1": "Back to Step 1",
+    "explanation": {
+      "title": "What is 6-3-5 Brainstorming?",
+      "description": "The 6-3-5 method is a proven creativity technique: 6 participants each write 3 ideas in 5 minutes, then pass their sheet to the next person who builds upon those ideas. This creates a rich collection of ideas in just 30 minutes.",
+      "bullet1": "No idea is too small or too crazy - quantity matters more than perfection",
+      "bullet2": "AI assistants join to fill empty seats and contribute additional perspectives",
+      "bullet3": "Each round, you'll see previous ideas to inspire new thinking",
+      "bullet4": "Don't worry if you're not an AI expert - everyday process improvements count too!",
+      "tip": "Think about repetitive tasks, communication bottlenecks, or areas where you wish you had better data or faster decisions."
+    },
+    "share": {
+      "title": "Invite Participants",
+      "scanQR": "Scan this QR code to join the session",
+      "orCopyLink": "Or share this link:",
+      "copy": "Copy",
+      "copied": "Copied!"
+    },
+    "join": {
+      "title": "Join Brainstorming Session",
+      "description": "Enter your name to join the 6-3-5 brainstorming session. AI assistants will fill any remaining slots (up to 6 total participants).",
+      "sessionStarted": "Session has already started. You cannot join at this time.",
+      "namePlaceholder": "Enter your name",
+      "nameLabel": "Your Name",
+      "joinButton": "Join Session",
+      "joining": "Joining...",
+      "sessionFull": "Session Full",
+      "participants": "Current Participants",
+      "humanCount": "{{count}} human(s)",
+      "aiCount": "{{count}} AI assistant(s)",
+      "howItWorks": "How it works:",
+      "rule1": "Minimum 1 participant needed to start",
+      "rule2": "AI assistants fill remaining slots (max 6 total)",
+      "rule3": "Each round lasts 5 minutes",
+      "rule4": "Generate 3 ideas per round",
+      "rule5": "Sheets rotate between participants"
+    },
+    "session": {
+      "startButton": "Start Brainstorming Session",
+      "starting": "Starting Session...",
+      "aiNote": "AI assistants will be added to fill up to 6 participants",
+      "skipButton": "Skip 6-3-5 Session",
+      "skipNote": "You can skip brainstorming and enter ideas manually in Step 4",
+      "skipConfirm": "Are you sure you want to skip the 6-3-5 brainstorming session? Any ideas created so far will be preserved, but you will proceed to the next step."
+    },
+    "progress": {
+      "round": "Round {{current}} of {{total}}",
+      "submitted": "{{count}} / {{total}} participants submitted",
+      "timeRemaining": "Time Remaining",
+      "allSubmitted": "All participants have submitted their ideas!",
+      "advanceRound": "Advance to Round {{next}}",
+      "completeSession": "Complete Session & Continue to Step 3",
+      "skipRemaining": "Skip Remaining Rounds"
+    },
+    "ideaSheet": {
+      "sheetNumber": "Sheet #{{number}}",
+      "roundOf": "Round {{current}} of {{total}}",
+      "previousIdeas": "Previous Ideas on this Sheet:",
+      "roundLabel": "Round {{number}}",
+      "yourIdeasFor": "Your Ideas for Round {{round}}:",
+      "idea": "Idea {{number}}",
+      "ideaPlaceholder": "Enter your idea...",
+      "submitIdeas": "Submit Ideas",
+      "submitting": "Submitting...",
+      "submittedMessage": "You've submitted your ideas for this round!",
+      "waitingForOthers": "Waiting for other participants to finish..."
+    },
+    "complete": {
+      "title": "Brainstorming Complete!",
+      "message": "Great work! All ideas have been collected.",
+      "continueButton": "Continue to Idea Prioritization"
+    }
+  },
+  "step3": {
+    "title": "Step 3: Idea Prioritization",
+    "subtitle": "Allocate your {{points}} points to your favorite ideas",
+    "backStep2": "Back to Step 2",
+    "skipToConsultation": "Skip to Consultation",
+    "explanation": {
+      "title": "Why prioritize ideas?",
+      "description": "Not all ideas are equally valuable or feasible for your company. By voting on ideas, we identify which opportunities resonate most with your team and should be explored further.",
+      "bullet1": "You have 3 points to distribute - give more points to ideas you find most promising",
+      "bullet2": "Consider both impact (how much value it could create) and feasibility (can you actually do it?)",
+      "bullet3": "The top-rated idea will be the focus for the detailed consultation in the next steps",
+      "tip": "Trust your instincts! You know your business best. Technical feasibility can be assessed later."
+    },
+    "noIdeas": {
+      "title": "No Ideas to Prioritize",
+      "message": "You skipped the 6-3-5 brainstorming session without creating any ideas. You can proceed directly to the consultation step where you'll enter ideas manually.",
+      "continueButton": "Continue to Consultation (Step 4)"
+    },
+    "voting": {
+      "pointsRemaining": "Points Remaining:",
+      "clickToAdd": "Click + to add points to ideas you like",
+      "submitVotes": "Submit Votes",
+      "submitting": "Submitting...",
+      "allocateAll": "Please allocate all {{total}} points. You have {{remaining}} remaining.",
+      "noParticipant": "No participant found. Please go back to Step 2 and join the session first."
+    },
+    "results": {
+      "votesRecorded": "Your votes have been recorded! Here are the current results:",
+      "topIdea": "Top Idea",
+      "topIdeas": "Top Ideas",
+      "points": "points",
+      "allRanked": "All Ideas Ranked",
+      "by": "by",
+      "round": "Round"
+    },
+    "continueStep4": "Continue to Consultation (Step 4)"
+  },
+  "step4": {
+    "title": "Step 4: Business Understanding",
+    "subtitle": "CRISP-DM guided consultation to understand business objectives and plan your AI project",
+    "backStep3": "Back to Step 3",
+    "continueStep5": "Continue to Business Case (Step 5)",
+    "continueExport": "Continue to Export",
+    "skipExport": "Skip to Export",
+    "explanation": {
+      "title": "What is CRISP-DM?",
+      "description": "CRISP-DM (Cross-Industry Standard Process for Data Mining) is a widely-used framework for planning AI and data projects. We'll guide you through the 'Business Understanding' phase - the crucial first step that ensures your AI project addresses real business needs.",
+      "bullet1": "We'll clarify your business goals - what success looks like for this project",
+      "bullet2": "We'll assess your current situation - resources, constraints, and data availability",
+      "bullet3": "We'll translate business goals into technical AI objectives",
+      "bullet4": "We'll outline a realistic project plan with clear phases",
+      "tip": "Answer the questions as honestly as possible. There are no wrong answers - the goal is to understand your specific situation."
+    },
+    "manualEntry": {
+      "title": "Manual Idea Entry Required",
+      "message": "Please enter at least one idea to proceed with the consultation.",
+      "ideaLabel": "Idea {{number}}",
+      "ideaPlaceholder": "Enter your idea...",
+      "submitIdeas": "Submit Ideas",
+      "atLeastOne": "Please enter at least one idea"
+    },
+    "chat": {
+      "focus": "Focus:",
+      "startMessage": "The AI consultant will guide you through the CRISP-DM Business Understanding phase, asking one question at a time.",
+      "startButton": "Start Consultation",
+      "starting": "Starting...",
+      "thinking": "Thinking...",
+      "messagePlaceholder": "Type your answer...",
+      "requestAiResponse": "Request AI Response",
+      "generateSummary": "Generate Summary & Findings",
+      "generatingSummary": "Generating summary..."
+    },
+    "findings": {
+      "crispDmTitle": "CRISP-DM Business Understanding",
+      "crispDmSubtitle": "Key outputs from the Business Understanding phase",
+      "businessObjectives": "Business Objectives",
+      "businessObjectivesPlaceholder": "Goals, success criteria, and business context",
+      "situationAssessment": "Situation Assessment",
+      "situationPlaceholder": "Resources, constraints, risks, and data availability",
+      "aiGoals": "AI/Data Mining Goals",
+      "aiGoalsPlaceholder": "Technical objectives aligned with business goals",
+      "projectPlan": "Project Plan",
+      "projectPlanPlaceholder": "Implementation phases and timeline",
+      "ideas": "Ideas",
+      "moreIdeas": "...and {{count}} more"
+    }
+  },
+  "expertSettings": {
+    "title": "Expert Settings",
+    "expertMode": "Expert Mode",
+    "expertModeDesc": "Enable to customize AI prompts, language, and LLM provider",
+    "llmConfig": {
+      "title": "LLM Configuration",
+      "provider": "Provider Preset",
+      "selectProvider": "-- Select a provider --",
+      "model": "Model",
+      "selectModel": "-- Select a model --",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter API key (leave blank to keep existing)",
+      "apiKeyNote": "Your API key is encrypted and stored securely per-session.",
+      "apiBase": "API Base URL (optional)",
+      "apiBasePlaceholder": "e.g., https://chat-ai.academiccloud.de/v1",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "testMissingFields": "Please select a model and enter an API key first.",
+      "testFailed": "Connection test failed. Please check your settings."
+    },
+    "language": {
+      "title": "Language",
+      "note": "Changing language will load the default prompts for that language. Your custom prompts are preserved separately.",
+      "english": "English",
+      "german": "Deutsch"
+    },
+    "prompts": {
+      "title": "Prompt Templates",
+      "resetAll": "Reset All to Defaults",
+      "resetConfirm": "Reset all prompts to defaults?",
+      "tabs": {
+        "system": "System",
+        "round1": "Round 1",
+        "rounds26": "Rounds 2-6",
+        "consultation": "Consult.",
+        "summary": "Summary"
+      },
+      "brainstormingSystem": "Brainstorming System Prompt",
+      "brainstormingSystemDesc": "Sets the AI role and context for the 6-3-5 brainstorming session",
+      "round1Prompt": "Round 1 Prompt",
+      "round1Desc": "Instructions for generating ideas in the first round (blank sheet)",
+      "subsequentRounds": "Subsequent Rounds",
+      "subsequentDesc": "Instructions for building on previous ideas in rounds 2-6",
+      "consultationSystem": "Consultation System",
+      "consultationDesc": "Sets the AI consultant role and goals for the interview",
+      "summaryExtraction": "Summary Extraction",
+      "summaryDesc": "Prompt for extracting structured findings from the consultation",
+      "variables": "Available variables:",
+      "resetPrompt": "Reset to Default",
+      "customized": "Customized"
+    }
+  },
+  "step5": {
+    "title": "Step 5: Business Case Calculation",
+    "subtitle": "Evaluate your AI project using the 5-level value framework",
+    "backStep4": "Back to Step 4",
+    "continueExport": "Continue to Export",
+    "explanation": {
+      "title": "Building a Business Case",
+      "description": "A solid business case helps you get management buy-in and justify investment in AI. We'll use the 5-level value framework to quantify the potential benefits of your project.",
+      "bullet1": "Budget Substitution: Can AI replace external services you currently pay for?",
+      "bullet2": "Process Efficiency: Will AI save time in routine tasks?",
+      "bullet3": "Project Acceleration: Can AI speed up development or time-to-market?",
+      "bullet4": "Risk Mitigation: Will AI help avoid costly errors or quality issues?",
+      "bullet5": "Strategic Scaling: Can AI help you grow without proportionally increasing costs?",
+      "tip": "Don't worry about exact numbers. Rough estimates ('ballpark figures') are perfectly fine at this stage."
+    },
+    "chat": {
+      "contextTitle": "Context from Previous Steps",
+      "companyProfile": "Company Profile",
+      "focusIdea": "Focus Idea",
+      "crispDmSummary": "CRISP-DM Business Understanding",
+      "startMessage": "The AI consultant will help you develop a business case using the 5-level value framework.",
+      "startButton": "Start Business Case Analysis",
+      "starting": "Starting...",
+      "thinking": "Analyzing...",
+      "messagePlaceholder": "Type your answer...",
+      "extractFindings": "Extract Business Case",
+      "extracting": "Extracting..."
+    },
+    "findings": {
+      "title": "Business Case Indication",
+      "subtitle": "5-Level Value Framework Analysis",
+      "classification": "Classification",
+      "classificationPlaceholder": "Which value level(s) apply to this project",
+      "calculation": "Back-of-the-envelope Calculation",
+      "calculationPlaceholder": "Estimated annual monetary benefit",
+      "validationQuestions": "Validation Questions",
+      "validationPlaceholder": "Questions to strengthen the business case",
+      "managementPitch": "Management Pitch",
+      "managementPitchPlaceholder": "One-sentence executive statement"
+    },
+    "framework": {
+      "title": "5 Levels of Value",
+      "level1": "Budget Substitution",
+      "level2": "Process Efficiency",
+      "level3": "Project Acceleration",
+      "level4": "Risk Mitigation",
+      "level5": "Strategic Scaling"
+    }
+  },
+  "export": {
+    "title": "Export Report",
+    "subtitle": "Generate and download your consultation report",
+    "reportTitle": "Consultation Report",
+    "reportIncludes": "Your report will include:",
+    "executiveSummary": "Executive Summary (CRISP-DM Business Understanding)",
+    "businessCaseSection": "Business Case Indication",
+    "implementationRoadmap": "Implementation Roadmap",
+    "appendixCompany": "Appendix A: Company Overview",
+    "appendixIdeas": "Appendix B: Brainstorming Ideas",
+    "appendixPrioritization": "Appendix C: Prioritization Results",
+    "appendixTranscript": "Appendix D: Consultation Transcript",
+    "appendixBusinessCase": "Appendix E: Business Case Transcript",
+    "generateButton": "Generate & Download PDF",
+    "generating": "Generating PDF...",
+    "success": "PDF generated successfully! Check your downloads.",
+    "backToBusinessCase": "Back to Business Case",
+    "backToConsultation": "Back to Consultation",
+    "startNew": "Start New Session"
+  },
+  "errors": {
+    "failedToLoad": "Failed to load",
+    "failedToSave": "Failed to save",
+    "failedToSubmit": "Failed to submit",
+    "failedToStart": "Failed to start",
+    "failedToJoin": "Failed to join",
+    "sessionNotFound": "Session not found",
+    "networkError": "Network error. Please try again.",
+    "failedToGeneratePDF": "Failed to generate PDF",
+    "failedToRestore": "Failed to restore session. Please check the file format."
+  }
+}
