@@ -364,6 +364,7 @@ class ConsultationService:
 
         # CRISP-DM Business Understanding categories
         result = {
+            "company_profile": None,
             "business_objectives": None,
             "situation_assessment": None,
             "ai_goals": None,
@@ -400,6 +401,13 @@ class ConsultationService:
         summary = response.choices[0].message.content
 
         # Save CRISP-DM Business Understanding findings
+        # Extract company profile summary
+        company_profile = (
+            self._extract_section(summary, "COMPANY PROFILE") or
+            self._extract_section(summary, "UNTERNEHMENSPROFIL")
+        )
+        self._save_finding(db_session.id, "company_profile", company_profile)
+
         # Try new format first, fall back to old format for compatibility
         business_obj = (
             self._extract_section(summary, "BUSINESS OBJECTIVES") or

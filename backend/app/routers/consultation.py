@@ -7,13 +7,14 @@ from typing import List, Dict, Optional
 import json
 
 from ..database import get_db
-from ..models import Session as SessionModel
+from ..models import Session as SessionModel, Participant, ConsultationMessage
 from ..schemas.consultation import (
     LLMRequest,
     ConsultationMessageCreate,
     ConsultationMessageResponse,
     ConsultationStartRequest,
-    ConsultationMessageWithKey
+    ConsultationMessageWithKey,
+    CollaborativeConsultationStatus
 )
 from ..services.consultation_service import ConsultationService
 from ..config import settings
@@ -414,3 +415,196 @@ def summarize_consultation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate summary: {str(e)}"
         )
+
+
+# ============== Collaborative Consultation Endpoints ==============
+
+@router.get("/{session_uuid}/consultation/collaborative-status")
+def get_collaborative_status(
+    session_uuid: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get the collaborative consultation status including participants and message count.
+    """
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    # Get participants (reuse from 6-3-5)
+    participants = db.query(Participant).filter(
+        Participant.session_id == db_session.id,
+        Participant.connection_status != 'ai_controlled'  # Only human participants
+    ).all()
+
+    # Get message count
+    message_count = db.query(ConsultationMessage).filter(
+        ConsultationMessage.session_id == db_session.id,
+        ConsultationMessage.role != "system"
+    ).count()
+
+    # Check if consultation has started
+    consultation_started = message_count > 0
+
+    return {
+        "collaborative_mode": db_session.collaborative_consultation or False,
+        "participants": [
+            {
+                "uuid": p.participant_uuid,
+                "name": p.name,
+                "is_owner": p.participant_uuid == db_session.owner_participant_uuid
+            }
+            for p in participants
+        ],
+        "message_count": message_count,
+        "consultation_started": consultation_started,
+        "owner_participant_uuid": db_session.owner_participant_uuid
+    }
+
+
+@router.post("/{session_uuid}/consultation/collaborative-mode")
+def set_collaborative_mode(
+    session_uuid: str,
+    enabled: bool,
+    db: Session = Depends(get_db)
+):
+    """
+    Enable or disable collaborative consultation mode.
+    Only the session owner can toggle this.
+    """
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    db_session.collaborative_consultation = enabled
+    db.commit()
+
+    return {
+        "collaborative_mode": enabled,
+        "message": f"Collaborative mode {'enabled' if enabled else 'disabled'}"
+    }
+
+
+@router.post("/{session_uuid}/consultation/message/save-collaborative")
+def save_collaborative_message(
+    session_uuid: str,
+    message: ConsultationMessageCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Save a user message in collaborative mode with participant info.
+    """
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    # Get participant if provided
+    participant = None
+    participant_name = None
+    if message.participant_uuid:
+        participant = db.query(Participant).filter(
+            Participant.participant_uuid == message.participant_uuid
+        ).first()
+        if participant:
+            participant_name = participant.name
+
+    # Format message content with participant name for collaborative mode
+    if db_session.collaborative_consultation and participant_name:
+        formatted_content = f"[{participant_name}]: {message.content}"
+    else:
+        formatted_content = message.content
+
+    # Save message
+    new_message = ConsultationMessage(
+        session_id=db_session.id,
+        participant_id=participant.id if participant else None,
+        role="user",
+        content=formatted_content,
+        message_type="consultation"
+    )
+    db.add(new_message)
+    db.commit()
+    db.refresh(new_message)
+
+    return {
+        "message_id": new_message.id,
+        "content": formatted_content,
+        "role": "user",
+        "participant_name": participant_name
+    }
+
+
+@router.get("/{session_uuid}/consultation/messages-collaborative")
+def get_collaborative_messages(
+    session_uuid: str,
+    since_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get consultation messages with participant info.
+    Optionally filter to messages after a specific ID (for polling).
+    """
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    # Build query
+    query = db.query(ConsultationMessage).filter(
+        ConsultationMessage.session_id == db_session.id,
+        ConsultationMessage.role != "system"
+    )
+
+    # Filter by since_id if provided (for polling new messages)
+    if since_id:
+        query = query.filter(ConsultationMessage.id > since_id)
+
+    messages = query.order_by(ConsultationMessage.created_at).all()
+
+    result = []
+    for m in messages:
+        # Skip initial trigger message
+        if m.content == "Please start the consultation.":
+            continue
+
+        # Get participant name if available
+        participant_name = None
+        if m.participant_id:
+            participant = db.query(Participant).filter(
+                Participant.id == m.participant_id
+            ).first()
+            if participant:
+                participant_name = participant.name
+
+        result.append({
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "created_at": m.created_at.isoformat(),
+            "participant_name": participant_name
+        })
+
+    return result

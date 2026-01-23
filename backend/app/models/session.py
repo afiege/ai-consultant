@@ -17,6 +17,8 @@ class Session(Base):
     current_step = Column(Integer, default=1)  # 1-4 tracking progress
     status = Column(String(50), default="active")  # active, completed, archived
     six_three_five_skipped = Column(Boolean, default=False)  # Whether 6-3-5 was skipped
+    owner_participant_uuid = Column(String(36), nullable=True)  # UUID of session owner (first participant to join)
+    collaborative_consultation = Column(Boolean, default=False)  # Enable multi-participant consultation mode
 
     # Expert mode settings
     expert_mode = Column(Boolean, default=False)  # Enable expert mode features

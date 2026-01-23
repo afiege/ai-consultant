@@ -219,14 +219,20 @@ def join_six_three_five(
         )
 
     # Create participant
+    participant_uuid = str(uuid.uuid4())
     participant = Participant(
         session_id=db_session.id,
-        participant_uuid=str(uuid.uuid4()),
+        participant_uuid=participant_uuid,
         name=participant_data.name,
         connection_status="connected"
     )
 
     db.add(participant)
+
+    # Set first participant as the session owner
+    if not db_session.owner_participant_uuid:
+        db_session.owner_participant_uuid = participant_uuid
+
     db.commit()
     db.refresh(participant)
 
@@ -262,6 +268,9 @@ def get_six_three_five_status(
             }
             for p in participants
         ]
+
+        # Include owner information
+        status_info['owner_participant_uuid'] = db_session.owner_participant_uuid
 
         return status_info
     except ValueError as e:

@@ -21,7 +21,9 @@
     "optional": "Optional",
     "required": "Required",
     "exportReport": "Export Report",
-    "saveSession": "Save Session"
+    "saveSession": "Save Session",
+    "copy": "Copy",
+    "copied": "Copied!"
   },
   "apiKeyPrompt": {
     "title": "Enter API Key",
@@ -159,7 +161,8 @@
       "rule2": "AI assistants fill remaining slots (max 6 total)",
       "rule3": "Each round lasts 5 minutes",
       "rule4": "Generate 3 ideas per round",
-      "rule5": "Sheets rotate between participants"
+      "rule5": "Sheets rotate between participants",
+      "alreadyJoined": "You have already joined this session"
     },
     "session": {
       "startButton": "Start Brainstorming Session",
@@ -167,7 +170,9 @@
       "aiNote": "AI assistants will be added to fill up to 6 participants",
       "skipButton": "Skip 6-3-5 Session",
       "skipNote": "You can skip brainstorming and enter ideas manually in Step 4",
-      "skipConfirm": "Are you sure you want to skip the 6-3-5 brainstorming session? Any ideas created so far will be preserved, but you will proceed to the next step."
+      "skipConfirm": "Are you sure you want to skip the 6-3-5 brainstorming session? Any ideas created so far will be preserved, but you will proceed to the next step.",
+      "waitingForOwner": "Waiting for the session creator to start...",
+      "waitingForOwnerNote": "Only the person who created this session can start the brainstorming."
     },
     "progress": {
       "round": "Round {{current}} of {{total}}",
@@ -176,7 +181,8 @@
       "allSubmitted": "All participants have submitted their ideas!",
       "advanceRound": "Advance to Round {{next}}",
       "completeSession": "Complete Session & Continue to Step 3",
-      "skipRemaining": "Skip Remaining Rounds"
+      "skipRemaining": "Skip Remaining Rounds",
+      "waitingForOwnerAdvance": "Waiting for the session creator to advance to the next round..."
     },
     "ideaSheet": {
       "sheetNumber": "Sheet #{{number}}",
@@ -265,9 +271,19 @@
       "starting": "Starting...",
       "thinking": "Thinking...",
       "messagePlaceholder": "Type your answer...",
+      "collaborativePlaceholder": "Type your message (all participants can contribute)...",
       "requestAiResponse": "Request AI Response",
       "generateSummary": "Generate Summary & Findings",
-      "generatingSummary": "Generating summary..."
+      "generatingSummary": "Generating summary...",
+      "collaborativeHint": "In collaborative mode: Send messages to contribute, then click 'Request AI Response' when ready for feedback."
+    },
+    "collaborative": {
+      "title": "Collaborative Mode",
+      "active": "Active",
+      "description": "Multiple participants can join and contribute to this consultation session. Share the link below to invite others.",
+      "showShare": "Show Share Link",
+      "hideShare": "Hide Share Link",
+      "shareInstructions": "Share this link or QR code with other participants to let them join the consultation."
     },
     "findings": {
       "crispDmTitle": "CRISP-DM Business Understanding",

@@ -21,7 +21,9 @@
     "optional": "Optional",
     "required": "Erforderlich",
     "exportReport": "Bericht exportieren",
-    "saveSession": "Sitzung speichern"
+    "saveSession": "Sitzung speichern",
+    "copy": "Kopieren",
+    "copied": "Kopiert!"
   },
   "apiKeyPrompt": {
     "title": "API-Schlüssel eingeben",
@@ -159,7 +161,8 @@
       "rule2": "KI-Assistenten füllen verbleibende Plätze (max. 6 insgesamt)",
       "rule3": "Jede Runde dauert 5 Minuten",
       "rule4": "3 Ideen pro Runde generieren",
-      "rule5": "Blätter rotieren zwischen Teilnehmern"
+      "rule5": "Blätter rotieren zwischen Teilnehmern",
+      "alreadyJoined": "Sie sind dieser Sitzung bereits beigetreten"
     },
     "session": {
       "startButton": "Brainstorming-Sitzung starten",
@@ -167,7 +170,9 @@
       "aiNote": "KI-Assistenten werden hinzugefügt, um auf 6 Teilnehmer aufzufüllen",
       "skipButton": "6-3-5 Sitzung überspringen",
       "skipNote": "Sie können das Brainstorming überspringen und Ideen manuell in Schritt 4 eingeben",
-      "skipConfirm": "Sind Sie sicher, dass Sie die 6-3-5 Brainstorming-Sitzung überspringen möchten? Alle bisher erstellten Ideen bleiben erhalten, aber Sie fahren mit dem nächsten Schritt fort."
+      "skipConfirm": "Sind Sie sicher, dass Sie die 6-3-5 Brainstorming-Sitzung überspringen möchten? Alle bisher erstellten Ideen bleiben erhalten, aber Sie fahren mit dem nächsten Schritt fort.",
+      "waitingForOwner": "Warten auf den Sitzungsersteller zum Starten...",
+      "waitingForOwnerNote": "Nur die Person, die diese Sitzung erstellt hat, kann das Brainstorming starten."
     },
     "progress": {
       "round": "Runde {{current}} von {{total}}",
@@ -176,7 +181,8 @@
       "allSubmitted": "Alle Teilnehmer haben ihre Ideen eingereicht!",
       "advanceRound": "Weiter zu Runde {{next}}",
       "completeSession": "Sitzung abschließen & weiter zu Schritt 3",
-      "skipRemaining": "Verbleibende Runden überspringen"
+      "skipRemaining": "Verbleibende Runden überspringen",
+      "waitingForOwnerAdvance": "Warten auf den Sitzungsersteller, um zur nächsten Runde zu wechseln..."
     },
     "ideaSheet": {
       "sheetNumber": "Blatt #{{number}}",
@@ -265,9 +271,19 @@
       "starting": "Wird gestartet...",
       "thinking": "Denkt nach...",
       "messagePlaceholder": "Ihre Antwort eingeben...",
+      "collaborativePlaceholder": "Nachricht eingeben (alle Teilnehmer können beitragen)...",
       "requestAiResponse": "KI-Antwort anfordern",
       "generateSummary": "Zusammenfassung & Erkenntnisse generieren",
-      "generatingSummary": "Zusammenfassung wird generiert..."
+      "generatingSummary": "Zusammenfassung wird generiert...",
+      "collaborativeHint": "Im Kollaborationsmodus: Senden Sie Nachrichten, um beizutragen, dann klicken Sie auf 'KI-Antwort anfordern', wenn Sie Feedback möchten."
+    },
+    "collaborative": {
+      "title": "Kollaborationsmodus",
+      "active": "Aktiv",
+      "description": "Mehrere Teilnehmer können dieser Beratungssitzung beitreten und dazu beitragen. Teilen Sie den Link unten, um andere einzuladen.",
+      "showShare": "Link anzeigen",
+      "hideShare": "Link ausblenden",
+      "shareInstructions": "Teilen Sie diesen Link oder QR-Code mit anderen Teilnehmern, um sie zur Beratung einzuladen."
     },
     "findings": {
       "crispDmTitle": "CRISP-DM Business Understanding",

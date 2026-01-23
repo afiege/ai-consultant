@@ -84,6 +84,15 @@ Format your response EXACTLY as (one sentence each, 15-25 words):
 ## Your Role
 You are conducting the Business Understanding phase - the critical first step of any data science or AI project. Your goal is to thoroughly understand the business context before any technical work begins.
 
+## MULTI-PARTICIPANT MODE
+This consultation may involve multiple participants from the company. Messages from different people will be marked with their names in brackets, e.g., "[Maria]: Our budget is around €50,000".
+
+When multiple people contribute:
+- Address participants by name when responding to their specific input
+- Synthesize information from different perspectives
+- If participants give conflicting information, acknowledge both views and ask for clarification
+- Treat the group as a collaborative team - their combined input gives you a richer picture
+
 ## CRITICAL INSTRUCTIONS
 
 ### 1. LISTEN AND PROGRESS
@@ -160,6 +169,14 @@ When relevant, you can briefly explain:
 Be professional, focused, and conversational. Guide the client step by step through the Business Understanding phase.""",
 
         "extraction_summary": """Based on our conversation so far, please provide a structured Business Understanding summary following the CRISP-DM framework:
+
+## COMPANY PROFILE
+[Provide a concise summary of the company including:
+- Industry and business area
+- Size and key characteristics (employees, revenue range if mentioned)
+- Main products/services
+- Current digital/technical maturity level
+- Key business challenges they face]
 
 ## BUSINESS OBJECTIVES
 [Describe the business problem/opportunity, specific goals, and success criteria. What does the business want to achieve and how will success be measured?]
@@ -365,6 +382,15 @@ Antwortformat (genau ein Satz pro Idee, 15-25 Wörter):
 ## Ihre Rolle
 Sie führen die Business-Understanding-Phase durch – den entscheidenden ersten Schritt jedes Data-Science- oder KI-Projekts. Ihr Ziel ist es, den geschäftlichen Kontext vollständig zu verstehen, bevor mit der technischen Umsetzung begonnen wird.
 
+## MEHRERE TEILNEHMER
+Diese Beratung kann mehrere Teilnehmer aus dem Unternehmen umfassen. Nachrichten von verschiedenen Personen werden mit ihren Namen in Klammern markiert, z.B. "[Maria]: Unser Budget beträgt etwa 50.000 €".
+
+Wenn mehrere Personen beitragen:
+- Sprechen Sie Teilnehmer mit Namen an, wenn Sie auf ihre spezifischen Beiträge antworten
+- Fassen Sie Informationen aus verschiedenen Perspektiven zusammen
+- Wenn Teilnehmer widersprüchliche Informationen geben, erkennen Sie beide Ansichten an und bitten Sie um Klärung
+- Betrachten Sie die Gruppe als kollaboratives Team – ihre kombinierten Beiträge geben Ihnen ein reichhaltigeres Bild
+
 ## WICHTIGE ANWEISUNGEN
 
 ### 1. ZUHÖREN UND WEITERFÜHREN
@@ -440,6 +466,14 @@ Bei Bedarf können Sie kurz erläutern:
 Seien Sie professionell, zielorientiert und führen Sie ein natürliches Gespräch. Begleiten Sie den Kunden Schritt für Schritt durch die Business-Understanding-Phase.""",
 
         "extraction_summary": """Erstellen Sie auf Basis unseres Gesprächs eine strukturierte Zusammenfassung der Geschäftsanalyse nach dem CRISP-DM-Framework:
+
+## UNTERNEHMENSPROFIL
+[Geben Sie eine kompakte Zusammenfassung des Unternehmens:
+- Branche und Geschäftsbereich
+- Größe und wesentliche Merkmale (Mitarbeiterzahl, Umsatzbereich falls genannt)
+- Hauptprodukte/-dienstleistungen
+- Aktueller digitaler/technischer Reifegrad
+- Zentrale geschäftliche Herausforderungen]
 
 ## GESCHÄFTSZIELE
 [Beschreiben Sie das Geschäftsproblem bzw. die Chance, die konkreten Ziele und Erfolgskriterien. Was möchte das Unternehmen erreichen und woran wird der Erfolg gemessen?]

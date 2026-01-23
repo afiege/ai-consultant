@@ -92,6 +92,21 @@ export const consultationAPI = {
   summarize: (sessionUuid, apiKey) =>
     api.post(`/api/sessions/${sessionUuid}/consultation/summarize`, { api_key: apiKey || apiKeyManager.get() }),
 
+  // Collaborative mode endpoints
+  getCollaborativeStatus: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/consultation/collaborative-status`),
+  setCollaborativeMode: (sessionUuid, enabled) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/collaborative-mode?enabled=${enabled}`),
+  saveCollaborativeMessage: (sessionUuid, content, participantUuid) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/message/save-collaborative`, {
+      content,
+      participant_uuid: participantUuid
+    }),
+  getCollaborativeMessages: (sessionUuid, sinceId = null) =>
+    api.get(`/api/sessions/${sessionUuid}/consultation/messages-collaborative`, {
+      params: sinceId ? { since_id: sinceId } : {}
+    }),
+
   // Streaming endpoints using fetch (SSE)
   startStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
     const key = apiKey || apiKeyManager.get();

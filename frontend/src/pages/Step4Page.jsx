@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import { QRCodeSVG } from 'qrcode.react';
 import { sixThreeFiveAPI, prioritizationAPI, consultationAPI, apiKeyManager } from '../services/api';
 import { PageHeader, ExplanationBox } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
@@ -29,6 +30,23 @@ const Step4Page = () => {
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'start' or 'summarize'
 
+  // Collaborative mode state
+  const [collaborativeMode, setCollaborativeMode] = useState(false);
+  const [participants, setParticipants] = useState([]);
+  const [participantUuid, setParticipantUuid] = useState(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [lastMessageId, setLastMessageId] = useState(null);
+  const [showSharePanel, setShowSharePanel] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  // Load participant UUID from localStorage (reuse from 6-3-5)
+  useEffect(() => {
+    const stored = localStorage.getItem(`participant_${sessionUuid}`);
+    if (stored) {
+      setParticipantUuid(stored);
+    }
+  }, [sessionUuid]);
+
   useEffect(() => {
     loadData();
   }, [sessionUuid]);
@@ -36,6 +54,38 @@ const Step4Page = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Poll for collaborative status and new messages
+  useEffect(() => {
+    if (collaborativeMode && consultationStarted) {
+      const pollInterval = setInterval(async () => {
+        try {
+          // Poll for new messages
+          const msgResponse = await consultationAPI.getCollaborativeMessages(sessionUuid, lastMessageId);
+          if (msgResponse.data.length > 0) {
+            setMessages(prev => {
+              // Filter out messages we already have
+              const existingIds = new Set(prev.map(m => m.id));
+              const newMsgs = msgResponse.data.filter(m => !existingIds.has(m.id));
+              if (newMsgs.length > 0) {
+                setLastMessageId(msgResponse.data[msgResponse.data.length - 1].id);
+                return [...prev, ...newMsgs];
+              }
+              return prev;
+            });
+          }
+
+          // Also poll for collaborative status (participants list)
+          const statusResponse = await consultationAPI.getCollaborativeStatus(sessionUuid);
+          setParticipants(statusResponse.data.participants || []);
+        } catch (err) {
+          console.error('Error polling collaborative updates:', err);
+        }
+      }, 3000); // Poll every 3 seconds
+
+      return () => clearInterval(pollInterval);
+    }
+  }, [collaborativeMode, consultationStarted, sessionUuid, lastMessageId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,12 +107,32 @@ const Step4Page = () => {
         // No prioritization results
       }
 
+      // Load collaborative status
+      try {
+        const collabResponse = await consultationAPI.getCollaborativeStatus(sessionUuid);
+        setCollaborativeMode(collabResponse.data.collaborative_mode);
+        setParticipants(collabResponse.data.participants || []);
+        setConsultationStarted(collabResponse.data.consultation_started);
+
+        // Check if current user is the owner
+        const storedUuid = localStorage.getItem(`participant_${sessionUuid}`);
+        if (storedUuid && collabResponse.data.owner_participant_uuid === storedUuid) {
+          setIsOwner(true);
+        }
+      } catch (e) {
+        // Collaborative mode not available
+      }
+
       // Try to load existing consultation messages
       try {
-        const messagesResponse = await consultationAPI.getMessages(sessionUuid);
+        const messagesResponse = collaborativeMode
+          ? await consultationAPI.getCollaborativeMessages(sessionUuid)
+          : await consultationAPI.getMessages(sessionUuid);
         if (messagesResponse.data.length > 0) {
           setMessages(messagesResponse.data);
           setConsultationStarted(true);
+          // Track last message ID for polling
+          setLastMessageId(messagesResponse.data[messagesResponse.data.length - 1].id);
         }
       } catch (e) {
         // No existing messages
@@ -330,6 +400,118 @@ const Step4Page = () => {
     setPendingAction(null);
   };
 
+  // Collaborative mode handlers
+  const handleToggleCollaborativeMode = async () => {
+    try {
+      const newMode = !collaborativeMode;
+      await consultationAPI.setCollaborativeMode(sessionUuid, newMode);
+      setCollaborativeMode(newMode);
+      if (newMode) {
+        setShowSharePanel(true);
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to toggle collaborative mode');
+    }
+  };
+
+  const handleCopyLink = async () => {
+    const shareUrl = `${window.location.origin}/session/${sessionUuid}/step4`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      // Fallback
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  };
+
+  const handleSendCollaborativeMessage = async (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim() || sendingMessage) return;
+
+    const userMessage = inputMessage.trim();
+    setInputMessage('');
+    setSendingMessage(true);
+
+    try {
+      // Save message with participant info
+      const response = await consultationAPI.saveCollaborativeMessage(
+        sessionUuid,
+        userMessage,
+        participantUuid
+      );
+
+      // Add to local messages
+      setMessages(prev => [...prev, {
+        id: response.data.message_id,
+        role: 'user',
+        content: response.data.content,
+        created_at: new Date().toISOString(),
+        participant_name: response.data.participant_name
+      }]);
+      setLastMessageId(response.data.message_id);
+
+      setSendingMessage(false);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send message');
+      setSendingMessage(false);
+    }
+  };
+
+  const handleRequestAiResponseCollaborative = async () => {
+    if (sendingMessage) return;
+    setSendingMessage(true);
+
+    // Add placeholder for AI response
+    const aiMsgId = Date.now();
+    setMessages(prev => [...prev, {
+      id: aiMsgId,
+      role: 'assistant',
+      content: '',
+      created_at: new Date().toISOString()
+    }]);
+
+    try {
+      await consultationAPI.requestAiResponseStream(
+        sessionUuid,
+        (chunk) => {
+          setMessages(prev => {
+            const updated = [...prev];
+            const aiIdx = updated.findIndex(m => m.id === aiMsgId);
+            if (aiIdx >= 0) {
+              updated[aiIdx] = {
+                ...updated[aiIdx],
+                content: updated[aiIdx].content + chunk
+              };
+            }
+            return updated;
+          });
+        },
+        () => {
+          setSendingMessage(false);
+          // Reload messages to get proper ID from backend
+          loadData();
+        },
+        (errorMsg) => {
+          setError(errorMsg || 'Failed to get AI response');
+          setSendingMessage(false);
+          setMessages(prev => prev.filter(m => m.id !== aiMsgId || m.content));
+        }
+      );
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to get AI response');
+      setSendingMessage(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -368,6 +550,103 @@ const Step4Page = () => {
             tip={t('step4.explanation.tip')}
             defaultOpen={true}
           />
+        )}
+
+        {/* Collaborative Mode Panel - show for session owner */}
+        {(isOwner || collaborativeMode) && ideas.length > 0 && (
+          <div className="mb-6 bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <h3 className="font-semibold text-gray-900">{t('step4.collaborative.title')}</h3>
+                {isOwner && (
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={collaborativeMode}
+                      onChange={handleToggleCollaborativeMode}
+                      className="sr-only peer"
+                      disabled={consultationStarted}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                )}
+                {!isOwner && collaborativeMode && (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                    {t('step4.collaborative.active')}
+                  </span>
+                )}
+              </div>
+              {collaborativeMode && (
+                <button
+                  onClick={() => setShowSharePanel(!showSharePanel)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  {showSharePanel ? t('step4.collaborative.hideShare') : t('step4.collaborative.showShare')}
+                </button>
+              )}
+            </div>
+
+            {collaborativeMode && (
+              <p className="text-sm text-gray-600 mt-2">
+                {t('step4.collaborative.description')}
+              </p>
+            )}
+
+            {/* Participants List */}
+            {collaborativeMode && participants.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {participants.map((p) => (
+                  <span
+                    key={p.uuid}
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      p.is_owner
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {p.name} {p.is_owner && '(Owner)'}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Share Panel with QR Code */}
+            {collaborativeMode && showSharePanel && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex flex-col md:flex-row items-center gap-4">
+                  <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <QRCodeSVG
+                      value={`${window.location.origin}/session/${sessionUuid}/step4`}
+                      size={120}
+                      level="M"
+                      includeMargin={true}
+                    />
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <p className="text-sm text-gray-600">{t('step4.collaborative.shareInstructions')}</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={`${window.location.origin}/session/${sessionUuid}/step4`}
+                        className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm text-gray-600 truncate"
+                      />
+                      <button
+                        onClick={handleCopyLink}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          linkCopied
+                            ? 'bg-green-600 text-white'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {linkCopied ? t('common.copied') : t('common.copy')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Manual idea entry when no ideas exist */}
@@ -448,6 +727,12 @@ const Step4Page = () => {
                               : 'bg-gray-100 text-gray-900'
                           }`}
                         >
+                          {/* Show participant name in collaborative mode */}
+                          {collaborativeMode && msg.participant_name && msg.role === 'user' && (
+                            <p className="text-xs font-semibold mb-1 opacity-80">
+                              {msg.participant_name}
+                            </p>
+                          )}
                           <div className={`text-sm max-w-none ${
                             msg.role === 'user'
                               ? ''
@@ -494,12 +779,12 @@ const Step4Page = () => {
               {/* Input area */}
               {consultationStarted && (
                 <div className="border-t p-4">
-                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <form onSubmit={collaborativeMode ? handleSendCollaborativeMessage : handleSendMessage} className="flex gap-2">
                     <input
                       type="text"
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
-                      placeholder={t('step4.chat.messagePlaceholder')}
+                      placeholder={collaborativeMode ? t('step4.chat.collaborativePlaceholder') : t('step4.chat.messagePlaceholder')}
                       disabled={sendingMessage}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -511,15 +796,32 @@ const Step4Page = () => {
                       {t('common.send')}
                     </button>
                   </form>
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      onClick={handleSummarize}
-                      disabled={summarizing || messages.length < 4}
-                      className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
-                    >
-                      {summarizing ? t('step4.chat.generatingSummary') : t('step4.chat.generateSummary')}
-                    </button>
+                  <div className="mt-2 flex justify-between items-center">
+                    {/* Request AI Response button for collaborative mode */}
+                    {collaborativeMode && (
+                      <button
+                        onClick={handleRequestAiResponseCollaborative}
+                        disabled={sendingMessage || messages.length < 2}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 transition-colors text-sm font-medium"
+                      >
+                        {sendingMessage ? t('step4.chat.thinking') : t('step4.chat.requestAiResponse')}
+                      </button>
+                    )}
+                    <div className={collaborativeMode ? '' : 'ml-auto'}>
+                      <button
+                        onClick={handleSummarize}
+                        disabled={summarizing || messages.length < 4}
+                        className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
+                      >
+                        {summarizing ? t('step4.chat.generatingSummary') : t('step4.chat.generateSummary')}
+                      </button>
+                    </div>
                   </div>
+                  {collaborativeMode && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      {t('step4.chat.collaborativeHint')}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

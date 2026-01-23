@@ -228,37 +228,87 @@ const Step2Page = () => {
               <ShareSession sessionUuid={sessionUuid} />
             </div>
 
-            <ParticipantJoin
-              onJoin={handleJoin}
-              participants={sessionStatus.participants || []}
-              sessionStarted={false}
-            />
+            {/* Only show join form if user hasn't joined yet */}
+            {!participantUuid ? (
+              <ParticipantJoin
+                onJoin={handleJoin}
+                participants={sessionStatus.participants || []}
+                sessionStarted={false}
+              />
+            ) : (
+              /* Show participant list when user has already joined */
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-white rounded-lg shadow-lg p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                    {t('step2.join.title')}
+                  </h2>
+                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-green-800 font-medium">
+                      ✓ {t('step2.join.alreadyJoined')}
+                    </p>
+                  </div>
+                  {sessionStatus.participants?.length > 0 && (
+                    <div className="p-4 bg-blue-50 rounded-md">
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        {t('step2.join.participants')} ({sessionStatus.participants.length}/6)
+                      </h3>
+                      <div className="space-y-1">
+                        {sessionStatus.participants.map((p) => (
+                          <div key={p.uuid} className="flex items-center text-sm">
+                            {p.is_ai ? (
+                              <span className="text-blue-600">🤖 {p.name}</span>
+                            ) : (
+                              <span className="text-gray-700">👤 {p.name}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {participantUuid && (
               <div className="max-w-2xl mx-auto space-y-4">
-                <button
-                  onClick={handleStartSession}
-                  disabled={loading}
-                  className="w-full bg-green-600 text-white py-3 px-6 rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-lg"
-                >
-                  {loading ? t('step2.session.starting') : t('step2.session.startButton')}
-                </button>
-                <p className="text-sm text-gray-600 text-center">
-                  {t('step2.session.aiNote')}
-                </p>
+                {/* Only show Start button to session owner */}
+                {participantUuid === sessionStatus.owner_participant_uuid ? (
+                  <>
+                    <button
+                      onClick={handleStartSession}
+                      disabled={loading}
+                      className="w-full bg-green-600 text-white py-3 px-6 rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-lg"
+                    >
+                      {loading ? t('step2.session.starting') : t('step2.session.startButton')}
+                    </button>
+                    <p className="text-sm text-gray-600 text-center">
+                      {t('step2.session.aiNote')}
+                    </p>
 
-                <div className="border-t border-gray-200 pt-4">
-                  <button
-                    onClick={handleSkipSession}
-                    disabled={loading}
-                    className="w-full bg-gray-200 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors font-medium"
-                  >
-                    {t('step2.session.skipButton')}
-                  </button>
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    {t('step2.session.skipNote')}
-                  </p>
-                </div>
+                    <div className="border-t border-gray-200 pt-4">
+                      <button
+                        onClick={handleSkipSession}
+                        disabled={loading}
+                        className="w-full bg-gray-200 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors font-medium"
+                      >
+                        {t('step2.session.skipButton')}
+                      </button>
+                      <p className="text-xs text-gray-500 text-center mt-2">
+                        {t('step2.session.skipNote')}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  /* Non-owners see a waiting message */
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-center">
+                    <p className="text-blue-800 font-medium">
+                      {t('step2.session.waitingForOwner')}
+                    </p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      {t('step2.session.waitingForOwnerNote')}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -308,28 +358,36 @@ const Step2Page = () => {
               submitting={submitting}
             />
 
-            {/* Advance Round Button (only for session owner or when all submitted) */}
+            {/* Advance Round Button (only for session owner when all submitted) */}
             {canAdvance && (
               <div className="bg-white rounded-lg shadow p-6 space-y-3">
                 <p className="text-green-700 font-medium mb-4">
                   ✓ {t('step2.progress.allSubmitted')}
                 </p>
-                <button
-                  onClick={handleAdvanceRound}
-                  disabled={loading}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors font-medium"
-                >
-                  {sessionStatus.current_round >= 6
-                    ? t('step2.progress.completeSession')
-                    : t('step2.progress.advanceRound', { next: sessionStatus.current_round + 1 })}
-                </button>
-                <button
-                  onClick={handleSkipSession}
-                  disabled={loading}
-                  className="w-full bg-gray-200 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-300 disabled:bg-gray-100 transition-colors font-medium text-sm"
-                >
-                  {t('step2.progress.skipRemaining')}
-                </button>
+                {participantUuid === sessionStatus.owner_participant_uuid ? (
+                  <>
+                    <button
+                      onClick={handleAdvanceRound}
+                      disabled={loading}
+                      className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors font-medium"
+                    >
+                      {sessionStatus.current_round >= 6
+                        ? t('step2.progress.completeSession')
+                        : t('step2.progress.advanceRound', { next: sessionStatus.current_round + 1 })}
+                    </button>
+                    <button
+                      onClick={handleSkipSession}
+                      disabled={loading}
+                      className="w-full bg-gray-200 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-300 disabled:bg-gray-100 transition-colors font-medium text-sm"
+                    >
+                      {t('step2.progress.skipRemaining')}
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-blue-600 text-center">
+                    {t('step2.progress.waitingForOwnerAdvance')}
+                  </p>
+                )}
               </div>
             )}
           </div>

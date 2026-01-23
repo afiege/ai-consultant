@@ -11,6 +11,7 @@ class ConsultationMessage(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    participant_id = Column(Integer, ForeignKey("participants.id", ondelete="SET NULL"), nullable=True)  # For collaborative mode
     role = Column(String(50), nullable=False)  # 'user', 'assistant', 'system'
     content = Column(Text, nullable=False)
     message_type = Column(String(20), default="consultation")  # 'consultation' (Step 4) or 'business_case' (Step 5)
@@ -18,6 +19,7 @@ class ConsultationMessage(Base):
 
     # Relationships
     session = relationship("Session", back_populates="consultation_messages")
+    participant = relationship("Participant")
 
 
 class ConsultationFinding(Base):

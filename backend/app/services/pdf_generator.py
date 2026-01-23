@@ -224,6 +224,10 @@ class PDFReportGenerator:
         # Title page
         story.extend(self._build_title_page(db_session))
 
+        # Company Profile Summary (main body)
+        story.append(PageBreak())
+        story.extend(self._build_company_profile_summary(db_session))
+
         # Main Results Section: Executive Summary with findings and recommendations
         story.append(PageBreak())
         story.extend(self._build_executive_summary(db_session))
@@ -321,6 +325,93 @@ class PDFReportGenerator:
                 fontSize=10,
                 alignment=TA_CENTER,
                 textColor=colors.lightgrey
+            )
+        ))
+
+        return elements
+
+    def _build_company_profile_summary(self, db_session: SessionModel) -> list:
+        """Build the company profile summary section for the main body."""
+        elements = []
+
+        elements.append(Paragraph("Company Profile", self.styles['SectionHeader']))
+        elements.append(Spacer(1, 0.2*inch))
+
+        # Get company profile finding
+        finding = self.db.query(ConsultationFinding).filter(
+            ConsultationFinding.session_id == db_session.id,
+            ConsultationFinding.factor_type == 'company_profile'
+        ).first()
+
+        if finding and finding.finding_text:
+            # Use the summarized company profile from the consultation findings
+            content_elements = markdown_to_elements(
+                finding.finding_text,
+                self.styles['ReportBody'],
+                self.styles['IdeaText']
+            )
+            elements.extend(content_elements)
+        else:
+            # Fallback: Create a basic profile from available data
+            elements.append(Paragraph(
+                f"<b>Company:</b> {db_session.company_name or 'Not specified'}",
+                self.styles['ReportBody']
+            ))
+            elements.append(Spacer(1, 0.1*inch))
+
+            # Get company info for basic summary
+            company_infos = self.db.query(CompanyInfo).filter(
+                CompanyInfo.session_id == db_session.id
+            ).all()
+
+            if company_infos:
+                elements.append(Paragraph(
+                    "The following information was provided about the company:",
+                    self.styles['ReportBody']
+                ))
+                elements.append(Spacer(1, 0.1*inch))
+
+                for info in company_infos[:2]:  # Limit to first 2 entries
+                    source_label = info.info_type.upper() if info.info_type else "TEXT"
+                    # Truncate for summary view
+                    content = info.content or ""
+                    if len(content) > 500:
+                        content = content[:500] + "..."
+
+                    elements.append(Paragraph(
+                        f"<b>Source: {source_label}</b>",
+                        self.styles['SubHeader']
+                    ))
+                    content_elements = markdown_to_elements(
+                        content,
+                        self.styles['ReportBody'],
+                        self.styles['IdeaText']
+                    )
+                    elements.extend(content_elements)
+                    elements.append(Spacer(1, 0.1*inch))
+
+                if len(company_infos) > 2:
+                    elements.append(Paragraph(
+                        f"<i>See Appendix A for complete company information ({len(company_infos)} sources total).</i>",
+                        self.styles['ReportBody']
+                    ))
+            else:
+                elements.append(Paragraph(
+                    "No detailed company information was provided. Complete Step 1 to populate this section.",
+                    self.styles['ReportBody']
+                ))
+
+        elements.append(Spacer(1, 0.3*inch))
+
+        # Add a reference to full details
+        elements.append(Paragraph(
+            "<i>For complete company documentation, see Appendix A.</i>",
+            ParagraphStyle(
+                'AppendixRef',
+                parent=self.styles['Normal'],
+                fontSize=9,
+                textColor=colors.gray,
+                alignment=TA_CENTER
             )
         ))
 
@@ -808,8 +899,18 @@ class PDFReportGenerator:
 
         for info in company_infos:
             source_label = info.info_type.upper() if info.info_type else "TEXT"
+            # Include original filename for file uploads, or source URL for web crawls
+            if info.file_name:
+                source_detail = f" ({info.file_name})"
+            elif info.source_url:
+                # Truncate long URLs
+                url_display = info.source_url if len(info.source_url) <= 60 else info.source_url[:57] + "..."
+                source_detail = f" ({url_display})"
+            else:
+                source_detail = ""
+
             elements.append(Paragraph(
-                f"<b>Source: {source_label}</b>",
+                f"<b>Source: {source_label}{source_detail}</b>",
                 self.styles['SubHeader']
             ))
 

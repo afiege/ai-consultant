@@ -12,6 +12,7 @@ class ConsultationMessageBase(BaseModel):
 class ConsultationMessageCreate(BaseModel):
     """Schema for creating a consultation message."""
     content: str  # User message only
+    participant_uuid: Optional[str] = None  # For collaborative mode
 
 
 class ConsultationMessageResponse(ConsultationMessageBase):
@@ -19,9 +20,18 @@ class ConsultationMessageResponse(ConsultationMessageBase):
     id: int
     session_id: int
     created_at: datetime
+    participant_name: Optional[str] = None  # For collaborative mode
 
     class Config:
         from_attributes = True
+
+
+class CollaborativeConsultationStatus(BaseModel):
+    """Schema for collaborative consultation status."""
+    collaborative_mode: bool
+    participants: List[dict] = []
+    message_count: int
+    consultation_started: bool
 
 
 class LLMRequest(BaseModel):
@@ -37,6 +47,7 @@ class ConsultationStartRequest(LLMRequest):
 class ConsultationMessageWithKey(LLMRequest):
     """Schema for sending a message with API key."""
     content: str  # User message
+    participant_uuid: Optional[str] = None  # For collaborative mode
 
 
 class ConsultationFindingBase(BaseModel):
