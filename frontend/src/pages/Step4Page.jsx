@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
-import { sixThreeFiveAPI, prioritizationAPI, consultationAPI } from '../services/api';
+import { sixThreeFiveAPI, prioritizationAPI, consultationAPI, apiKeyManager } from '../services/api';
 import { PageHeader, ExplanationBox } from '../components/common';
+import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 
 const Step4Page = () => {
   const { t } = useTranslation();
@@ -25,6 +26,8 @@ const Step4Page = () => {
   const [consultationStarted, setConsultationStarted] = useState(false);
   const [findings, setFindings] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'start' or 'summarize'
 
   useEffect(() => {
     loadData();
@@ -123,6 +126,13 @@ const Step4Page = () => {
   };
 
   const handleStartConsultation = async () => {
+    // Check if API key is set
+    if (!apiKeyManager.isSet()) {
+      setPendingAction('start');
+      setShowApiKeyPrompt(true);
+      return;
+    }
+
     setSendingMessage(true);
     setConsultationStarted(true);
 
@@ -281,6 +291,13 @@ const Step4Page = () => {
   };
 
   const handleSummarize = async () => {
+    // Check if API key is set
+    if (!apiKeyManager.isSet()) {
+      setPendingAction('summarize');
+      setShowApiKeyPrompt(true);
+      return;
+    }
+
     setSummarizing(true);
     try {
       const response = await consultationAPI.summarize(sessionUuid);
@@ -300,6 +317,17 @@ const Step4Page = () => {
     } finally {
       setSummarizing(false);
     }
+  };
+
+  const handleApiKeySet = () => {
+    setShowApiKeyPrompt(false);
+    // Execute the pending action now that we have the API key
+    if (pendingAction === 'start') {
+      handleStartConsultation();
+    } else if (pendingAction === 'summarize') {
+      handleSummarize();
+    }
+    setPendingAction(null);
   };
 
   if (loading) {
@@ -606,6 +634,13 @@ const Step4Page = () => {
           </button>
         </div>
       </div>
+
+      {/* API Key Prompt Modal */}
+      <ApiKeyPrompt
+        isOpen={showApiKeyPrompt}
+        onClose={() => setShowApiKeyPrompt(false)}
+        onApiKeySet={handleApiKeySet}
+      />
     </div>
   );
 };

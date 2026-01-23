@@ -19,8 +19,7 @@ cd backend
 railway init
 
 # Set environment variables
-railway variables set MISTRAL_API_KEY=your_mistral_api_key
-railway variables set ENCRYPTION_KEY=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+railway variables set LLM_MODEL=mistral/mistral-small-latest
 railway variables set CORS_ORIGINS=https://your-frontend-url.railway.app
 
 # Deploy
@@ -60,28 +59,18 @@ railway up
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `MISTRAL_API_KEY` | Yes | Mistral AI API key for consultation |
-| `ENCRYPTION_KEY` | Yes | Fernet key for encrypting API keys |
+| `LLM_MODEL` | No | LLM model (default: `mistral/mistral-small-latest`) |
+| `LLM_API_BASE` | No | Custom API base URL for OpenAI-compatible endpoints |
 | `CORS_ORIGINS` | Yes | Frontend URL(s), comma-separated |
 | `DATABASE_URL` | No | SQLite path (default: `./database/ai_consultant.db`) |
+
+**Note:** API keys are NOT stored on the server. Users enter their API key in the app at runtime.
 
 ### Frontend
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `VITE_API_URL` | Yes | Backend API URL |
-
-## Generate Encryption Key
-
-```python
-from cryptography.fernet import Fernet
-print(Fernet.generate_key().decode())
-```
-
-Or via command line:
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
 
 ## Monitoring
 

@@ -30,8 +30,16 @@ Based on the company information above, generate ideas for:
 ## Guidelines
 - Be SPECIFIC to this company - reference their industry, products, services, or challenges
 - Each idea should be actionable and realistic for an SME
-- Ideas should be concise (1-2 sentences) but clear enough to understand
-- Think creatively but practically - what would genuinely help THIS business?""",
+- Think creatively but practically - what would genuinely help THIS business?
+
+## CRITICAL: Output Format
+Each idea MUST follow this exact format:
+- Start with a bold action verb (e.g., "Implement", "Deploy", "Create", "Automate")
+- Be exactly ONE sentence (15-25 words)
+- Include what the solution does AND what benefit it provides
+- Example format: "Implement [solution] to [action] that [benefit for the company]."
+
+Do NOT write long explanations. Do NOT add sub-points or details. ONE clear sentence per idea.""",
 
         "brainstorming_round1": """## Round {round_number} - Fresh Start
 
@@ -45,10 +53,10 @@ Think about:
 - How could technology improve their customer experience?
 - What data do they likely have that could be leveraged?
 {uniqueness_note}
-Format your response as:
-1. [First idea - be specific to this company]
-2. [Second idea - address a different aspect]
-3. [Third idea - think creatively]""",
+Format your response EXACTLY as (one sentence each, 15-25 words):
+1. [Action verb] [solution] to [do what] that [benefit].
+2. [Action verb] [solution] to [do what] that [benefit].
+3. [Action verb] [solution] to [do what] that [benefit].""",
 
         "brainstorming_subsequent": """## Round {round_number} - Build on Previous Ideas
 
@@ -66,10 +74,10 @@ As a brainstorming participant, your job is to READ these ideas and get INSPIRED
 
 Generate 3 NEW ideas that build upon, complement, or creatively extend the ideas above. Your ideas should feel like a natural continuation of this brainstorming thread.
 {uniqueness_note}
-Format your response as:
-1. [First idea - inspired by or building on previous ideas]
-2. [Second idea - a complementary or related concept]
-3. [Third idea - a creative extension or combination]""",
+Format your response EXACTLY as (one sentence each, 15-25 words):
+1. [Action verb] [solution] to [do what] that [benefit].
+2. [Action verb] [solution] to [do what] that [benefit].
+3. [Action verb] [solution] to [do what] that [benefit].""",
 
         "consultation_system": """You are an experienced AI and digitalization consultant conducting a Business Understanding session with a client from an SME (Small and Medium Enterprise), following the CRISP-DM methodology.
 
@@ -303,8 +311,16 @@ Entwickeln Sie auf Basis der Unternehmensinformationen Ideen für:
 ## Richtlinien
 - Beziehen Sie sich konkret auf dieses Unternehmen – nennen Sie Branche, Produkte, Dienstleistungen oder Herausforderungen
 - Jede Idee sollte für ein KMU umsetzbar und realistisch sein
-- Formulieren Sie die Ideen prägnant (1-2 Sätze), aber verständlich
-- Denken Sie kreativ, aber praxisnah – was würde DIESEM Unternehmen wirklich helfen?""",
+- Denken Sie kreativ, aber praxisnah – was würde DIESEM Unternehmen wirklich helfen?
+
+## WICHTIG: Ausgabeformat
+Jede Idee MUSS diesem Format folgen:
+- Beginnen Sie mit einem starken Verb (z.B. "Implementieren", "Einführen", "Entwickeln", "Automatisieren")
+- Genau EIN Satz (15-25 Wörter)
+- Beschreiben Sie, was die Lösung tut UND welchen Nutzen sie bringt
+- Beispielformat: "[Verb] [Lösung], um [Aktion] zu ermöglichen, die [Nutzen für das Unternehmen]."
+
+Schreiben Sie KEINE langen Erklärungen. KEINE Unterpunkte oder Details. EIN klarer Satz pro Idee.""",
 
         "brainstorming_round1": """## Runde {round_number} – Neubeginn
 
@@ -318,10 +334,10 @@ Entwickeln Sie auf Basis der Unternehmensinformationen 3 kreative und praxisnahe
 - Wie könnte Technologie das Kundenerlebnis verbessern?
 - Welche Daten sind vermutlich vorhanden und könnten genutzt werden?
 {uniqueness_note}
-Antwortformat:
-1. [Erste Idee – konkret auf dieses Unternehmen bezogen]
-2. [Zweite Idee – ein anderer Aspekt des Geschäfts]
-3. [Dritte Idee – ein kreativer Ansatz]""",
+Antwortformat (genau ein Satz pro Idee, 15-25 Wörter):
+1. [Verb] [Lösung], um [was zu tun], die [Nutzen].
+2. [Verb] [Lösung], um [was zu tun], die [Nutzen].
+3. [Verb] [Lösung], um [was zu tun], die [Nutzen].""",
 
         "brainstorming_subsequent": """## Runde {round_number} – Weiterentwicklung der bisherigen Ideen
 
@@ -339,10 +355,10 @@ Als Teilnehmer ist es Ihre Aufgabe, diese Ideen zu LESEN und sich davon INSPIRIE
 
 Entwickeln Sie 3 NEUE Ideen, die auf den bisherigen aufbauen, diese ergänzen oder kreativ weiterführen. Ihre Ideen sollten sich wie eine natürliche Fortsetzung dieses Ideenaustausches anfühlen.
 {uniqueness_note}
-Antwortformat:
-1. [Erste Idee – inspiriert von oder aufbauend auf bisherigen Ideen]
-2. [Zweite Idee – ein ergänzendes oder verwandtes Konzept]
-3. [Dritte Idee – eine kreative Erweiterung oder Kombination]""",
+Antwortformat (genau ein Satz pro Idee, 15-25 Wörter):
+1. [Verb] [Lösung], um [was zu tun], die [Nutzen].
+2. [Verb] [Lösung], um [was zu tun], die [Nutzen].
+3. [Verb] [Lösung], um [was zu tun], die [Nutzen].""",
 
         "consultation_system": """Sie sind ein erfahrener KI- und Digitalisierungsberater und führen eine Geschäftsanalyse (Business Understanding) mit einem Kunden aus einem kleinen oder mittleren Unternehmen (KMU) durch – nach der CRISP-DM-Methodik.
 

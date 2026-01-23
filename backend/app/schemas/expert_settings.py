@@ -21,9 +21,9 @@ class CustomPrompts(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    """Schema for LLM configuration."""
+    """Schema for LLM configuration (model and api_base stored, api_key passed per-request)."""
     model: Optional[str] = None  # e.g., "meta-llama-3.1-8b-instruct"
-    api_key: Optional[str] = None  # Will be encrypted when stored
+    api_key: Optional[str] = None  # Only used for connection testing, NOT stored
     api_base: Optional[str] = None  # e.g., "https://chat-ai.academiccloud.de/v1"
 
 

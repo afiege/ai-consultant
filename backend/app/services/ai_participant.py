@@ -77,8 +77,8 @@ class AIParticipant:
             completion_kwargs = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": 0.9,  # Higher temperature for more creative/diverse ideas
-                "max_tokens": 500
+                "temperature": 0.7,  # Balanced temperature for creativity with consistency
+                "max_tokens": 300  # Reduced to encourage concise responses
             }
             if self.api_key:
                 completion_kwargs["api_key"] = self.api_key

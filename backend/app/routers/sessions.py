@@ -19,22 +19,12 @@ def create_session(
     # Generate unique session UUID
     session_uuid = str(uuid.uuid4())
 
-    # Encrypt API key if provided
-    encrypted_key = None
-    if session_data.mistral_api_key:
-        from cryptography.fernet import Fernet
-        from ..config import settings
-
-        cipher = Fernet(settings.get_encryption_key.encode())
-        encrypted_key = cipher.encrypt(session_data.mistral_api_key.encode()).decode()
-
     # Create new session
     db_session = SessionModel(
         session_uuid=session_uuid,
         company_name=session_data.company_name,
         current_step=1,
-        status="active",
-        mistral_api_key_encrypted=encrypted_key
+        status="active"
     )
 
     db.add(db_session)
@@ -92,15 +82,6 @@ def update_session(
 
     if session_data.six_three_five_skipped is not None:
         db_session.six_three_five_skipped = session_data.six_three_five_skipped
-
-    if session_data.mistral_api_key is not None:
-        # TODO: Encrypt API key before storing
-        from cryptography.fernet import Fernet
-        from ..config import settings
-
-        cipher = Fernet(settings.get_encryption_key.encode())
-        encrypted_key = cipher.encrypt(session_data.mistral_api_key.encode())
-        db_session.mistral_api_key_encrypted = encrypted_key.decode()
 
     db.commit()
     db.refresh(db_session)

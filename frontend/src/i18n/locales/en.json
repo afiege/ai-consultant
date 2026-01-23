@@ -23,6 +23,20 @@
     "exportReport": "Export Report",
     "saveSession": "Save Session"
   },
+  "apiKeyPrompt": {
+    "title": "Enter API Key",
+    "description": "An API key is required to use the AI features. Your key is stored only in your browser and is never saved on the server.",
+    "provider": "Provider",
+    "model": "Model",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "Enter your API key",
+    "securityNote": "Your API key is stored only in your browser session and cleared when you close the tab.",
+    "testConnection": "Test Connection",
+    "testing": "Testing...",
+    "testFailed": "Connection test failed",
+    "continue": "Continue",
+    "enterKey": "Please enter an API key"
+  },
   "home": {
     "title": "AI & Digitalization Consultant",
     "subtitle": "Your SME's guide to AI and digital transformation",
@@ -45,7 +59,9 @@
       "step3Title": "Idea Prioritization",
       "step3Desc": "Rank and prioritize generated ideas collaboratively",
       "step4Title": "Business Understanding",
-      "step4Desc": "CRISP-DM guided consultation to define objectives and plan your AI project"
+      "step4Desc": "CRISP-DM guided consultation to define objectives and plan your AI project",
+      "step5Title": "Business Case Calculation",
+      "step5Desc": "Quantify potential value using the 5-level framework for management buy-in"
     },
     "restoreSession": {
       "description": "Or continue a previously saved session:",
@@ -90,7 +106,7 @@
     "webCrawl": {
       "title": "Crawl Company Website",
       "urlLabel": "Website URL",
-      "urlPlaceholder": "https://www.example.com",
+      "urlPlaceholder": "www.example.com",
       "hint": "Enter your company's website or a page with relevant information (About Us, Company Profile, etc.)",
       "crawlButton": "Crawl Website",
       "crawling": "Crawling...",

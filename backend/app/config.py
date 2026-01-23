@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
-from cryptography.fernet import Fernet
 
 
 class Settings(BaseSettings):
@@ -8,18 +7,6 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "sqlite:///./database/ai_consultant.db"
-
-    # Security - auto-generate if not provided (for development)
-    encryption_key: Optional[str] = None
-
-    @property
-    def get_encryption_key(self) -> str:
-        """Get encryption key, generate one if not set."""
-        if self.encryption_key:
-            return self.encryption_key
-        # Generate a consistent key based on a seed (not secure for production secrets)
-        # For production, always set ENCRYPTION_KEY environment variable
-        return Fernet.generate_key().decode()
 
     # CORS
     cors_origins: str = "http://localhost:5173,http://localhost:3000"

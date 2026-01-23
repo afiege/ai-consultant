@@ -92,9 +92,8 @@ htmlcov/
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
 
-# Evaluation results (may contain session data)
-evaluation/results/
-!evaluation/results/.gitkeep
+# Evaluation (benchmark data, results)
+evaluation/
 
 # Claude Code settings (optional - remove if you want to share settings)
 .claude/

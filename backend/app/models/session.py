@@ -16,7 +16,6 @@ class Session(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
     current_step = Column(Integer, default=1)  # 1-4 tracking progress
     status = Column(String(50), default="active")  # active, completed, archived
-    mistral_api_key_encrypted = Column(Text, nullable=True)  # Encrypted API key
     six_three_five_skipped = Column(Boolean, default=False)  # Whether 6-3-5 was skipped
 
     # Expert mode settings
@@ -26,7 +25,6 @@ class Session(Base):
 
     # LLM configuration (per-session)
     llm_model = Column(String(100), nullable=True)  # e.g., "meta-llama-3.1-8b-instruct"
-    llm_api_key_encrypted = Column(Text, nullable=True)  # Encrypted API key
     llm_api_base = Column(String(255), nullable=True)  # e.g., "https://chat-ai.academiccloud.de/v1"
 
     # Relationships

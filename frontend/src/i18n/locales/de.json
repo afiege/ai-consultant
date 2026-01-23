@@ -23,6 +23,20 @@
     "exportReport": "Bericht exportieren",
     "saveSession": "Sitzung speichern"
   },
+  "apiKeyPrompt": {
+    "title": "API-Schlüssel eingeben",
+    "description": "Ein API-Schlüssel ist erforderlich, um die KI-Funktionen zu nutzen. Ihr Schlüssel wird nur in Ihrem Browser gespeichert und niemals auf dem Server gesichert.",
+    "provider": "Anbieter",
+    "model": "Modell",
+    "apiKey": "API-Schlüssel",
+    "apiKeyPlaceholder": "Geben Sie Ihren API-Schlüssel ein",
+    "securityNote": "Ihr API-Schlüssel wird nur in Ihrer Browser-Sitzung gespeichert und beim Schließen des Tabs gelöscht.",
+    "testConnection": "Verbindung testen",
+    "testing": "Wird getestet...",
+    "testFailed": "Verbindungstest fehlgeschlagen",
+    "continue": "Fortfahren",
+    "enterKey": "Bitte geben Sie einen API-Schlüssel ein"
+  },
   "home": {
     "title": "KI & Digitalisierungsberater",
     "subtitle": "Ihr Leitfaden für KI und digitale Transformation im Mittelstand",
@@ -45,7 +59,9 @@
       "step3Title": "Ideenpriorisierung",
       "step3Desc": "Gemeinsames Bewerten und Priorisieren der generierten Ideen",
       "step4Title": "Business Understanding",
-      "step4Desc": "CRISP-DM-geführte Beratung zur Definition von Zielen und Planung Ihres KI-Projekts"
+      "step4Desc": "CRISP-DM-geführte Beratung zur Definition von Zielen und Planung Ihres KI-Projekts",
+      "step5Title": "Business Case Berechnung",
+      "step5Desc": "Potenzielle Wertschöpfung mit dem 5-Stufen-Rahmen für Management-Zustimmung quantifizieren"
     },
     "restoreSession": {
       "description": "Oder eine zuvor gespeicherte Sitzung fortsetzen:",
@@ -90,7 +106,7 @@
     "webCrawl": {
       "title": "Firmenwebsite crawlen",
       "urlLabel": "Website-URL",
-      "urlPlaceholder": "https://www.beispiel.de",
+      "urlPlaceholder": "www.beispiel.de",
       "hint": "Geben Sie die Website Ihres Unternehmens oder eine Seite mit relevanten Informationen ein (Über uns, Firmenprofil, etc.)",
       "crawlButton": "Website crawlen",
       "crawling": "Crawling läuft...",

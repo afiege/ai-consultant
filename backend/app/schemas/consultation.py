@@ -24,9 +24,19 @@ class ConsultationMessageResponse(ConsultationMessageBase):
         from_attributes = True
 
 
-class ConsultationStartRequest(BaseModel):
+class LLMRequest(BaseModel):
+    """Schema for requests that need an LLM API key."""
+    api_key: str  # API key passed per-request, NOT stored
+
+
+class ConsultationStartRequest(LLMRequest):
     """Schema for starting consultation with API key."""
-    mistral_api_key: str
+    pass
+
+
+class ConsultationMessageWithKey(LLMRequest):
+    """Schema for sending a message with API key."""
+    content: str  # User message
 
 
 class ConsultationFindingBase(BaseModel):

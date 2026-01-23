@@ -10,7 +10,7 @@ class SessionBase(BaseModel):
 
 class SessionCreate(SessionBase):
     """Schema for creating a new session."""
-    mistral_api_key: Optional[str] = None  # Will be encrypted before storage
+    pass
 
 
 class SessionUpdate(BaseModel):
@@ -18,7 +18,6 @@ class SessionUpdate(BaseModel):
     company_name: Optional[str] = None
     current_step: Optional[int] = Field(None, ge=1, le=4)
     status: Optional[str] = None
-    mistral_api_key: Optional[str] = None  # Will be encrypted before storage
     six_three_five_skipped: Optional[bool] = None
 
 

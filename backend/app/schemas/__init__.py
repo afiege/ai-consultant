@@ -20,9 +20,11 @@ from .prioritization import (
     IdeaWithScore,
 )
 from .consultation import (
+    LLMRequest,
     ConsultationMessageCreate,
     ConsultationMessageResponse,
     ConsultationStartRequest,
+    ConsultationMessageWithKey,
     ConsultationFindingCreate,
     ConsultationFindingResponse,
     ConsultationSummary,
@@ -61,9 +63,11 @@ __all__ = [
     "PrioritizationCreate",
     "PrioritizationResponse",
     "IdeaWithScore",
+    "LLMRequest",
     "ConsultationMessageCreate",
     "ConsultationMessageResponse",
     "ConsultationStartRequest",
+    "ConsultationMessageWithKey",
     "ConsultationFindingCreate",
     "ConsultationFindingResponse",
     "ConsultationSummary",

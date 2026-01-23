@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { sessionAPI, expertSettingsAPI, sessionBackupAPI } from '../services/api';
+import { sessionAPI, expertSettingsAPI, sessionBackupAPI, apiKeyManager } from '../services/api';
 import LLMConfigSection from '../components/common/LLMConfigSection';
 
 // Helper to load/save LLM config from localStorage
@@ -74,6 +74,10 @@ const HomePage = () => {
               api_base: llmConfig.api_base || null,
             }
           });
+          // Also set the API key in sessionStorage so it's available for all steps
+          if (llmConfig.api_key) {
+            apiKeyManager.set(llmConfig.api_key);
+          }
         } catch (configErr) {
           console.error('Failed to save LLM config to session:', configErr);
           // Continue anyway - user can configure later
@@ -169,6 +173,15 @@ const HomePage = () => {
               <div>
                 <h3 className="font-semibold text-gray-900">{t('home.features.step4Title')}</h3>
                 <p className="text-sm text-gray-600">{t('home.features.step4Desc')}</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+                <span className="text-blue-600 font-semibold text-sm">5</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{t('home.features.step5Title')}</h3>
+                <p className="text-sm text-gray-600">{t('home.features.step5Desc')}</p>
               </div>
             </div>
           </div>

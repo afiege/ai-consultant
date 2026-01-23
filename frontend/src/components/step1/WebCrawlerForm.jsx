@@ -6,11 +6,23 @@ const WebCrawlerForm = ({ onCrawl, loading }) => {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
 
+  // Normalize URL by adding https:// if no protocol is provided
+  const normalizeUrl = (urlString) => {
+    let normalized = urlString.trim();
+    if (!normalized) return normalized;
+
+    // If no protocol, prepend https://
+    if (!normalized.match(/^https?:\/\//i)) {
+      normalized = 'https://' + normalized;
+    }
+    return normalized;
+  };
+
   const validateUrl = (urlString) => {
     try {
       const urlObj = new URL(urlString);
       if (!['http:', 'https:'].includes(urlObj.protocol)) {
-        return 'URL must start with http:// or https://';
+        return 'URL must use http:// or https://';
       }
       return '';
     } catch (e) {
@@ -21,14 +33,15 @@ const WebCrawlerForm = ({ onCrawl, loading }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const validationError = validateUrl(url);
+    const normalizedUrl = normalizeUrl(url);
+    const validationError = validateUrl(normalizedUrl);
     if (validationError) {
       setError(validationError);
       return;
     }
 
     setError('');
-    await onCrawl(url);
+    await onCrawl(normalizedUrl);
     setUrl(''); // Clear form after submission
   };
 
@@ -51,7 +64,7 @@ const WebCrawlerForm = ({ onCrawl, loading }) => {
           <div className="flex gap-2">
             <div className="flex-1">
               <input
-                type="url"
+                type="text"
                 id="website-url"
                 value={url}
                 onChange={handleUrlChange}

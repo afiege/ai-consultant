@@ -1,39 +1,115 @@
 # AI & Digitalization Consultant for SMEs
 
-An AI-powered digitalization consultant application for Small and Medium Enterprises (SMEs) that guides companies through a comprehensive 4-step consultation process using the Mistral-small LLM.
+An AI-powered digitalization consultant application for Small and Medium Enterprises (SMEs) that guides companies through a comprehensive 5-step consultation process using LLMs via LiteLLM (supporting OpenAI, Anthropic, Mistral, OpenRouter, and more).
 
 ## Features
 
-### 4-Step Consultation Process
+### 5-Step Consultation Process
 
-1. **Company Overview Collection**
+1. **Company Overview Collection** (Step 1)
    - Free text input for company information
    - File uploads (PDF, DOCX) with automatic text extraction
    - Web crawling to gather information from company websites
 
-2. **Interactive 6-3-5 Brainstorming**
+2. **Interactive 6-3-5 Brainstorming** (Step 2)
    - Real-time collaborative ideation with up to 6 participants
+   - AI participant that contributes ideas alongside humans
    - Each participant contributes 3 ideas per round
    - 5-minute rounds with automatic sheet rotation
-   - WebSocket-based real-time updates
+   - QR code sharing for easy session joining
 
-3. **Idea Prioritization**
+3. **Idea Prioritization** (Step 3)
    - Vote and score generated ideas
    - Collaborative ranking system
    - Identify top ideas for implementation
 
-4. **AI-Guided Consultation Interview**
-   - Interactive interview powered by Mistral-small API
-   - Focus on 3 key factors:
-     - AI/digitalization project to tackle
-     - Main risks and challenges
-     - End user identification
-   - Context-aware responses based on company info and brainstorming results
+4. **CRISP-DM Business Understanding** (Step 4)
+   - AI-guided consultation using CRISP-DM methodology
+   - Streaming chat responses (Server-Sent Events)
+   - Extracts 4 key findings:
+     - Business Objectives
+     - Situation Assessment
+     - AI/Data Mining Goals
+     - Project Plan
 
-5. **Professional PDF Export**
+5. **Business Case Calculation** (Step 5)
+   - 5-Level Value Framework analysis
+   - AI-assisted ROI estimation
+   - Produces:
+     - Classification (which value level)
+     - Back-of-the-envelope Calculation
+     - Validation Questions
+     - Management Pitch
+
+6. **Professional PDF Export**
    - Comprehensive report generation
-   - Includes all consultation data from all 4 steps
-   - Professional formatting with sections and summaries
+   - Includes all consultation data from all 5 steps
+   - Professional formatting with executive summary
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            FRONTEND (React + Vite)                          │
+│                                                                             │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐         │
+│  │ Step1    │ │ Step2    │ │ Step3    │ │ Step4    │ │ Step5    │         │
+│  │ Company  │ │ 6-3-5    │ │ Prioriti-│ │ CRISP-DM │ │ Business │         │
+│  │ Profile  │ │ Method   │ │ zation   │ │ Consult  │ │ Case     │         │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘         │
+│       │            │            │            │            │                │
+│       │      ┌─────┴────────────┴────────────┴────────────┘                │
+│       │      │  ApiKeyPrompt (modal) - prompts for LLM API key             │
+│       │      └─────┬─────────────────────────────────────────              │
+│  ┌────┴────────────┴──────────────────────────────────────────┐            │
+│  │                    services/api.js                          │            │
+│  │  apiKeyManager (sessionStorage) + API client functions      │            │
+│  └─────────────────────────────┬──────────────────────────────┘            │
+└────────────────────────────────┼────────────────────────────────────────────┘
+                                 │ HTTP/REST + SSE
+                                 │ (API key in request body)
+┌────────────────────────────────┼────────────────────────────────────────────┐
+│                         BACKEND (FastAPI)                                   │
+│                                │                                            │
+│  ┌─────────────────────────────┴─────────────────────────────────┐         │
+│  │                         Routers                                │         │
+│  │  sessions │ six_three_five │ consultation │ business_case     │         │
+│  │  prioritization │ expert_settings │ company_info              │         │
+│  └─────────────────────────────┬─────────────────────────────────┘         │
+│                                │                                            │
+│  ┌─────────────────────────────┴─────────────────────────────────┐         │
+│  │                         Services                               │         │
+│  │  llm_service.py ──► LiteLLM ──► OpenAI/Anthropic/Mistral/etc  │         │
+│  │  six_three_five_service │ consultation_service                 │         │
+│  │  business_case_service │ pdf_generator │ web_crawler           │         │
+│  └─────────────────────────────┬─────────────────────────────────┘         │
+│                                │                                            │
+│  ┌─────────────────────────────┴─────────────────────────────────┐         │
+│  │                    Models (SQLAlchemy)                         │         │
+│  │  Session │ CompanyInfo │ Participant │ IdeaSheet │ Idea       │         │
+│  │  Prioritization │ ConsultationMessage │ ConsultationFinding   │         │
+│  └───────────────────────────────────────────────────────────────┘         │
+└─────────────────────────────────┬───────────────────────────────────────────┘
+                                  │
+        ┌─────────────────────────┼─────────────────────────┐
+        ▼                         ▼                         ▼
+┌───────────────┐      ┌──────────────────┐      ┌──────────────────┐
+│    SQLite     │      │  LLM Providers   │      │  File Storage    │
+│  sessions.db  │      │  (via LiteLLM)   │      │  uploads/        │
+│               │      │  - OpenAI        │      │  exports/        │
+│               │      │  - Anthropic     │      │                  │
+│               │      │  - Mistral       │      │                  │
+│               │      │  - OpenRouter    │      │                  │
+└───────────────┘      └──────────────────┘      └──────────────────┘
+```
+
+### Key Design Decisions
+
+- **No server-side API key storage**: User API keys are stored only in browser `sessionStorage` (cleared when tab closes) and passed with each LLM request
+- **LiteLLM abstraction**: Supports 100+ LLM providers through a unified interface
+- **SSE streaming**: Chat responses stream in real-time for better UX
+- **SQLite database**: Simple file-based storage, easy backup/restore
+- **Modular architecture**: Each step has dedicated router and service layer
 
 ## Tech Stack
 
@@ -41,12 +117,10 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 - **FastAPI** - Modern Python web framework
 - **SQLAlchemy** - ORM for database operations
 - **SQLite** - Database with WAL mode for better concurrency
-- **WebSockets** - Real-time communication
-- **Mistral AI API** - LLM integration
-- **ReportLab** - PDF generation
+- **LiteLLM** - Multi-provider LLM integration (OpenAI, Anthropic, Mistral, OpenRouter, etc.)
+- **WeasyPrint** - PDF generation
 - **BeautifulSoup4** - Web scraping
 - **PyPDF2 & python-docx** - File processing
-- **Cryptography** - API key encryption
 
 ### Frontend
 - **React 18** - UI framework
@@ -54,10 +128,9 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 - **Vite** - Build tool and dev server
 - **Tailwind CSS** - Styling
 - **Axios** - HTTP client
-- **Socket.IO Client** - WebSocket client
-- **Zustand** - State management
-- **React Dropzone** - File uploads
-- **React Timer Hook** - Countdown timers
+- **i18next** - Internationalization (English & German)
+- **React Markdown** - Markdown rendering in chat
+- **QRCode.react** - QR code generation for session sharing
 
 ## Project Structure
 
@@ -65,32 +138,63 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 ai-consultant/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # FastAPI application
-│   │   ├── config.py            # Configuration
+│   │   ├── main.py              # FastAPI application entry point
+│   │   ├── config.py            # Configuration (env vars)
 │   │   ├── database.py          # Database setup
 │   │   ├── models/              # SQLAlchemy models
-│   │   ├── schemas/             # Pydantic schemas
-│   │   ├── routers/             # API endpoints
-│   │   ├── services/            # Business logic
-│   │   └── utils/               # Utilities
-│   ├── uploads/                 # File storage
-│   ├── exports/                 # Generated PDFs
+│   │   │   ├── session.py       # Session, CompanyInfo
+│   │   │   ├── brainstorm.py    # Participant, IdeaSheet, Idea
+│   │   │   ├── prioritization.py
+│   │   │   └── consultation.py  # Messages, Findings
+│   │   ├── schemas/             # Pydantic request/response schemas
+│   │   ├── routers/             # API endpoint handlers
+│   │   │   ├── sessions.py
+│   │   │   ├── company_info.py
+│   │   │   ├── six_three_five.py
+│   │   │   ├── prioritization.py
+│   │   │   ├── consultation.py
+│   │   │   ├── business_case.py
+│   │   │   └── expert_settings.py
+│   │   └── services/            # Business logic
+│   │       ├── llm_service.py   # LiteLLM integration
+│   │       ├── six_three_five_service.py
+│   │       ├── consultation_service.py
+│   │       ├── business_case_service.py
+│   │       ├── pdf_generator.py
+│   │       ├── web_crawler.py
+│   │       └── default_prompts.py
+│   ├── uploads/                 # Uploaded files
+│   ├── exports/                 # Generated PDF reports
 │   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   ├── components/          # React components
-│   │   ├── hooks/               # Custom hooks
-│   │   ├── services/            # API clients
-│   │   ├── context/             # React context
-│   │   └── styles/              # CSS files
+│   │   ├── App.jsx              # Main app with routing
+│   │   ├── main.jsx             # Entry point
+│   │   ├── pages/               # Page components
+│   │   │   ├── HomePage.jsx
+│   │   │   ├── Step1Page.jsx
+│   │   │   ├── Step2Page.jsx
+│   │   │   ├── Step3Page.jsx
+│   │   │   ├── Step4Page.jsx
+│   │   │   ├── Step5Page.jsx
+│   │   │   └── ExportPage.jsx
+│   │   ├── components/          # Reusable components
+│   │   │   ├── common/          # Shared UI components
+│   │   │   │   ├── ApiKeyPrompt.jsx
+│   │   │   │   ├── PageHeader.jsx
+│   │   │   │   └── ExplanationBox.jsx
+│   │   │   ├── step1/
+│   │   │   ├── step2/
+│   │   │   └── step3/
+│   │   ├── services/
+│   │   │   └── api.js           # API client + apiKeyManager
+│   │   └── i18n/
+│   │       └── locales/         # en.json, de.json
 │   ├── package.json
 │   └── vite.config.js
 │
-└── database/
-    └── ai_consultant.db         # SQLite database
+└── README.md
 ```
 
 ## Setup Instructions
@@ -128,18 +232,13 @@ ai-consultant/
    cp .env.example .env
    ```
 
-   Edit `.env` and set:
-   - `ENCRYPTION_KEY` - Generate with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
-   - `MISTRAL_API_KEY` - Your Mistral API key (optional, users can provide their own)
-   - Other settings as needed
+   Edit `.env` and configure:
+   - `LLM_MODEL` - Default model (e.g., `mistral/mistral-small-latest`, `gpt-4o`, `claude-3-sonnet`)
+   - `LLM_API_BASE` - Custom API base URL (optional, for local models or proxies)
+
+   **Note**: API keys are entered by users in the app at runtime and are NOT stored on the server.
 
 5. **Run the backend**
-   ```bash
-   cd app
-   python main.py
-   ```
-
-   Or using uvicorn directly:
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
@@ -167,7 +266,6 @@ ai-consultant/
    The defaults should work for local development:
    ```
    VITE_API_URL=http://localhost:8000
-   VITE_WS_URL=ws://localhost:8000
    ```
 
 4. **Run the development server**
@@ -188,30 +286,54 @@ ai-consultant/
    - Submit information to proceed
 
 3. **Step 2: 6-3-5 Brainstorming**
-   - Share the session link with up to 5 other participants (6 total)
+   - Share the session link or QR code with participants
    - Each participant enters their name to join
-   - When ready, start the brainstorming session
+   - Enter your API key when prompted (for AI participant)
+   - Start the brainstorming session
    - Write 3 ideas during each 5-minute round
-   - Sheets automatically rotate to the next participant
-   - Continue for up to 6 rounds or until all sheets are filled
+   - Sheets rotate to the next participant after each round
 
 4. **Step 3: Prioritization**
    - Review all generated ideas
-   - Vote or score each idea
+   - Allocate points to your favorite ideas
    - See ranked results based on collective votes
 
-5. **Step 4: AI Consultation**
-   - Enter your Mistral API key (securely encrypted)
-   - Engage in an AI-guided interview
-   - The AI will help identify:
-     - Which AI/digitalization project to tackle
-     - Main risks and challenges
-     - Target end users
-   - Review the extracted key findings
+5. **Step 4: CRISP-DM Consultation**
+   - Enter your API key for the LLM provider (if not already set)
+   - Engage in an AI-guided interview following CRISP-DM methodology
+   - The AI extracts key findings into structured categories
+   - Click "Generate Summary" to extract findings
 
-6. **Export**
+6. **Step 5: Business Case**
+   - Continue the conversation to develop a business case
+   - The AI uses the 5-level value framework:
+     1. Budget Substitution
+     2. Process Efficiency
+     3. Project Acceleration
+     4. Risk Mitigation
+     5. Strategic Scaling
+   - Extract findings for classification, calculation, validation questions, and management pitch
+
+7. **Export**
    - Generate a comprehensive PDF report
    - Download the report containing all consultation data
+
+## API Key Handling
+
+This application uses a **pass-per-request** approach for API keys:
+
+1. When an LLM operation is triggered, the app checks if an API key exists in `sessionStorage`
+2. If not, a modal prompts the user to enter their API key
+3. The key is stored in `sessionStorage` (browser tab only, cleared on close)
+4. Each API request includes the key in the request body
+5. The server never stores API keys - they're used only in-memory for the LLM call
+
+**Supported providers** (via LiteLLM):
+- OpenAI (GPT-4, GPT-3.5, etc.)
+- Anthropic (Claude)
+- Mistral AI
+- OpenRouter (100+ models)
+- Any OpenAI-compatible endpoint
 
 ## API Documentation
 
@@ -221,23 +343,32 @@ Once the backend is running, visit:
 
 ## Database Schema
 
-The application uses 8 main tables:
-- `sessions` - Consultation sessions
+The application uses these main tables:
+- `sessions` - Consultation sessions with settings
 - `company_info` - Company data from Step 1
 - `participants` - 6-3-5 session participants
-- `idea_sheets` - Idea sheets that rotate
-- `ideas` - Individual ideas (3 per round)
-- `prioritizations` - Votes and rankings
-- `consultation_messages` - AI interview messages
-- `consultation_findings` - Key findings (3 factors)
+- `idea_sheets` - Idea sheets that rotate between participants
+- `ideas` - Individual ideas (3 per round per sheet)
+- `prioritizations` - Votes and point allocations
+- `consultation_messages` - Chat messages (CRISP-DM and Business Case)
+- `consultation_findings` - Extracted findings from consultations
+- `expert_settings` - Per-session LLM configuration
 
 ## Security Features
 
-- **API Key Encryption**: Mistral API keys are encrypted using Fernet before storage
-- **Input Validation**: All user inputs are validated and sanitized
-- **File Upload Security**: File type and size restrictions, UUID-based filenames
+- **No API Key Storage**: API keys are entered by users at runtime, stored only in browser sessionStorage, and passed with each request - never persisted on the server
+- **Input Validation**: All user inputs validated via Pydantic schemas
+- **File Upload Security**: File type restrictions, size limits, UUID-based filenames
 - **CORS Protection**: Configured allowed origins
 - **SQL Injection Protection**: SQLAlchemy ORM with parameterized queries
+
+## Internationalization
+
+The application supports:
+- **English** (default)
+- **German**
+
+Language can be switched via the UI. Translations are in `frontend/src/i18n/locales/`.
 
 ## Development
 
@@ -259,30 +390,21 @@ npm run build
 
 The built files will be in `frontend/dist/`
 
-## Current Status
+## Deployment
 
-✅ **Phase 1 Complete**: Foundation & Setup
-- Project structure initialized
-- Backend with FastAPI, database models, and session management
-- Frontend with React, routing, and session context
-- All configuration files ready
-
-🔄 **Next Phases**:
-- Phase 2: Company Overview Collection (Step 1)
-- Phase 3: 6-3-5 Brainstorming (Step 2)
-- Phase 4: Idea Prioritization (Step 3)
-- Phase 5: AI Consultation (Step 4)
-- Phase 6: PDF Export
-- Phase 7: Testing & Polish
+See [DEPLOY.md](DEPLOY.md) for deployment instructions including:
+- Railway deployment
+- Docker deployment
+- Manual VPS deployment
 
 ## License
 
-MIT License
+MIT License - see [LICENSE](LICENSE) file.
 
 ## Contributing
 
-This is a diploma/thesis project. Contributions are welcome after initial completion.
+Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ## Contact
 
-For questions or support, please contact the project maintainer.
+For questions or support, please open an issue on GitHub.

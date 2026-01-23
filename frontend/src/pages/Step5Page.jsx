@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
-import { companyInfoAPI, prioritizationAPI, consultationAPI, businessCaseAPI } from '../services/api';
+import { companyInfoAPI, prioritizationAPI, consultationAPI, businessCaseAPI, apiKeyManager } from '../services/api';
 import { PageHeader, ExplanationBox } from '../components/common';
+import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 
 const Step5Page = () => {
   const { t } = useTranslation();
@@ -29,6 +30,8 @@ const Step5Page = () => {
   // Business case findings
   const [findings, setFindings] = useState(null);
   const [extracting, setExtracting] = useState(false);
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'start' or 'extract'
 
   useEffect(() => {
     loadData();
@@ -102,6 +105,13 @@ const Step5Page = () => {
   };
 
   const handleStartBusinessCase = async () => {
+    // Check if API key is set
+    if (!apiKeyManager.isSet()) {
+      setPendingAction('start');
+      setShowApiKeyPrompt(true);
+      return;
+    }
+
     setSendingMessage(true);
     setBusinessCaseStarted(true);
 
@@ -203,6 +213,13 @@ const Step5Page = () => {
   };
 
   const handleExtractFindings = async () => {
+    // Check if API key is set
+    if (!apiKeyManager.isSet()) {
+      setPendingAction('extract');
+      setShowApiKeyPrompt(true);
+      return;
+    }
+
     setExtracting(true);
     try {
       const response = await businessCaseAPI.extract(sessionUuid);
@@ -229,6 +246,17 @@ const Step5Page = () => {
     const first = companyInfo[0];
     if (!first.content) return null;
     return first.content.substring(0, 200) + (first.content.length > 200 ? '...' : '');
+  };
+
+  const handleApiKeySet = () => {
+    setShowApiKeyPrompt(false);
+    // Execute the pending action now that we have the API key
+    if (pendingAction === 'start') {
+      handleStartBusinessCase();
+    } else if (pendingAction === 'extract') {
+      handleExtractFindings();
+    }
+    setPendingAction(null);
   };
 
   if (loading) {
@@ -558,6 +586,13 @@ const Step5Page = () => {
           </button>
         </div>
       </div>
+
+      {/* API Key Prompt Modal */}
+      <ApiKeyPrompt
+        isOpen={showApiKeyPrompt}
+        onClose={() => setShowApiKeyPrompt(false)}
+        onApiKeySet={handleApiKeySet}
+      />
     </div>
   );
 };

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { sixThreeFiveAPI } from '../services/api';
+import { sixThreeFiveAPI, apiKeyManager } from '../services/api';
 import ParticipantJoin from '../components/step2/ParticipantJoin';
 import IdeaSheet from '../components/step2/IdeaSheet';
 import ShareSession from '../components/step2/ShareSession';
 import { PageHeader, ExplanationBox } from '../components/common';
+import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 
 const Step2Page = () => {
   const { t } = useTranslation();
@@ -19,6 +20,8 @@ const Step2Page = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'start' or 'advance'
 
   // Load participant UUID from localStorage
   useEffect(() => {
@@ -85,6 +88,13 @@ const Step2Page = () => {
   };
 
   const handleStartSession = async () => {
+    // Check if API key is set
+    if (!apiKeyManager.isSet()) {
+      setPendingAction('start');
+      setShowApiKeyPrompt(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -116,6 +126,13 @@ const Step2Page = () => {
   };
 
   const handleAdvanceRound = async () => {
+    // Check if API key is set
+    if (!apiKeyManager.isSet()) {
+      setPendingAction('advance');
+      setShowApiKeyPrompt(true);
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await sixThreeFiveAPI.advanceRound(sessionUuid);
@@ -148,6 +165,17 @@ const Step2Page = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApiKeySet = () => {
+    setShowApiKeyPrompt(false);
+    // Execute the pending action now that we have the API key
+    if (pendingAction === 'start') {
+      handleStartSession();
+    } else if (pendingAction === 'advance') {
+      handleAdvanceRound();
+    }
+    setPendingAction(null);
   };
 
   const formatTime = (seconds) => {
@@ -346,6 +374,13 @@ const Step2Page = () => {
           </button>
         </div>
       </div>
+
+      {/* API Key Prompt Modal */}
+      <ApiKeyPrompt
+        isOpen={showApiKeyPrompt}
+        onClose={() => setShowApiKeyPrompt(false)}
+        onApiKeySet={handleApiKeySet}
+      />
     </div>
   );
 };

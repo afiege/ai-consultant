@@ -25,6 +25,7 @@ from ..schemas import (
 )
 from ..services.six_three_five_manager import SixThreeFiveSession
 from ..services.ai_participant import AIParticipant, get_company_context_summary
+from ..schemas import LLMRequest
 from ..config import settings
 
 
@@ -46,31 +47,21 @@ def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, s
     return custom_prompts, language
 
 
-def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str], Optional[str]]:
+def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str]]:
     """
     Get LLM settings from session, falling back to global settings.
+    Note: API key is NOT stored - it must be passed per-request.
 
     Returns:
-        Tuple of (model, api_key, api_base)
+        Tuple of (model, api_base)
     """
-    from cryptography.fernet import Fernet
-
     # Get model (session override or global default)
     model = db_session.llm_model or settings.llm_model
-
-    # Get API key (session-level LLM key, or legacy mistral key, or None for env var)
-    api_key = None
-    if db_session.llm_api_key_encrypted:
-        cipher = Fernet(settings.get_encryption_key.encode())
-        api_key = cipher.decrypt(db_session.llm_api_key_encrypted.encode()).decode()
-    elif db_session.mistral_api_key_encrypted:
-        cipher = Fernet(settings.get_encryption_key.encode())
-        api_key = cipher.decrypt(db_session.mistral_api_key_encrypted.encode()).decode()
 
     # Get API base (session override or global default)
     api_base = db_session.llm_api_base or settings.llm_api_base or None
 
-    return model, api_key, api_base
+    return model, api_base
 
 
 router = APIRouter()
@@ -102,6 +93,7 @@ def generate_ai_ideas_background(
 @router.post("/{session_uuid}/six-three-five/start")
 def start_six_three_five(
     session_uuid: str,
+    request: LLMRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
@@ -117,8 +109,9 @@ def start_six_three_five(
             detail=f"Session {session_uuid} not found"
         )
 
-    # Get LLM settings (session-level or global defaults)
-    model, api_key, api_base = get_llm_settings(db_session)
+    # Get LLM settings (model and api_base from session, api_key from request)
+    model, api_base = get_llm_settings(db_session)
+    api_key = request.api_key
 
     # Get expert settings
     custom_prompts, language = _get_expert_settings(db_session)
@@ -366,6 +359,7 @@ def submit_ideas(
 @router.post("/{session_uuid}/six-three-five/advance-round")
 async def advance_round(
     session_uuid: str,
+    request: LLMRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
@@ -383,8 +377,9 @@ async def advance_round(
     if not db_session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
-    # Get LLM settings (session-level or global defaults)
-    model, api_key, api_base = get_llm_settings(db_session)
+    # Get LLM settings (model and api_base from session, api_key from request)
+    model, api_base = get_llm_settings(db_session)
+    api_key = request.api_key
 
     # Get all sheets
     sheets = db.query(IdeaSheet).filter(

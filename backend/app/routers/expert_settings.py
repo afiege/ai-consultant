@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import json
 from typing import Optional, List
-from cryptography.fernet import Fernet
 from litellm import completion
 
 from ..database import get_db
@@ -22,7 +21,6 @@ from ..schemas import (
     LLM_PROVIDERS,
 )
 from ..services.default_prompts import get_all_defaults
-from ..config import settings
 
 
 class LLMTestRequest(BaseModel):
@@ -39,25 +37,6 @@ class LLMTestResponse(BaseModel):
     response_preview: Optional[str] = None
 
 router = APIRouter()
-
-
-def _encrypt_api_key(api_key: str) -> str:
-    """Encrypt an API key for storage."""
-    cipher = Fernet(settings.get_encryption_key.encode())
-    return cipher.encrypt(api_key.encode()).decode()
-
-
-def _decrypt_api_key(encrypted_key: str) -> str:
-    """Decrypt an API key from storage."""
-    cipher = Fernet(settings.get_encryption_key.encode())
-    return cipher.decrypt(encrypted_key.encode()).decode()
-
-
-def _mask_api_key(api_key: str) -> str:
-    """Mask an API key for display (show first 4 and last 4 chars)."""
-    if not api_key or len(api_key) < 12:
-        return "****" if api_key else None
-    return f"{api_key[:4]}...{api_key[-4:]}"
 
 
 def _get_session(db: Session, session_uuid: str) -> SessionModel:
@@ -199,20 +178,12 @@ def get_expert_settings(
     """Get expert mode settings for a session."""
     db_session = _get_session(db, session_uuid)
 
-    # Build LLM config with masked API key
+    # Build LLM config (api_key is not stored, only model and api_base)
     llm_config = None
-    if db_session.llm_model or db_session.llm_api_base or db_session.llm_api_key_encrypted:
-        masked_key = None
-        if db_session.llm_api_key_encrypted:
-            try:
-                decrypted = _decrypt_api_key(db_session.llm_api_key_encrypted)
-                masked_key = _mask_api_key(decrypted)
-            except Exception:
-                masked_key = "****"
-
+    if db_session.llm_model or db_session.llm_api_base:
         llm_config = LLMConfig(
             model=db_session.llm_model,
-            api_key=masked_key,
+            api_key=None,  # API key is not stored
             api_base=db_session.llm_api_base
         )
 
@@ -255,7 +226,7 @@ def update_expert_settings(
 
         db_session.custom_prompts = _serialize_custom_prompts(CustomPrompts(**existing_data))
 
-    # Update LLM config if provided
+    # Update LLM config if provided (only model and api_base, NOT api_key)
     if update_settings.llm_config is not None:
         llm_config = update_settings.llm_config
 
@@ -267,30 +238,17 @@ def update_expert_settings(
         if llm_config.api_base is not None:
             db_session.llm_api_base = llm_config.api_base if llm_config.api_base else None
 
-        # Update api_key if provided (encrypt it)
-        if llm_config.api_key is not None:
-            if llm_config.api_key:
-                db_session.llm_api_key_encrypted = _encrypt_api_key(llm_config.api_key)
-            else:
-                db_session.llm_api_key_encrypted = None
+        # Note: api_key is NOT stored - it's passed per-request by the frontend
 
     db.commit()
     db.refresh(db_session)
 
-    # Build response with masked API key
+    # Build response (api_key is not stored)
     llm_config_response = None
-    if db_session.llm_model or db_session.llm_api_base or db_session.llm_api_key_encrypted:
-        masked_key = None
-        if db_session.llm_api_key_encrypted:
-            try:
-                decrypted = _decrypt_api_key(db_session.llm_api_key_encrypted)
-                masked_key = _mask_api_key(decrypted)
-            except Exception:
-                masked_key = "****"
-
+    if db_session.llm_model or db_session.llm_api_base:
         llm_config_response = LLMConfig(
             model=db_session.llm_model,
-            api_key=masked_key,
+            api_key=None,  # API key is not stored
             api_base=db_session.llm_api_base
         )
 

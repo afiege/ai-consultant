@@ -10,9 +10,11 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, ListFlowable, ListItem
+    PageBreak, ListFlowable, ListItem, KeepTogether
 )
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY, TA_RIGHT
+from reportlab.graphics.shapes import Drawing, Rect, String, Line
+from reportlab.graphics import renderPDF
 from sqlalchemy.orm import Session
 
 from ..models import (
@@ -399,7 +401,7 @@ class PDFReportGenerator:
         return elements
 
     def _build_business_case_section(self, db_session: SessionModel) -> list:
-        """Build the business case indication section (Step 5)."""
+        """Build the business case indication section (Step 5) with graphical elements."""
         elements = []
 
         elements.append(Paragraph("Business Case Indication", self.styles['SectionHeader']))
@@ -430,71 +432,333 @@ class PDFReportGenerator:
             ))
             return elements
 
-        # 1. Classification
-        elements.append(Paragraph("1. Value Framework Classification", self.styles['SubHeader']))
-        if findings_dict.get('business_case_classification'):
-            content_elements = markdown_to_elements(
-                findings_dict['business_case_classification'],
-                self.styles['ReportBody'],
-                self.styles['IdeaText']
-            )
-            elements.extend(content_elements)
-        else:
-            elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
+        # 1. Classification with Visual Framework Ladder
+        elements.append(Paragraph("Value Framework Classification", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
 
+        # Build the 5-level framework visualization
+        classification_text = findings_dict.get('business_case_classification', '')
+        elements.extend(self._build_value_framework_visual(classification_text))
         elements.append(Spacer(1, 0.2*inch))
 
-        # 2. Back-of-the-envelope Calculation
-        elements.append(Paragraph("2. Back-of-the-envelope Calculation", self.styles['SubHeader']))
+        # Classification details in a styled box
+        if classification_text:
+            classification_table = Table(
+                [[Paragraph(
+                    f"<b>Analysis:</b><br/>{markdown_to_reportlab(classification_text)}",
+                    ParagraphStyle('ClassBox', parent=self.styles['ReportBody'], fontSize=9, leading=12)
+                )]],
+                colWidths=[15*cm]
+            )
+            classification_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f0f4f8')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#cbd5e0')),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+            ]))
+            elements.append(classification_table)
+
+        elements.append(Spacer(1, 0.3*inch))
+
+        # 2. Back-of-the-envelope Calculation with styled metrics box
+        elements.append(Paragraph("Financial Projection", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
         if findings_dict.get('business_case_calculation'):
-            content_elements = markdown_to_elements(
-                findings_dict['business_case_calculation'],
-                self.styles['ReportBody'],
-                self.styles['IdeaText']
-            )
-            elements.extend(content_elements)
+            elements.extend(self._build_calculation_visual(findings_dict['business_case_calculation']))
         else:
             elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
 
-        elements.append(Spacer(1, 0.2*inch))
+        elements.append(Spacer(1, 0.3*inch))
 
-        # 3. Validation Questions
-        elements.append(Paragraph("3. Validation Questions", self.styles['SubHeader']))
+        # 3. Validation Questions as checklist
+        elements.append(Paragraph("Validation Checklist", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
         if findings_dict.get('business_case_validation'):
-            content_elements = markdown_to_elements(
-                findings_dict['business_case_validation'],
-                self.styles['ReportBody'],
-                self.styles['IdeaText']
-            )
-            elements.extend(content_elements)
+            elements.extend(self._build_validation_checklist(findings_dict['business_case_validation']))
         else:
             elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
 
-        elements.append(Spacer(1, 0.2*inch))
+        elements.append(Spacer(1, 0.3*inch))
 
-        # 4. Management Pitch
-        elements.append(Paragraph("4. Management Pitch", self.styles['SubHeader']))
+        # 4. Management Pitch as prominent callout
+        elements.append(Paragraph("Management Pitch", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
         if findings_dict.get('business_case_pitch'):
-            # Use a styled box/callout for the pitch
-            pitch_text = findings_dict['business_case_pitch']
-            pitch_text = pitch_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            pitch_text = pitch_text.replace('\n', '<br/>')
-            elements.append(Paragraph(
-                f"<i>\"{pitch_text}\"</i>",
-                ParagraphStyle(
-                    'PitchStyle',
-                    parent=self.styles['ReportBody'],
-                    fontSize=11,
-                    leftIndent=20,
-                    rightIndent=20,
-                    spaceBefore=10,
-                    spaceAfter=10,
-                    textColor=colors.HexColor('#2c5282'),
-                    leading=16
-                )
-            ))
+            elements.extend(self._build_pitch_callout(findings_dict['business_case_pitch']))
         else:
             elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
+
+        return elements
+
+    def _build_value_framework_visual(self, classification_text: str) -> list:
+        """Build a visual representation of the 5-level value framework."""
+        elements = []
+
+        # Define the 5 levels with colors
+        levels = [
+            ("Level 5", "Strategic Scaling", "Expand capacity without proportional headcount", colors.HexColor('#1a365d')),
+            ("Level 4", "Risk Mitigation", "Avoid Cost of Poor Quality, recalls, failures", colors.HexColor('#2c5282')),
+            ("Level 3", "Project Acceleration", "Reduce time-to-market or R&D cycles", colors.HexColor('#2b6cb0')),
+            ("Level 2", "Process Efficiency", "Time savings in routine tasks", colors.HexColor('#3182ce')),
+            ("Level 1", "Budget Substitution", "Replace external services with AI solution", colors.HexColor('#4299e1')),
+        ]
+
+        # Detect which level(s) are mentioned in the classification
+        detected_levels = set()
+        text_lower = classification_text.lower()
+        for i, (level_num, level_name, _, _) in enumerate(levels):
+            if level_name.lower() in text_lower or f"level {5-i}" in text_lower or f"stufe {5-i}" in text_lower:
+                detected_levels.add(5-i)
+
+        # Build table rows for the framework
+        table_data = []
+        for i, (level_num, level_name, description, base_color) in enumerate(levels):
+            level_value = 5 - i
+            is_selected = level_value in detected_levels
+
+            # Create row with level indicator
+            if is_selected:
+                indicator = Paragraph(
+                    f"<b>&rarr;</b>",
+                    ParagraphStyle('Arrow', fontSize=14, textColor=colors.HexColor('#276749'), alignment=TA_CENTER)
+                )
+                bg_color = colors.HexColor('#c6f6d5')  # Light green for selected
+                text_color = colors.HexColor('#22543d')
+            else:
+                indicator = Paragraph("", ParagraphStyle('Empty', fontSize=10))
+                bg_color = colors.HexColor('#edf2f7')  # Light gray
+                text_color = colors.HexColor('#4a5568')
+
+            level_cell = Paragraph(
+                f"<b>{level_num}</b>",
+                ParagraphStyle('Level', fontSize=9, textColor=colors.white, alignment=TA_CENTER)
+            )
+            name_cell = Paragraph(
+                f"<b>{level_name}</b>",
+                ParagraphStyle('Name', fontSize=9, textColor=text_color)
+            )
+            desc_cell = Paragraph(
+                description,
+                ParagraphStyle('Desc', fontSize=8, textColor=text_color)
+            )
+
+            table_data.append([indicator, level_cell, name_cell, desc_cell])
+
+        # Create the table
+        framework_table = Table(
+            table_data,
+            colWidths=[0.8*cm, 1.5*cm, 4*cm, 9*cm]
+        )
+
+        # Apply styling
+        style_commands = [
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+        ]
+
+        # Add row-specific styling
+        for i, (_, _, _, base_color) in enumerate(levels):
+            level_value = 5 - i
+            is_selected = level_value in detected_levels
+
+            # Level cell background (always colored)
+            style_commands.append(('BACKGROUND', (1, i), (1, i), base_color))
+
+            # Row background for content cells
+            if is_selected:
+                style_commands.append(('BACKGROUND', (0, i), (0, i), colors.HexColor('#c6f6d5')))
+                style_commands.append(('BACKGROUND', (2, i), (-1, i), colors.HexColor('#c6f6d5')))
+            else:
+                style_commands.append(('BACKGROUND', (2, i), (-1, i), colors.HexColor('#f7fafc')))
+
+        framework_table.setStyle(TableStyle(style_commands))
+        elements.append(framework_table)
+
+        return elements
+
+    def _build_calculation_visual(self, calculation_text: str) -> list:
+        """Build a styled visual for the financial calculation."""
+        elements = []
+
+        # Create a styled calculation box with header
+        header_style = ParagraphStyle(
+            'CalcHeader',
+            parent=self.styles['ReportBody'],
+            fontSize=10,
+            textColor=colors.white,
+            alignment=TA_LEFT
+        )
+        content_style = ParagraphStyle(
+            'CalcContent',
+            parent=self.styles['ReportBody'],
+            fontSize=9,
+            leading=13,
+            textColor=colors.HexColor('#2d3748')
+        )
+
+        # Header row
+        header_table = Table(
+            [[Paragraph("<b>Back-of-the-Envelope Calculation</b>", header_style)]],
+            colWidths=[15*cm]
+        )
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#2c5282')),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(header_table)
+
+        # Content box
+        content_para = Paragraph(markdown_to_reportlab(calculation_text), content_style)
+        content_table = Table(
+            [[content_para]],
+            colWidths=[15*cm]
+        )
+        content_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#ebf8ff')),
+            ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#90cdf4')),
+            ('TOPPADDING', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(content_table)
+
+        return elements
+
+    def _build_validation_checklist(self, validation_text: str) -> list:
+        """Build a checklist-style visualization for validation questions."""
+        elements = []
+
+        # Parse the validation text into individual questions
+        lines = validation_text.strip().split('\n')
+        questions = []
+        for line in lines:
+            line = line.strip()
+            if line:
+                # Remove bullet points or numbers
+                cleaned = re.sub(r'^[\d\.\-\*\•]+\s*', '', line)
+                if cleaned:
+                    questions.append(cleaned)
+
+        if not questions:
+            # Fallback: treat the whole text as one item
+            questions = [validation_text]
+
+        # Build table rows for checklist
+        table_data = []
+        checkbox_style = ParagraphStyle('Checkbox', fontSize=12, alignment=TA_CENTER)
+        question_style = ParagraphStyle(
+            'Question',
+            parent=self.styles['ReportBody'],
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor('#2d3748')
+        )
+
+        for i, question in enumerate(questions[:10]):  # Limit to 10 questions
+            # Escape HTML
+            question = question.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            checkbox = Paragraph("&#9744;", checkbox_style)  # Empty checkbox unicode
+            q_text = Paragraph(question, question_style)
+            table_data.append([checkbox, q_text])
+
+        if table_data:
+            checklist_table = Table(
+                table_data,
+                colWidths=[0.8*cm, 14.2*cm]
+            )
+            checklist_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fffaf0')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#ed8936')),
+                ('LINEBELOW', (0, 0), (-1, -2), 0.5, colors.HexColor('#fbd38d')),
+            ]))
+            elements.append(checklist_table)
+        else:
+            elements.append(Paragraph(validation_text, self.styles['ReportBody']))
+
+        return elements
+
+    def _build_pitch_callout(self, pitch_text: str) -> list:
+        """Build a prominent callout box for the management pitch."""
+        elements = []
+
+        # Create a visually prominent pitch box
+        pitch_style = ParagraphStyle(
+            'PitchText',
+            parent=self.styles['ReportBody'],
+            fontSize=11,
+            leading=16,
+            textColor=colors.HexColor('#1a365d'),
+            alignment=TA_LEFT
+        )
+
+        # Escape and format the pitch text
+        pitch_clean = pitch_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        pitch_clean = pitch_clean.replace('\n', '<br/>')
+
+        # Quote icon header
+        quote_header = Table(
+            [[Paragraph(
+                "<b>&#10077; Elevator Pitch</b>",
+                ParagraphStyle('QuoteHeader', fontSize=12, textColor=colors.HexColor('#2c5282'))
+            )]],
+            colWidths=[15*cm]
+        )
+        quote_header.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#bee3f8')),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(quote_header)
+
+        # Main pitch content with styled border
+        pitch_content = Paragraph(f"<i>{pitch_clean}</i>", pitch_style)
+        pitch_table = Table(
+            [[pitch_content]],
+            colWidths=[15*cm]
+        )
+        pitch_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#ebf8ff')),
+            ('BOX', (0, 0), (-1, -1), 2, colors.HexColor('#3182ce')),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+            ('LEFTPADDING', (0, 0), (-1, -1), 20),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 20),
+        ]))
+        elements.append(pitch_table)
+
+        # Closing quote
+        quote_footer = Table(
+            [[Paragraph(
+                "<b>&#10078;</b>",
+                ParagraphStyle('QuoteFooter', fontSize=14, textColor=colors.HexColor('#2c5282'), alignment=TA_RIGHT)
+            )]],
+            colWidths=[15*cm]
+        )
+        quote_footer.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#bee3f8')),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(quote_footer)
 
         return elements
 

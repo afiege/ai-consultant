@@ -9,9 +9,11 @@ import json
 from ..database import get_db
 from ..models import Session as SessionModel
 from ..schemas.consultation import (
+    LLMRequest,
     ConsultationMessageCreate,
     ConsultationMessageResponse,
-    ConsultationStartRequest
+    ConsultationStartRequest,
+    ConsultationMessageWithKey
 )
 from ..services.consultation_service import ConsultationService
 from ..config import settings
@@ -19,31 +21,21 @@ from ..config import settings
 router = APIRouter()
 
 
-def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str], Optional[str]]:
+def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str]]:
     """
     Get LLM settings from session, falling back to global settings.
+    Note: API key is NOT stored - it must be passed per-request.
 
     Returns:
-        Tuple of (model, api_key, api_base)
+        Tuple of (model, api_base)
     """
-    from cryptography.fernet import Fernet
-
     # Get model (session override or global default)
     model = db_session.llm_model or settings.llm_model
-
-    # Get API key (session-level LLM key, or legacy mistral key, or None for env var)
-    api_key = None
-    if db_session.llm_api_key_encrypted:
-        cipher = Fernet(settings.get_encryption_key.encode())
-        api_key = cipher.decrypt(db_session.llm_api_key_encrypted.encode()).decode()
-    elif db_session.mistral_api_key_encrypted:
-        cipher = Fernet(settings.get_encryption_key.encode())
-        api_key = cipher.decrypt(db_session.mistral_api_key_encrypted.encode()).decode()
 
     # Get API base (session override or global default)
     api_base = db_session.llm_api_base or settings.llm_api_base or None
 
-    return model, api_key, api_base
+    return model, api_base
 
 
 def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, str]], str]:
@@ -67,6 +59,7 @@ def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, s
 @router.post("/{session_uuid}/consultation/start")
 def start_consultation(
     session_uuid: str,
+    request: ConsultationStartRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -85,13 +78,13 @@ def start_consultation(
 
     try:
         custom_prompts, language = _get_expert_settings(db_session)
-        model, api_key, api_base = get_llm_settings(db_session)
+        model, api_base = get_llm_settings(db_session)
         service = ConsultationService(
             db,
             model=model,
             custom_prompts=custom_prompts,
             language=language,
-            api_key=api_key,
+            api_key=request.api_key,
             api_base=api_base
         )
         result = service.start_consultation(session_uuid)
@@ -106,6 +99,7 @@ def start_consultation(
 @router.post("/{session_uuid}/consultation/start/stream")
 def start_consultation_stream(
     session_uuid: str,
+    request: ConsultationStartRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -123,13 +117,13 @@ def start_consultation_stream(
         )
 
     custom_prompts, language = _get_expert_settings(db_session)
-    model, api_key, api_base = get_llm_settings(db_session)
+    model, api_base = get_llm_settings(db_session)
     service = ConsultationService(
         db,
         model=model,
         custom_prompts=custom_prompts,
         language=language,
-        api_key=api_key,
+        api_key=request.api_key,
         api_base=api_base
     )
 
@@ -183,7 +177,7 @@ def save_message(
 @router.post("/{session_uuid}/consultation/message")
 def send_message(
     session_uuid: str,
-    message: ConsultationMessageCreate,
+    message: ConsultationMessageWithKey,
     db: Session = Depends(get_db)
 ):
     """
@@ -201,13 +195,13 @@ def send_message(
 
     try:
         custom_prompts, language = _get_expert_settings(db_session)
-        model, api_key, api_base = get_llm_settings(db_session)
+        model, api_base = get_llm_settings(db_session)
         service = ConsultationService(
             db,
             model=model,
             custom_prompts=custom_prompts,
             language=language,
-            api_key=api_key,
+            api_key=message.api_key,
             api_base=api_base
         )
         result = service.send_message(session_uuid, message.content)
@@ -227,7 +221,7 @@ def send_message(
 @router.post("/{session_uuid}/consultation/message/stream")
 def send_message_stream(
     session_uuid: str,
-    message: ConsultationMessageCreate,
+    message: ConsultationMessageWithKey,
     db: Session = Depends(get_db)
 ):
     """
@@ -245,13 +239,13 @@ def send_message_stream(
         )
 
     custom_prompts, language = _get_expert_settings(db_session)
-    model, api_key, api_base = get_llm_settings(db_session)
+    model, api_base = get_llm_settings(db_session)
     service = ConsultationService(
         db,
         model=model,
         custom_prompts=custom_prompts,
         language=language,
-        api_key=api_key,
+        api_key=message.api_key,
         api_base=api_base
     )
 
@@ -269,6 +263,7 @@ def send_message_stream(
 @router.post("/{session_uuid}/consultation/request-response/stream")
 def request_ai_response_stream(
     session_uuid: str,
+    request: LLMRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -287,13 +282,13 @@ def request_ai_response_stream(
         )
 
     custom_prompts, language = _get_expert_settings(db_session)
-    model, api_key, api_base = get_llm_settings(db_session)
+    model, api_base = get_llm_settings(db_session)
     service = ConsultationService(
         db,
         model=model,
         custom_prompts=custom_prompts,
         language=language,
-        api_key=api_key,
+        api_key=request.api_key,
         api_base=api_base
     )
 
@@ -385,6 +380,7 @@ def get_findings(
 @router.post("/{session_uuid}/consultation/summarize")
 def summarize_consultation(
     session_uuid: str,
+    request: LLMRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -402,13 +398,13 @@ def summarize_consultation(
 
     try:
         custom_prompts, language = _get_expert_settings(db_session)
-        model, api_key, api_base = get_llm_settings(db_session)
+        model, api_base = get_llm_settings(db_session)
         service = ConsultationService(
             db,
             model=model,
             custom_prompts=custom_prompts,
             language=language,
-            api_key=api_key,
+            api_key=request.api_key,
             api_base=api_base
         )
         result = service.extract_findings_now(session_uuid)

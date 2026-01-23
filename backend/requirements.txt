@@ -22,9 +22,6 @@ lxml>=5.1.0
 # AI Integration (LiteLLM for multi-provider support)
 litellm>=1.30.0
 
-# Security
-cryptography>=42.0.0
-
 # Utilities
 python-dotenv>=1.0.0
 pydantic>=2.6.0

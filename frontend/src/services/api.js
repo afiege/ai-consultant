@@ -9,6 +9,16 @@ const api = axios.create({
   },
 });
 
+// API Key management (stored in sessionStorage - cleared when tab closes)
+const API_KEY_STORAGE_KEY = 'ai_consultant_api_key';
+
+export const apiKeyManager = {
+  get: () => sessionStorage.getItem(API_KEY_STORAGE_KEY),
+  set: (apiKey) => sessionStorage.setItem(API_KEY_STORAGE_KEY, apiKey),
+  clear: () => sessionStorage.removeItem(API_KEY_STORAGE_KEY),
+  isSet: () => !!sessionStorage.getItem(API_KEY_STORAGE_KEY),
+};
+
 // Session endpoints
 export const sessionAPI = {
   create: (data) => api.post('/api/sessions/', data),
@@ -36,8 +46,8 @@ export const companyInfoAPI = {
 
 // 6-3-5 method endpoints
 export const sixThreeFiveAPI = {
-  start: (sessionUuid) =>
-    api.post(`/api/sessions/${sessionUuid}/six-three-five/start`),
+  start: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/six-three-five/start`, { api_key: apiKey || apiKeyManager.get() }),
   skip: (sessionUuid) =>
     api.post(`/api/sessions/${sessionUuid}/six-three-five/skip`),
   join: (sessionUuid, data) =>
@@ -48,8 +58,8 @@ export const sixThreeFiveAPI = {
     api.get(`/api/sessions/${sessionUuid}/six-three-five/my-sheet/${participantUuid}`),
   submitIdeas: (sessionUuid, participantUuid, data) =>
     api.post(`/api/sessions/${sessionUuid}/six-three-five/ideas?participant_uuid=${participantUuid}`, data),
-  advanceRound: (sessionUuid) =>
-    api.post(`/api/sessions/${sessionUuid}/six-three-five/advance-round`),
+  advanceRound: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/six-three-five/advance-round`, { api_key: apiKey || apiKeyManager.get() }),
   getIdeas: (sessionUuid) =>
     api.get(`/api/sessions/${sessionUuid}/six-three-five/ideas`),
   submitManualIdeas: (sessionUuid, ideas) =>
@@ -68,10 +78,10 @@ export const prioritizationAPI = {
 
 // Consultation endpoints
 export const consultationAPI = {
-  start: (sessionUuid) =>
-    api.post(`/api/sessions/${sessionUuid}/consultation/start`),
-  sendMessage: (sessionUuid, content) =>
-    api.post(`/api/sessions/${sessionUuid}/consultation/message`, { content }),
+  start: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/start`, { api_key: apiKey || apiKeyManager.get() }),
+  sendMessage: (sessionUuid, content, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/message`, { content, api_key: apiKey || apiKeyManager.get() }),
   // Save user message without AI response (user answering questions)
   saveMessage: (sessionUuid, content) =>
     api.post(`/api/sessions/${sessionUuid}/consultation/message/save`, { content }),
@@ -79,17 +89,19 @@ export const consultationAPI = {
     api.get(`/api/sessions/${sessionUuid}/consultation/messages`),
   getFindings: (sessionUuid) =>
     api.get(`/api/sessions/${sessionUuid}/consultation/findings`),
-  summarize: (sessionUuid) =>
-    api.post(`/api/sessions/${sessionUuid}/consultation/summarize`),
+  summarize: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/summarize`, { api_key: apiKey || apiKeyManager.get() }),
 
   // Streaming endpoints using fetch (SSE)
-  startStream: async (sessionUuid, onChunk, onDone, onError) => {
+  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/start/stream`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key }),
         }
       );
 
@@ -134,14 +146,15 @@ export const consultationAPI = {
     }
   },
 
-  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError) => {
+  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/message/stream`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ content, api_key: key }),
         }
       );
 
@@ -176,13 +189,15 @@ export const consultationAPI = {
   },
 
   // Request AI response based on current conversation (no new user message)
-  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError) => {
+  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/request-response/stream`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key }),
         }
       );
 
@@ -229,27 +244,29 @@ export const consultationAPI = {
 
 // Business Case endpoints (Step 5)
 export const businessCaseAPI = {
-  start: (sessionUuid) =>
-    api.post(`/api/sessions/${sessionUuid}/business-case/start`),
-  sendMessage: (sessionUuid, content) =>
-    api.post(`/api/sessions/${sessionUuid}/business-case/message`, { content }),
+  start: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/business-case/start`, { api_key: apiKey || apiKeyManager.get() }),
+  sendMessage: (sessionUuid, content, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/business-case/message`, { content, api_key: apiKey || apiKeyManager.get() }),
   saveMessage: (sessionUuid, content) =>
     api.post(`/api/sessions/${sessionUuid}/business-case/message/save`, { content }),
   getMessages: (sessionUuid) =>
     api.get(`/api/sessions/${sessionUuid}/business-case/messages`),
   getFindings: (sessionUuid) =>
     api.get(`/api/sessions/${sessionUuid}/business-case/findings`),
-  extract: (sessionUuid) =>
-    api.post(`/api/sessions/${sessionUuid}/business-case/extract`),
+  extract: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/business-case/extract`, { api_key: apiKey || apiKeyManager.get() }),
 
   // Streaming endpoints using fetch (SSE)
-  startStream: async (sessionUuid, onChunk, onDone, onError) => {
+  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/start/stream`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key }),
         }
       );
 
@@ -292,14 +309,15 @@ export const businessCaseAPI = {
     }
   },
 
-  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError) => {
+  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/message/stream`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ content, api_key: key }),
         }
       );
 
@@ -333,13 +351,15 @@ export const businessCaseAPI = {
     }
   },
 
-  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError) => {
+  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/request-response/stream`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key }),
         }
       );
 
