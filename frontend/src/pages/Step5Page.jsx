@@ -875,15 +875,6 @@ const Step5Page = () => {
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="mt-6 flex justify-start">
-          <button
-            onClick={() => navigate(`/session/${sessionUuid}/step4`)}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            {t('step5.backStep4')}
-          </button>
-        </div>
       </div>
 
       {/* API Key Prompt Modal */}

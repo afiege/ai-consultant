@@ -156,15 +156,6 @@ const Step1aPage = () => {
           />
         </div>
 
-        {/* Navigation */}
-        <div className="mt-8 flex justify-start">
-          <button
-            onClick={() => navigate('/')}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            {t('step1a.backHome')}
-          </button>
-        </div>
       </div>
     </div>
   );

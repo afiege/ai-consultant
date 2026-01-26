@@ -34,28 +34,35 @@ const MaturitySlider = ({ value, onChange, questionKey, dimensionKey, t }) => {
         {t(`step1b.dimensions.${dimensionKey}.${questionKey}`)}
       </label>
       <div className="flex items-center gap-4">
-        <input
-          type="range"
-          min="1"
-          max="6"
-          step="1"
-          value={value}
-          onChange={(e) => onChange(parseInt(e.target.value))}
-          className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-        />
-        <div className="w-24 text-center">
+        <div className="flex-1 px-2">
+          <input
+            type="range"
+            min="1"
+            max="6"
+            step="1"
+            value={value}
+            onChange={(e) => onChange(parseInt(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+          />
+        </div>
+        <div className="w-12 text-center">
           <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm">
             {value}
           </span>
         </div>
       </div>
-      <div className="flex justify-between text-xs text-gray-500 mt-1 px-1">
-        <span>1</span>
-        <span>2</span>
-        <span>3</span>
-        <span>4</span>
-        <span>5</span>
-        <span>6</span>
+      <div className="flex items-center gap-4">
+        <div className="flex-1 px-2">
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>1</span>
+            <span>2</span>
+            <span>3</span>
+            <span>4</span>
+            <span>5</span>
+            <span>6</span>
+          </div>
+        </div>
+        <div className="w-12"></div>
       </div>
     </div>
   );
@@ -380,15 +387,6 @@ const Step1bPage = () => {
           </button>
         </div>
 
-        {/* Navigation */}
-        <div className="mt-8 flex justify-start">
-          <button
-            onClick={() => navigate(`/session/${sessionUuid}/step1a`)}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            {t('step1b.backToCompanyInfo')}
-          </button>
-        </div>
       </div>
     </div>
   );

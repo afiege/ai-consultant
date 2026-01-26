@@ -640,21 +640,6 @@ const Step6Page = () => {
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="mt-8 flex justify-between">
-          <button
-            onClick={() => navigate(`/session/${sessionUuid}/step5`)}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            {t('step6.backStep5')}
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="px-6 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900"
-          >
-            {t('step6.backHome')}
-          </button>
-        </div>
       </div>
 
       {/* API Key Prompt Modal */}

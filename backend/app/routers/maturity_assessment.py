@@ -13,7 +13,7 @@ from ..schemas.maturity_assessment import (
     get_maturity_level_name,
 )
 
-router = APIRouter(prefix="/sessions/{session_uuid}/maturity", tags=["maturity"])
+router = APIRouter()
 
 
 def get_session(db: Session, session_uuid: str) -> SessionModel:
@@ -26,7 +26,7 @@ def get_session(db: Session, session_uuid: str) -> SessionModel:
     return session
 
 
-@router.get("", response_model=MaturityAssessmentResponse | None)
+@router.get("/{session_uuid}/maturity", response_model=MaturityAssessmentResponse | None)
 async def get_maturity_assessment(session_uuid: str, db: Session = Depends(get_db)):
     """Get the maturity assessment for a session."""
     session = get_session(db, session_uuid)
@@ -59,7 +59,7 @@ async def get_maturity_assessment(session_uuid: str, db: Session = Depends(get_d
     return MaturityAssessmentResponse(**response_data)
 
 
-@router.post("", response_model=MaturityAssessmentResponse)
+@router.post("/{session_uuid}/maturity", response_model=MaturityAssessmentResponse)
 async def create_or_update_maturity_assessment(
     session_uuid: str,
     assessment_data: MaturityAssessmentCreate,
@@ -68,14 +68,14 @@ async def create_or_update_maturity_assessment(
     """Create or update the maturity assessment for a session."""
     session = get_session(db, session_uuid)
 
-    # Calculate overall score
+    # Calculate overall score (round to 1 decimal for consistent display)
     scores = [
         assessment_data.resources_score,
         assessment_data.information_systems_score,
         assessment_data.culture_score,
         assessment_data.organizational_structure_score,
     ]
-    overall_score = sum(scores) / len(scores)
+    overall_score = round(sum(scores) / len(scores), 1)
     maturity_level = get_maturity_level_name(overall_score)
 
     # Check if assessment already exists
@@ -137,7 +137,7 @@ async def create_or_update_maturity_assessment(
     return MaturityAssessmentResponse(**response_data)
 
 
-@router.get("/levels")
+@router.get("/maturity/levels")
 async def get_maturity_levels():
     """Get information about all maturity levels."""
     return [level.model_dump() for level in MATURITY_LEVELS]

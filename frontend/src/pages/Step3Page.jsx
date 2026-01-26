@@ -318,15 +318,6 @@ const Step3Page = () => {
           </>
         )}
 
-        {/* Navigation */}
-        <div className="mt-8 flex justify-start">
-          <button
-            onClick={() => navigate(`/session/${sessionUuid}/step2`)}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            {t('step3.backStep2')}
-          </button>
-        </div>
       </div>
     </div>
   );

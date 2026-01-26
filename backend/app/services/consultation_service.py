@@ -242,6 +242,9 @@ class ConsultationService:
         """
         db_session = self._get_session(session_uuid)
 
+        # Check for context updates before processing (saves to DB if changes detected)
+        self._inject_context_update_if_needed(db_session)
+
         # Save user message
         user_msg = ConsultationMessage(
             session_id=db_session.id,
@@ -251,7 +254,7 @@ class ConsultationService:
         self.db.add(user_msg)
         self.db.commit()
 
-        # Get conversation history
+        # Get conversation history (includes any context updates from DB)
         messages = self._get_conversation_history(db_session.id)
 
         # Generate AI response
@@ -283,6 +286,9 @@ class ConsultationService:
         """
         db_session = self._get_session(session_uuid)
 
+        # Check for context updates before processing (saves to DB if changes detected)
+        self._inject_context_update_if_needed(db_session)
+
         # Save user message
         user_msg = ConsultationMessage(
             session_id=db_session.id,
@@ -292,7 +298,7 @@ class ConsultationService:
         self.db.add(user_msg)
         self.db.commit()
 
-        # Get conversation history
+        # Get conversation history (includes any context updates from DB)
         messages = self._get_conversation_history(db_session.id)
 
         # Stream the response
@@ -323,7 +329,10 @@ class ConsultationService:
         """
         db_session = self._get_session(session_uuid)
 
-        # Get conversation history
+        # Check for context updates before processing (saves to DB if changes detected)
+        self._inject_context_update_if_needed(db_session)
+
+        # Get conversation history (includes any context updates from DB)
         messages = self._get_conversation_history(db_session.id)
 
         # Log the conversation being sent (debug level)
@@ -852,3 +861,220 @@ You are having a one-on-one conversation with the client. Respond directly and n
             return match.group(1).strip()
 
         return None
+
+    def _get_consultation_start_time(self, session_id: int):
+        """Get the timestamp when the consultation was started."""
+        first_msg = self.db.query(ConsultationMessage).filter(
+            ConsultationMessage.session_id == session_id,
+            ConsultationMessage.role == "system"
+        ).order_by(ConsultationMessage.created_at).first()
+
+        return first_msg.created_at if first_msg else None
+
+    def _detect_context_changes(self, db_session: SessionModel) -> Dict:
+        """
+        Detect if context data (company info, maturity, ideas) has changed
+        since the consultation was started.
+
+        Returns a dict with changed sections and their new content.
+        """
+        consultation_start = self._get_consultation_start_time(db_session.id)
+        if not consultation_start:
+            return {}
+
+        changes = {}
+
+        # Check maturity assessment updates
+        maturity = self.db.query(MaturityAssessment).filter(
+            MaturityAssessment.session_id == db_session.id
+        ).first()
+
+        if maturity and maturity.updated_at and maturity.updated_at > consultation_start:
+            changes["maturity"] = {
+                "overall_score": maturity.overall_score,
+                "maturity_level": maturity.maturity_level,
+                "resources_score": maturity.resources_score,
+                "information_systems_score": maturity.information_systems_score,
+                "culture_score": maturity.culture_score,
+                "organizational_structure_score": maturity.organizational_structure_score,
+            }
+
+        # Check company info additions/updates (uses created_at since it doesn't have updated_at)
+        new_company_infos = self.db.query(CompanyInfo).filter(
+            CompanyInfo.session_id == db_session.id,
+            CompanyInfo.created_at > consultation_start
+        ).all()
+
+        if new_company_infos:
+            changes["company_info"] = [
+                {"type": info.info_type, "content": info.content[:500]}
+                for info in new_company_infos
+            ]
+
+        # Check for new ideas or prioritization changes
+        sheets = self.db.query(IdeaSheet).filter(
+            IdeaSheet.session_id == db_session.id
+        ).all()
+
+        new_ideas = []
+        for sheet in sheets:
+            ideas = self.db.query(Idea).filter(
+                Idea.sheet_id == sheet.id,
+                Idea.created_at > consultation_start
+            ).all()
+            for idea in ideas:
+                new_ideas.append(idea.content)
+
+        if new_ideas:
+            changes["new_ideas"] = new_ideas
+
+        # Check for new prioritization votes
+        new_votes = self.db.query(Prioritization).filter(
+            Prioritization.session_id == db_session.id,
+            Prioritization.created_at > consultation_start
+        ).count()
+
+        if new_votes > 0:
+            # Recalculate top ideas with current votes
+            all_ideas = []
+            for sheet in sheets:
+                ideas = self.db.query(Idea).filter(Idea.sheet_id == sheet.id).all()
+                for idea in ideas:
+                    votes = self.db.query(Prioritization).filter(
+                        Prioritization.idea_id == idea.id
+                    ).all()
+                    total_points = sum(v.score or 0 for v in votes)
+                    all_ideas.append({"content": idea.content, "points": total_points})
+
+            all_ideas.sort(key=lambda x: x["points"], reverse=True)
+            if all_ideas:
+                changes["prioritization_updated"] = all_ideas[:5]
+
+        return changes
+
+    def _build_context_update_message(self, changes: Dict) -> str:
+        """Build a notification message about context changes."""
+        if not changes:
+            return ""
+
+        if self.language == "de":
+            parts = ["[WICHTIGE AKTUALISIERUNG: Der Kunde hat seit Beginn unseres Gesprächs Informationen in vorherigen Schritten aktualisiert]\n"]
+
+            if "maturity" in changes:
+                m = changes["maturity"]
+                parts.append(f"**Reifegrad-Bewertung aktualisiert:**")
+                parts.append(f"- Neuer Gesamtreifegrad: {m['overall_score']:.1f}/6 ({m['maturity_level']})")
+                parts.append(f"- Ressourcen: {m['resources_score']}/6, IT-Systeme: {m['information_systems_score']}/6")
+                parts.append(f"- Kultur: {m['culture_score']}/6, Organisation: {m['organizational_structure_score']}/6\n")
+
+            if "company_info" in changes:
+                parts.append("**Neue Unternehmensinformationen hinzugefügt:**")
+                for info in changes["company_info"]:
+                    parts.append(f"- [{info['type'].upper()}]: {info['content'][:200]}...")
+                parts.append("")
+
+            if "new_ideas" in changes:
+                parts.append("**Neue Ideen wurden hinzugefügt:**")
+                for idea in changes["new_ideas"][:3]:
+                    parts.append(f"- {idea[:100]}...")
+                parts.append("")
+
+            if "prioritization_updated" in changes:
+                parts.append("**Priorisierung wurde aktualisiert. Aktuelle Top-Ideen:**")
+                for i, idea in enumerate(changes["prioritization_updated"][:3]):
+                    parts.append(f"{i+1}. {idea['content'][:80]}... ({idea['points']} Punkte)")
+                parts.append("")
+
+            parts.append("Bitte berücksichtigen Sie diese Aktualisierungen in Ihren weiteren Empfehlungen.")
+        else:
+            parts = ["[IMPORTANT UPDATE: The client has updated information in previous steps since our conversation began]\n"]
+
+            if "maturity" in changes:
+                m = changes["maturity"]
+                parts.append(f"**Maturity Assessment Updated:**")
+                parts.append(f"- New Overall Maturity: {m['overall_score']:.1f}/6 ({m['maturity_level']})")
+                parts.append(f"- Resources: {m['resources_score']}/6, IT Systems: {m['information_systems_score']}/6")
+                parts.append(f"- Culture: {m['culture_score']}/6, Organization: {m['organizational_structure_score']}/6\n")
+
+            if "company_info" in changes:
+                parts.append("**New Company Information Added:**")
+                for info in changes["company_info"]:
+                    parts.append(f"- [{info['type'].upper()}]: {info['content'][:200]}...")
+                parts.append("")
+
+            if "new_ideas" in changes:
+                parts.append("**New Ideas Have Been Added:**")
+                for idea in changes["new_ideas"][:3]:
+                    parts.append(f"- {idea[:100]}...")
+                parts.append("")
+
+            if "prioritization_updated" in changes:
+                parts.append("**Prioritization Has Been Updated. Current Top Ideas:**")
+                for i, idea in enumerate(changes["prioritization_updated"][:3]):
+                    parts.append(f"{i+1}. {idea['content'][:80]}... ({idea['points']} points)")
+                parts.append("")
+
+            parts.append("Please take these updates into account in your further recommendations.")
+
+        return "\n".join(parts)
+
+    def _inject_context_update_if_needed(self, db_session: SessionModel) -> Optional[str]:
+        """
+        Check for context changes and return an update message if needed.
+        Saves the update as a system message so it's only injected once.
+        """
+        changes = self._detect_context_changes(db_session)
+        if not changes:
+            return None
+
+        # Check if we've already notified about recent changes
+        # Look for a context update message after the original system prompt
+        consultation_start = self._get_consultation_start_time(db_session.id)
+        if not consultation_start:
+            return None
+
+        # Check for existing context update messages
+        existing_update = self.db.query(ConsultationMessage).filter(
+            ConsultationMessage.session_id == db_session.id,
+            ConsultationMessage.role == "system",
+            ConsultationMessage.content.like("%IMPORTANT UPDATE%") | ConsultationMessage.content.like("%WICHTIGE AKTUALISIERUNG%"),
+            ConsultationMessage.created_at > consultation_start
+        ).first()
+
+        if existing_update:
+            # Already notified about changes - but check if there are newer changes
+            # by comparing timestamps
+            latest_change_time = None
+
+            # Get latest maturity update
+            maturity = self.db.query(MaturityAssessment).filter(
+                MaturityAssessment.session_id == db_session.id
+            ).first()
+            if maturity and maturity.updated_at:
+                latest_change_time = maturity.updated_at
+
+            # Get latest company info
+            latest_info = self.db.query(CompanyInfo).filter(
+                CompanyInfo.session_id == db_session.id
+            ).order_by(CompanyInfo.created_at.desc()).first()
+            if latest_info and latest_info.created_at:
+                if not latest_change_time or latest_info.created_at > latest_change_time:
+                    latest_change_time = latest_info.created_at
+
+            # If the existing update is after the latest change, skip
+            if latest_change_time and existing_update.created_at >= latest_change_time:
+                return None
+
+        # Build and save the context update message
+        update_message = self._build_context_update_message(changes)
+
+        # Save the update as a system message so it appears in conversation history
+        update_msg = ConsultationMessage(
+            session_id=db_session.id,
+            role="system",
+            content=update_message
+        )
+        self.db.add(update_msg)
+        self.db.commit()
+
+        return update_message
