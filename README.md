@@ -2,49 +2,87 @@
 
 An AI-powered digitalization consultant application for Small and Medium Enterprises (SMEs) that guides companies through a comprehensive 5-step consultation process using LLMs via LiteLLM (supporting OpenAI, Anthropic, Mistral, OpenRouter, and more).
 
+## Customer Journey
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   STEP 1a    │     │   STEP 1b    │     │   STEP 2     │     │   STEP 3     │     │   STEP 4     │
+│   Company    │────▶│   Digital    │────▶│    6-3-5     │────▶│    Idea      │────▶│     AI       │
+│ Information  │     │  Maturity    │     │ Brainstorming│     │Prioritization│     │ Consultation │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘     └──────┬───────┘
+                                                                                           │
+                     ┌─────────────────────────────────────────────────────────────────────┘
+                     ▼
+              ┌──────────────┐
+              │   STEP 5     │     • Executive Summary
+              │   Results    │────▶• Business Case (5-Level Value Framework)
+              │   & Export   │     • Cost Estimation & ROI
+              │              │     • SWOT Analysis
+              └──────────────┘     • PDF Export
+```
+
 ## Features
 
 ### 5-Step Consultation Process
 
-1. **Company Overview Collection** (Step 1)
+1. **Company Information** (Step 1a)
    - Free text input for company information
    - File uploads (PDF, DOCX) with automatic text extraction
    - Web crawling to gather information from company websites
 
-2. **Interactive 6-3-5 Brainstorming** (Step 2)
+2. **Digital Maturity Assessment** (Step 1b)
+   - Based on acatech Industry 4.0 Maturity Index
+   - Rate 4 dimensions on a 1-6 scale:
+     - Resources (employees, technology, materials)
+     - Information Systems (IT integration, data processing)
+     - Culture (willingness to change, knowledge sharing)
+     - Organizational Structure (agility, collaboration)
+   - Visual results with dimension breakdown
+
+3. **Interactive 6-3-5 Brainstorming** (Step 2)
    - Real-time collaborative ideation with up to 6 participants
-   - AI participant that contributes ideas alongside humans
+   - AI participants that contribute ideas alongside humans
    - Each participant contributes 3 ideas per round
    - 5-minute rounds with automatic sheet rotation
    - QR code sharing for easy session joining
 
-3. **Idea Prioritization** (Step 3)
+4. **Idea Prioritization** (Step 3)
    - Vote and score generated ideas
    - Collaborative ranking system
-   - Identify top ideas for implementation
+   - Select focus project for consultation
 
-4. **CRISP-DM Business Understanding** (Step 4)
+5. **CRISP-DM Business Understanding** (Step 4)
    - AI-guided consultation using CRISP-DM methodology
    - Streaming chat responses (Server-Sent Events)
+   - Topic progress tracking
    - Extracts 4 key findings:
      - Business Objectives
      - Situation Assessment
      - AI/Data Mining Goals
      - Project Plan
 
-5. **Business Case Calculation** (Step 5)
-   - 5-Level Value Framework analysis
-   - AI-assisted ROI estimation
-   - Produces:
-     - Classification (which value level)
-     - Back-of-the-envelope Calculation
-     - Validation Questions
-     - Management Pitch
+6. **Results & Analysis** (Step 5)
+   - **Executive Summary** - Overview of all findings
+   - **Business Case** - 5-Level Value Framework analysis:
+     1. Budget Substitution
+     2. Process Efficiency
+     3. Project Acceleration
+     4. Risk Mitigation
+     5. Strategic Scaling
+   - **Cost Estimation** - Investment analysis and ROI calculation
+   - **SWOT Analysis** - Company readiness evaluation
 
-6. **Professional PDF Export**
+7. **Professional PDF Export**
    - Comprehensive report generation
-   - Includes all consultation data from all 5 steps
+   - Includes all consultation data from all steps
    - Professional formatting with executive summary
+
+### Additional Features
+
+- **Multi-language Support** - English and German
+- **Expert Mode** - Customize all AI prompts and LLM settings
+- **Session Backup/Restore** - Export and import session data
+- **Multi-participant Collaboration** - Real-time collaboration in brainstorming and consultation
 
 ## Architecture
 
@@ -142,27 +180,33 @@ ai-consultant/
 │   │   ├── config.py            # Configuration (env vars)
 │   │   ├── database.py          # Database setup
 │   │   ├── models/              # SQLAlchemy models
-│   │   │   ├── session.py       # Session, CompanyInfo
+│   │   │   ├── session.py       # Session, CompanyInfo, MaturityAssessment
 │   │   │   ├── brainstorm.py    # Participant, IdeaSheet, Idea
 │   │   │   ├── prioritization.py
 │   │   │   └── consultation.py  # Messages, Findings
 │   │   ├── schemas/             # Pydantic request/response schemas
+│   │   │   ├── expert_settings.py  # Custom prompts, LLM config
+│   │   │   └── ...
 │   │   ├── routers/             # API endpoint handlers
 │   │   │   ├── sessions.py
 │   │   │   ├── company_info.py
+│   │   │   ├── maturity_assessment.py
 │   │   │   ├── six_three_five.py
 │   │   │   ├── prioritization.py
 │   │   │   ├── consultation.py
 │   │   │   ├── business_case.py
-│   │   │   └── expert_settings.py
+│   │   │   ├── cost_estimation.py
+│   │   │   ├── export.py
+│   │   │   ├── expert_settings.py
+│   │   │   └── session_backup.py
 │   │   └── services/            # Business logic
-│   │       ├── llm_service.py   # LiteLLM integration
-│   │       ├── six_three_five_service.py
+│   │       ├── ai_participant.py    # AI brainstorming participant
 │   │       ├── consultation_service.py
 │   │       ├── business_case_service.py
+│   │       ├── cost_estimation_service.py
 │   │       ├── pdf_generator.py
 │   │       ├── web_crawler.py
-│   │       └── default_prompts.py
+│   │       └── default_prompts.py   # All AI prompts (EN/DE)
 │   ├── uploads/                 # Uploaded files
 │   ├── exports/                 # Generated PDF reports
 │   └── requirements.txt
@@ -173,20 +217,21 @@ ai-consultant/
 │   │   ├── main.jsx             # Entry point
 │   │   ├── pages/               # Page components
 │   │   │   ├── HomePage.jsx
-│   │   │   ├── Step1Page.jsx
-│   │   │   ├── Step2Page.jsx
-│   │   │   ├── Step3Page.jsx
-│   │   │   ├── Step4Page.jsx
-│   │   │   ├── Step5Page.jsx
-│   │   │   └── ExportPage.jsx
+│   │   │   ├── Step1aPage.jsx   # Company Information
+│   │   │   ├── Step1bPage.jsx   # Digital Maturity Assessment
+│   │   │   ├── Step2Page.jsx    # 6-3-5 Brainstorming
+│   │   │   ├── Step3Page.jsx    # Idea Prioritization
+│   │   │   ├── Step4Page.jsx    # AI Consultation
+│   │   │   └── Step5Page.jsx    # Results & Export
 │   │   ├── components/          # Reusable components
 │   │   │   ├── common/          # Shared UI components
 │   │   │   │   ├── ApiKeyPrompt.jsx
 │   │   │   │   ├── PageHeader.jsx
+│   │   │   │   ├── StepProgress.jsx
 │   │   │   │   └── ExplanationBox.jsx
 │   │   │   ├── step1/
 │   │   │   ├── step2/
-│   │   │   └── step3/
+│   │   │   └── step4/
 │   │   ├── services/
 │   │   │   └── api.js           # API client + apiKeyManager
 │   │   └── i18n/
@@ -194,6 +239,7 @@ ai-consultant/
 │   ├── package.json
 │   └── vite.config.js
 │
+├── DEPLOY.md                    # Deployment instructions
 └── README.md
 ```
 
@@ -281,42 +327,65 @@ ai-consultant/
    - Open `http://localhost:5173` in your browser
    - Click "Start New Consultation"
 
-2. **Step 1: Company Overview**
+2. **Step 1a: Company Information**
    - Enter company information via text, upload files, or provide a website URL
-   - Submit information to proceed
+   - The AI will use this context throughout the consultation
 
-3. **Step 2: 6-3-5 Brainstorming**
+3. **Step 1b: Digital Maturity Assessment**
+   - Rate your company on 4 dimensions (1-6 scale each)
+   - View your overall maturity level and dimension breakdown
+   - This helps the AI tailor recommendations to your level
+
+4. **Step 2: 6-3-5 Brainstorming**
    - Share the session link or QR code with participants
    - Each participant enters their name to join
-   - Enter your API key when prompted (for AI participant)
+   - Enter your API key when prompted (for AI participants)
    - Start the brainstorming session
    - Write 3 ideas during each 5-minute round
    - Sheets rotate to the next participant after each round
 
-4. **Step 3: Prioritization**
+5. **Step 3: Prioritization**
    - Review all generated ideas
    - Allocate points to your favorite ideas
-   - See ranked results based on collective votes
+   - Select the top-voted idea as your focus project
 
-5. **Step 4: CRISP-DM Consultation**
+6. **Step 4: AI Consultation**
    - Enter your API key for the LLM provider (if not already set)
-   - Engage in an AI-guided interview following CRISP-DM methodology
-   - The AI extracts key findings into structured categories
+   - Engage in an AI-guided consultation following CRISP-DM methodology
+   - Track progress on 4 key topics:
+     - Business Objectives
+     - Situation Assessment
+     - AI/Data Mining Goals
+     - Project Plan
    - Click "Generate Summary" to extract findings
 
-6. **Step 5: Business Case**
-   - Continue the conversation to develop a business case
-   - The AI uses the 5-level value framework:
-     1. Budget Substitution
-     2. Process Efficiency
-     3. Project Acceleration
-     4. Risk Mitigation
-     5. Strategic Scaling
-   - Extract findings for classification, calculation, validation questions, and management pitch
+7. **Step 5: Results & Export**
+   - View the **Executive Summary** of your consultation
+   - Generate a **Business Case** using the 5-level value framework
+   - Get **Cost Estimation** with ROI analysis
+   - Review the **SWOT Analysis** for project readiness
+   - Export everything as a professional **PDF report**
 
-7. **Export**
-   - Generate a comprehensive PDF report
-   - Download the report containing all consultation data
+## Expert Mode
+
+Expert Mode allows customization of AI behavior and LLM settings:
+
+### Custom Prompts
+All 12 AI prompts can be customized:
+- Brainstorming prompts (system, round 1, subsequent rounds)
+- Consultation prompts (system rules, context template)
+- Extraction prompts (summary, business case, cost estimation)
+- Analysis prompts (SWOT, transition briefing)
+
+### LLM Configuration
+- Choose from preset providers (OpenAI, Mistral, Anthropic, Ollama)
+- Configure custom API endpoints
+- Test connection before saving
+
+### Accessing Expert Mode
+1. Click the gear icon in the page header
+2. Toggle "Expert Mode" on
+3. Customize prompts and LLM settings as needed
 
 ## API Key Handling
 
@@ -344,15 +413,15 @@ Once the backend is running, visit:
 ## Database Schema
 
 The application uses these main tables:
-- `sessions` - Consultation sessions with settings
-- `company_info` - Company data from Step 1
+- `sessions` - Consultation sessions with settings and expert mode config
+- `company_info` - Company data from Step 1a
+- `maturity_assessments` - Digital maturity scores from Step 1b
 - `participants` - 6-3-5 session participants
 - `idea_sheets` - Idea sheets that rotate between participants
 - `ideas` - Individual ideas (3 per round per sheet)
 - `prioritizations` - Votes and point allocations
 - `consultation_messages` - Chat messages (CRISP-DM and Business Case)
 - `consultation_findings` - Extracted findings from consultations
-- `expert_settings` - Per-session LLM configuration
 
 ## Security Features
 
