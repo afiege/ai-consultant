@@ -17,7 +17,14 @@ class CustomPrompts(BaseModel):
     brainstorming_round1: Optional[str] = None
     brainstorming_subsequent: Optional[str] = None
     consultation_system: Optional[str] = None
+    consultation_context: Optional[str] = None
     extraction_summary: Optional[str] = None
+    business_case_system: Optional[str] = None
+    business_case_extraction: Optional[str] = None
+    cost_estimation_system: Optional[str] = None
+    cost_estimation_extraction: Optional[str] = None
+    transition_briefing_system: Optional[str] = None
+    swot_analysis_system: Optional[str] = None
 
 
 class LLMConfig(BaseModel):
@@ -142,14 +149,56 @@ PROMPT_METADATA = [
     ),
     PromptInfo(
         key="consultation_system",
-        label="Business Understanding Prompt",
-        description="CRISP-DM Business Understanding phase - guides the consultant through objectives, situation assessment, AI goals, and project planning",
-        variables=["company_name", "company_info_text", "top_ideas_text", "focus_idea"]
+        label="Consultation System Prompt",
+        description="Behavioral rules for the AI consultant - response format, what to avoid, conversation style",
+        variables=["multi_participant_section"]
+    ),
+    PromptInfo(
+        key="consultation_context",
+        label="Consultation Context Template",
+        description="Session-specific context injected at start - company info, maturity, focus project, ideas",
+        variables=["company_name", "company_info_text", "maturity_section", "focus_idea", "top_ideas_text"]
     ),
     PromptInfo(
         key="extraction_summary",
         label="CRISP-DM Summary Extraction",
         description="Extracts structured Business Understanding outputs: objectives, situation, AI goals, and project plan",
         variables=[]
+    ),
+    PromptInfo(
+        key="business_case_system",
+        label="Business Case System Prompt",
+        description="Guides the AI through business case development using the 5-level value framework",
+        variables=["company_info_text", "focus_idea", "business_objectives", "situation_assessment", "ai_goals", "project_plan"]
+    ),
+    PromptInfo(
+        key="business_case_extraction",
+        label="Business Case Extraction",
+        description="Extracts structured business case: classification, calculation, validation questions, management pitch",
+        variables=[]
+    ),
+    PromptInfo(
+        key="cost_estimation_system",
+        label="Cost Estimation System Prompt",
+        description="Guides the AI through project cost estimation and budgeting",
+        variables=["company_info_text", "focus_idea", "business_objectives", "situation_assessment", "ai_goals", "project_plan", "potentials_summary"]
+    ),
+    PromptInfo(
+        key="cost_estimation_extraction",
+        label="Cost Estimation Extraction",
+        description="Extracts structured cost estimate: complexity, initial investment, recurring costs, TCO",
+        variables=[]
+    ),
+    PromptInfo(
+        key="transition_briefing_system",
+        label="Transition Briefing System Prompt",
+        description="Creates technical handover document for the Technical Understanding phase",
+        variables=["company_profile", "executive_summary", "business_case_summary", "cost_estimation_summary"]
+    ),
+    PromptInfo(
+        key="swot_analysis_system",
+        label="SWOT Analysis System Prompt",
+        description="Creates SWOT analysis evaluating company readiness for the AI project",
+        variables=["company_profile", "executive_summary", "business_case_summary", "cost_estimation_summary"]
     ),
 ]

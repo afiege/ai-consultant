@@ -272,7 +272,14 @@ def reset_prompt_to_default(
         "brainstorming_round1",
         "brainstorming_subsequent",
         "consultation_system",
-        "extraction_summary"
+        "consultation_context",
+        "extraction_summary",
+        "business_case_system",
+        "business_case_extraction",
+        "cost_estimation_system",
+        "cost_estimation_extraction",
+        "transition_briefing_system",
+        "swot_analysis_system"
     ]
 
     if prompt_key not in valid_keys:

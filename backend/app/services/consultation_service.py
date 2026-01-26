@@ -108,7 +108,7 @@ class ConsultationService:
         # Build context from previous steps
         context = self._build_consultation_context(db_session)
 
-        # Create system message
+        # Create system message (behavioral rules only)
         system_content = self._build_system_prompt(context)
         system_msg = ConsultationMessage(
             session_id=db_session.id,
@@ -117,20 +117,22 @@ class ConsultationService:
         )
         self.db.add(system_msg)
 
-        # Save the initial user prompt (needed for proper role alternation)
+        # Build context and include it in the initial user message
+        context_content = self._build_context_message(context)
+        initial_prompt = f"{context_content}\n\n---\nPlease start the consultation with your first message."
+
+        # Save the initial user prompt with context
         initial_user_msg = ConsultationMessage(
             session_id=db_session.id,
             role="user",
-            content="Please start the consultation."
+            content=initial_prompt
         )
         self.db.add(initial_user_msg)
 
-        # Generate initial AI greeting
-        initial_prompt = self._build_initial_greeting(context)
-
+        # Messages: system rules, then user message with context
         messages = [
             {"role": "system", "content": system_content},
-            {"role": "user", "content": "Please start the consultation."}
+            {"role": "user", "content": initial_prompt}
         ]
 
         response = self._call_llm(messages, temperature=0.7, max_tokens=1000)
@@ -170,7 +172,7 @@ class ConsultationService:
         # Build context from previous steps
         context = self._build_consultation_context(db_session)
 
-        # Create system message
+        # Create system message (behavioral rules only)
         system_content = self._build_system_prompt(context)
         system_msg = ConsultationMessage(
             session_id=db_session.id,
@@ -179,18 +181,23 @@ class ConsultationService:
         )
         self.db.add(system_msg)
 
-        # Save the initial user prompt (needed for proper role alternation)
+        # Build context and include it in the initial user message
+        context_content = self._build_context_message(context)
+        initial_prompt = f"{context_content}\n\n---\nPlease start the consultation with your first message."
+
+        # Save the initial user prompt with context
         initial_user_msg = ConsultationMessage(
             session_id=db_session.id,
             role="user",
-            content="Please start the consultation."
+            content=initial_prompt
         )
         self.db.add(initial_user_msg)
         self.db.commit()
 
+        # Messages: system rules, then user message with context
         messages = [
             {"role": "system", "content": system_content},
-            {"role": "user", "content": "Please start the consultation."}
+            {"role": "user", "content": initial_prompt}
         ]
 
         # Stream the response
@@ -381,7 +388,7 @@ class ConsultationService:
             }
             for m in messages
             # Filter out the initial trigger message (not user-visible)
-            if m.content != "Please start the consultation."
+            if "Please start the consultation" not in m.content
         ]
 
     def get_findings(self, session_uuid: str) -> Dict:
@@ -627,73 +634,7 @@ Respond only with these 4 categories, brief and concise."""
         }
 
     def _build_system_prompt(self, context: Dict) -> str:
-        """Build the system prompt for the AI consultant."""
-        # Format company info
-        company_info_text = ""
-        for info in context.get("company_info", [])[:3]:
-            company_info_text += f"\n[{info['type'].upper()}]\n{info['content']}\n"
-
-        # Format maturity assessment section and dynamic level guidance
-        maturity = context.get("maturity")
-        if maturity and maturity.get("overall_score"):
-            company_level = round(maturity['overall_score'])
-            company_level = max(1, min(6, company_level))  # Clamp to 1-6
-
-            if self.language == "de":
-                maturity_section = f"""Das Unternehmen wurde nach dem acatech Industrie 4.0 Reifegradmodell bewertet:
-
-**Gesamtreifegrad: {maturity['overall_score']:.1f}/6 ({maturity.get('maturity_level', 'Unbekannt')})**
-
-Dimensionen-Scores:
-- Ressourcen (Mitarbeiter, Technik, Material): {maturity.get('resources_score', 'N/A')}/6
-- Informationssysteme (IT-Integration, Datenverarbeitung): {maturity.get('information_systems_score', 'N/A')}/6
-- Kultur (Veränderungsbereitschaft, Wissensaustausch): {maturity.get('culture_score', 'N/A')}/6
-- Organisationsstruktur (Agilität, Zusammenarbeit): {maturity.get('organizational_structure_score', 'N/A')}/6"""
-            else:
-                maturity_section = f"""The company has been assessed using the acatech Industry 4.0 Maturity Index:
-
-**Overall Maturity: {maturity['overall_score']:.1f}/6 ({maturity.get('maturity_level', 'Unknown')})**
-
-Dimension Scores:
-- Resources (employees, technology, materials): {maturity.get('resources_score', 'N/A')}/6
-- Information Systems (IT integration, data processing): {maturity.get('information_systems_score', 'N/A')}/6
-- Culture (willingness to change, knowledge sharing): {maturity.get('culture_score', 'N/A')}/6
-- Organizational Structure (agility, collaboration): {maturity.get('organizational_structure_score', 'N/A')}/6"""
-
-            # Build dynamic maturity level guidance (show company's level ± 1)
-            guidance = MATURITY_GUIDANCE.get(self.language, MATURITY_GUIDANCE["en"])
-            levels_to_show = [l for l in range(company_level - 1, company_level + 2) if 1 <= l <= 6]
-
-            if self.language == "de":
-                maturity_level_guidance = f"Dieses Unternehmen ist auf **Stufe {company_level}**. Hier ist die relevante Orientierung:\n\n"
-                for level in levels_to_show:
-                    name, desc = guidance[level]
-                    marker = " ← AKTUELL" if level == company_level else ""
-                    maturity_level_guidance += f"- **Stufe {level} ({name}){marker}**: {desc}\n\n"
-            else:
-                maturity_level_guidance = f"This company is at **Level {company_level}**. Here is the relevant guidance:\n\n"
-                for level in levels_to_show:
-                    name, desc = guidance[level]
-                    marker = " ← CURRENT" if level == company_level else ""
-                    maturity_level_guidance += f"- **Level {level} ({name}){marker}**: {desc}\n\n"
-        else:
-            if self.language == "de":
-                maturity_section = "Keine Reifegradbewertung vorhanden. Erkunden Sie im Gespräch den aktuellen Stand der Digitalisierung."
-                maturity_level_guidance = "Ohne Reifegradbewertung: Beginnen Sie mit grundlegenden Fragen zur aktuellen IT-Infrastruktur und Digitalisierung, um das Niveau einzuschätzen."
-            else:
-                maturity_section = "No maturity assessment available. Explore the current state of digitalization during the conversation."
-                maturity_level_guidance = "Without maturity assessment: Start with basic questions about current IT infrastructure and digitalization to gauge their level."
-
-        # Format top ideas
-        top_ideas_text = ""
-        for i, idea in enumerate(context.get("ideas", [])[:5]):
-            points_str = f" ({idea['points']} votes)" if idea['points'] > 0 else ""
-            top_ideas_text += f"{i+1}. {idea['content']}{points_str}\n"
-
-        # Get focus idea
-        top_idea = context.get("top_idea")
-        focus_idea = top_idea["content"] if top_idea else "general AI/digitalization improvements"
-
+        """Build the system prompt with behavioral rules only."""
         # Build multi-participant section based on mode and language
         collaborative_mode = context.get("collaborative_mode", False)
         if self.language == "de":
@@ -705,12 +646,9 @@ Wenn mehrere Personen beitragen:
 - Sprechen Sie Teilnehmer mit Namen an, wenn Sie auf ihre spezifischen Beiträge antworten
 - Fassen Sie Informationen aus verschiedenen Perspektiven zusammen
 - Wenn Teilnehmer widersprüchliche Informationen geben, erkennen Sie beide Ansichten an und bitten Sie um Klärung
-- Betrachten Sie die Gruppe als kollaboratives Team – ihre kombinierten Beiträge geben Ihnen ein reichhaltigeres Bild
 """
             else:
-                multi_participant_section = """## EINZELBENUTZER-MODUS
-Sie führen ein Einzelgespräch mit dem Kunden. Antworten Sie direkt und natürlich, ohne Namenspräfixe wie "[Kunde]:" in Ihren Antworten zu verwenden. Sprechen Sie den Kunden einfach direkt an.
-"""
+                multi_participant_section = ""
         else:
             if collaborative_mode:
                 multi_participant_section = """## MULTI-PARTICIPANT MODE
@@ -720,29 +658,82 @@ When multiple people contribute:
 - Address participants by name when responding to their specific input
 - Synthesize information from different perspectives
 - If participants give conflicting information, acknowledge both views and ask for clarification
-- Treat the group as a collaborative team - their combined input gives you a richer picture
 """
             else:
-                multi_participant_section = """## SINGLE USER MODE
-You are having a one-on-one conversation with the client. Respond directly and naturally without using any name prefixes like "[Client]:" in your responses. Simply address them conversationally.
-"""
+                multi_participant_section = ""
 
-        # Get prompt template
+        # Get prompt template (behavioral rules only)
         template = get_prompt(
             "consultation_system",
             self.language,
             self.custom_prompts
         )
 
-        # Format with context variables
+        return template.format(multi_participant_section=multi_participant_section)
+
+    def _build_context_message(self, context: Dict) -> str:
+        """Build the context message with session-specific data."""
+        # Format company info
+        company_info_text = ""
+        for info in context.get("company_info", [])[:3]:
+            company_info_text += f"\n[{info['type'].upper()}]\n{info['content']}\n"
+
+        if not company_info_text:
+            company_info_text = "No company information provided yet."
+
+        # Format maturity assessment section
+        maturity = context.get("maturity")
+        if maturity and maturity.get("overall_score"):
+            if self.language == "de":
+                maturity_section = f"""**Gesamtreifegrad: {maturity['overall_score']:.1f}/6 ({maturity.get('maturity_level', 'Unbekannt')})**
+- Ressourcen: {maturity.get('resources_score', 'N/A')}/6
+- Informationssysteme: {maturity.get('information_systems_score', 'N/A')}/6
+- Kultur: {maturity.get('culture_score', 'N/A')}/6
+- Organisationsstruktur: {maturity.get('organizational_structure_score', 'N/A')}/6"""
+            else:
+                maturity_section = f"""**Overall: {maturity['overall_score']:.1f}/6 ({maturity.get('maturity_level', 'Unknown')})**
+- Resources: {maturity.get('resources_score', 'N/A')}/6
+- Information Systems: {maturity.get('information_systems_score', 'N/A')}/6
+- Culture: {maturity.get('culture_score', 'N/A')}/6
+- Organizational Structure: {maturity.get('organizational_structure_score', 'N/A')}/6"""
+        else:
+            if self.language == "de":
+                maturity_section = "Keine Bewertung vorhanden."
+            else:
+                maturity_section = "No assessment available."
+
+        # Format top ideas
+        top_ideas_text = ""
+        for i, idea in enumerate(context.get("ideas", [])[:5]):
+            points_str = f" ({idea['points']} votes)" if idea['points'] > 0 else ""
+            top_ideas_text += f"{i+1}. {idea['content']}{points_str}\n"
+
+        if not top_ideas_text:
+            if self.language == "de":
+                top_ideas_text = "Keine Ideen aus Brainstorming."
+            else:
+                top_ideas_text = "No ideas from brainstorming."
+
+        # Get focus idea
+        top_idea = context.get("top_idea")
+        if self.language == "de":
+            focus_idea = top_idea["content"] if top_idea else "Allgemeine KI-/Digitalisierungsverbesserungen"
+        else:
+            focus_idea = top_idea["content"] if top_idea else "General AI/digitalization improvements"
+
+        # Get context template
+        template = get_prompt(
+            "consultation_context",
+            self.language,
+            self.custom_prompts
+        )
+
         return template.format(
             company_name=context.get('company_name', 'Unknown'),
             company_info_text=company_info_text,
-            top_ideas_text=top_ideas_text,
-            focus_idea=focus_idea,
-            multi_participant_section=multi_participant_section,
             maturity_section=maturity_section,
-            maturity_level_guidance=maturity_level_guidance
+            focus_idea=focus_idea,
+            top_ideas_text=top_ideas_text
         )
 
     def _build_initial_greeting(self, context: Dict) -> str:
