@@ -51,7 +51,7 @@ export const maturityAPI = {
   save: (sessionUuid, data) =>
     api.post(`/api/sessions/${sessionUuid}/maturity`, data),
   getLevels: () =>
-    api.get('/api/sessions/any/maturity/levels'),
+    api.get('/api/sessions/maturity/levels'),
 };
 
 // 6-3-5 method endpoints

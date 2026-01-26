@@ -97,24 +97,31 @@ const Step4Page = () => {
   }, [collaborativeMode, consultationStarted, sessionUuid, lastMessageId]);
 
   // Analyze messages to detect which topics have been covered
+  // Only analyzes USER messages to avoid false positives from AI responses
   useEffect(() => {
-    if (messages.length < 2) return;
+    // Need at least 4 messages (2 exchanges) before checking
+    if (messages.length < 4) return;
 
-    const allText = messages.map(m => m.content.toLowerCase()).join(' ');
+    // Only analyze user messages - AI responses naturally contain topic keywords
+    const userMessages = messages.filter(m => m.role === 'user');
+    if (userMessages.length < 2) return;
 
-    // Keywords for each topic
+    const userText = userMessages.map(m => m.content.toLowerCase()).join(' ');
+
+    // Keywords for each topic - more specific terms to reduce false positives
     const topicKeywords = {
-      businessObjectives: ['goal', 'objective', 'problem', 'opportunity', 'success', 'kpi', 'metric', 'achieve', 'ziel', 'erfolg', 'problem', 'chance'],
-      situationAssessment: ['budget', 'team', 'resource', 'timeline', 'constraint', 'data', 'employee', 'staff', 'regulation', 'budget', 'mitarbeiter', 'daten', 'zeitrahmen'],
-      aiGoals: ['accuracy', 'input', 'output', 'model', 'algorithm', 'prediction', 'automat', 'solution', 'genauigkeit', 'modell', 'lösung', 'vorhersage'],
-      projectPlan: ['milestone', 'phase', 'implement', 'pilot', 'timeline', 'rollout', 'start', 'deploy', 'meilenstein', 'umsetzung', 'pilot']
+      businessObjectives: ['goal', 'objective', 'problem', 'opportunity', 'success', 'kpi', 'metric', 'achieve', 'target', 'ziel', 'erfolg', 'kennzahl', 'chance'],
+      situationAssessment: ['budget', 'team', 'resource', 'constraint', 'employee', 'staff', 'regulation', 'infrastructure', 'mitarbeiter', 'ressource', 'einschränkung'],
+      aiGoals: ['accuracy', 'input', 'output', 'model', 'algorithm', 'prediction', 'automat', 'genauigkeit', 'modell', 'vorhersage', 'training'],
+      projectPlan: ['milestone', 'phase', 'implement', 'pilot', 'rollout', 'deploy', 'timeline', 'meilenstein', 'umsetzung', 'zeitplan']
     };
 
     const newCovered = { ...topicsCovered };
     Object.entries(topicKeywords).forEach(([topic, keywords]) => {
       if (!skippedTopics[topic]) {
-        const matches = keywords.filter(kw => allText.includes(kw)).length;
-        if (matches >= 2) {
+        const matches = keywords.filter(kw => userText.includes(kw)).length;
+        // Require at least 3 keyword matches from user messages
+        if (matches >= 3) {
           newCovered[topic] = true;
         }
       }
@@ -909,14 +916,13 @@ const Step4Page = () => {
                               : 'bg-green-500'
                             : 'bg-gray-200'
                         }`}>
-                          {topicsCovered[topic.key] && (
-                            skippedTopics[topic.key] ? (
-                              <span className="text-white text-xs">–</span>
-                            ) : (
-                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )
+                          {topicsCovered[topic.key] && !skippedTopics[topic.key] && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {topicsCovered[topic.key] && skippedTopics[topic.key] && (
+                            <span className="text-white text-xs">–</span>
                           )}
                         </div>
                         <span className={`text-sm ${

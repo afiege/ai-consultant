@@ -11,7 +11,7 @@ from ..database import get_db
 from ..models import Session as SessionModel, ConsultationFinding, CompanyInfo, MaturityAssessment
 from ..services.pdf_generator import PDFReportGenerator
 from ..services.default_prompts import get_prompt
-from ..config import get_settings
+from ..config import settings
 
 router = APIRouter()
 
@@ -201,7 +201,6 @@ def generate_transition_briefing(
     # Get API key from header or request body
     api_key = x_api_key or request.api_key
     if not api_key:
-        settings = get_settings()
         api_key = getattr(settings, 'openai_api_key', None)
 
     # Build the context for the prompt
@@ -418,7 +417,6 @@ def generate_swot_analysis(
     # Get API key from header or request body
     api_key = x_api_key or request.api_key
     if not api_key:
-        settings = get_settings()
         api_key = getattr(settings, 'openai_api_key', None)
 
     # Build the context (reuse the transition context builder)

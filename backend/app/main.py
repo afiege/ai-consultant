@@ -82,7 +82,7 @@ app.include_router(expert_settings.router, prefix="/api/sessions", tags=["expert
 app.include_router(business_case.router, prefix="/api/sessions", tags=["business-case"])
 app.include_router(cost_estimation.router, prefix="/api/sessions", tags=["cost-estimation"])
 app.include_router(session_backup.router, prefix="/api/sessions", tags=["session-backup"])
-app.include_router(maturity_assessment.router, prefix="/api", tags=["maturity-assessment"])
+app.include_router(maturity_assessment.router, prefix="/api/sessions", tags=["maturity-assessment"])
 # app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 
 
