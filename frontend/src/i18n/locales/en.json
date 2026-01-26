@@ -298,6 +298,16 @@
       "projectPlanPlaceholder": "Implementation phases and timeline",
       "ideas": "Ideas",
       "moreIdeas": "...and {{count}} more"
+    },
+    "topics": {
+      "title": "Topics Progress",
+      "businessObjectives": "Business Objectives",
+      "situationAssessment": "Situation & Resources",
+      "aiGoals": "AI/Technical Goals",
+      "projectPlan": "Implementation Plan",
+      "progress": "Progress",
+      "skip": "Mark as not applicable",
+      "skipBtn": "Skip"
     }
   },
   "expertSettings": {
@@ -353,10 +363,14 @@
     }
   },
   "step5": {
-    "title": "Step 5: Business Case Calculation",
-    "subtitle": "Evaluate your AI project using the 5-level value framework",
+    "title": "Step 5: Business Case & Cost Estimation",
+    "subtitle": "Evaluate potentials and estimate costs for your AI project",
     "backStep4": "Back to Step 4",
     "continueExport": "Continue to Export",
+    "tabs": {
+      "potentials": "Potentials",
+      "costs": "Cost Estimation"
+    },
     "explanation": {
       "title": "Building a Business Case",
       "description": "A solid business case helps you get management buy-in and justify investment in AI. We'll use the 5-level value framework to quantify the potential benefits of your project.",
@@ -367,17 +381,34 @@
       "bullet5": "Strategic Scaling: Can AI help you grow without proportionally increasing costs?",
       "tip": "Don't worry about exact numbers. Rough estimates ('ballpark figures') are perfectly fine at this stage."
     },
+    "costsExplanation": {
+      "title": "Understanding Project Costs",
+      "description": "Getting a realistic cost estimate helps you plan your budget and set expectations with stakeholders. We'll break down costs into initial investment, recurring costs, and total cost of ownership.",
+      "bullet1": "Initial Investment: Development, integration, and training costs (one-time)",
+      "bullet2": "Recurring Costs: Cloud infrastructure, licenses, API usage (monthly/yearly)",
+      "bullet3": "Maintenance: Updates, monitoring, support (15-20% of initial annually)",
+      "bullet4": "Total Cost of Ownership: Full 3-year cost projection for budgeting",
+      "tip": "Cost varies significantly based on complexity. A quick win might cost 5k-15k, while enterprise solutions can exceed 150k."
+    },
     "chat": {
       "contextTitle": "Context from Previous Steps",
       "companyProfile": "Company Profile",
       "focusIdea": "Focus Idea",
       "crispDmSummary": "CRISP-DM Business Understanding",
       "startMessage": "The AI consultant will help you develop a business case using the 5-level value framework.",
-      "startButton": "Start Business Case Analysis",
+      "startButton": "Start Potentials Analysis",
       "starting": "Starting...",
       "thinking": "Analyzing...",
       "messagePlaceholder": "Type your answer...",
       "extractFindings": "Extract Business Case",
+      "extracting": "Extracting..."
+    },
+    "costs": {
+      "startMessage": "The AI consultant will help you estimate realistic costs for your AI project.",
+      "startButton": "Start Cost Estimation",
+      "starting": "Starting...",
+      "thinking": "Calculating...",
+      "extractFindings": "Extract Cost Estimate",
       "extracting": "Extracting..."
     },
     "findings": {
@@ -392,6 +423,20 @@
       "managementPitch": "Management Pitch",
       "managementPitchPlaceholder": "One-sentence executive statement"
     },
+    "costsFindings": {
+      "title": "Cost Estimation",
+      "subtitle": "Project Investment Analysis",
+      "complexity": "Complexity Assessment",
+      "complexityPlaceholder": "Project complexity level (Quick Win to Enterprise)",
+      "initialInvestment": "Initial Investment",
+      "initialPlaceholder": "One-time development and setup costs",
+      "recurring": "Recurring Costs",
+      "recurringPlaceholder": "Monthly/annual infrastructure and licenses",
+      "tco": "3-Year TCO",
+      "tcoPlaceholder": "Total Cost of Ownership over 3 years",
+      "roi": "Investment vs. Return",
+      "roiPlaceholder": "Payback period and ROI analysis"
+    },
     "framework": {
       "title": "5 Levels of Value",
       "level1": "Budget Substitution",
@@ -399,6 +444,15 @@
       "level3": "Project Acceleration",
       "level4": "Risk Mitigation",
       "level5": "Strategic Scaling"
+    },
+    "costFramework": {
+      "title": "Cost Reference",
+      "quickWin": "Quick Win",
+      "standard": "Standard",
+      "complex": "Complex",
+      "enterprise": "Enterprise",
+      "weeks": "weeks",
+      "months": "months"
     }
   },
   "export": {
@@ -407,19 +461,32 @@
     "reportTitle": "Consultation Report",
     "reportIncludes": "Your report will include:",
     "executiveSummary": "Executive Summary (CRISP-DM Business Understanding)",
-    "businessCaseSection": "Business Case Indication",
+    "businessCaseSection": "Business Case Indication (Potentials)",
+    "costEstimationSection": "Cost Estimation Analysis",
     "implementationRoadmap": "Implementation Roadmap",
     "appendixCompany": "Appendix A: Company Overview",
     "appendixIdeas": "Appendix B: Brainstorming Ideas",
     "appendixPrioritization": "Appendix C: Prioritization Results",
     "appendixTranscript": "Appendix D: Consultation Transcript",
     "appendixBusinessCase": "Appendix E: Business Case Transcript",
+    "appendixCostEstimation": "Appendix F: Cost Estimation Transcript",
     "generateButton": "Generate & Download PDF",
     "generating": "Generating PDF...",
     "success": "PDF generated successfully! Check your downloads.",
     "backToBusinessCase": "Back to Business Case",
     "backToConsultation": "Back to Consultation",
     "startNew": "Start New Session"
+  },
+  "stepProgress": {
+    "steps": {
+      "company": "Company",
+      "brainstorming": "Brainstorming",
+      "prioritization": "Prioritize",
+      "consultation": "Consultation",
+      "businessCase": "Business Case",
+      "export": "Export"
+    },
+    "skipped": "skipped"
   },
   "errors": {
     "failedToLoad": "Failed to load",

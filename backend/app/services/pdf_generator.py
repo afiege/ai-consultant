@@ -232,9 +232,13 @@ class PDFReportGenerator:
         story.append(PageBreak())
         story.extend(self._build_executive_summary(db_session))
 
-        # Business Case Section (Step 5)
+        # Business Case Section (Step 5a - Potentials)
         story.append(PageBreak())
         story.extend(self._build_business_case_section(db_session))
+
+        # Cost Estimation Section (Step 5b)
+        story.append(PageBreak())
+        story.extend(self._build_cost_estimation_section(db_session))
 
         # Implementation Roadmap
         story.append(PageBreak())
@@ -262,6 +266,10 @@ class PDFReportGenerator:
         # Appendix E: Business Case Conversation (input)
         story.append(PageBreak())
         story.extend(self._build_business_case_transcript(db_session))
+
+        # Appendix F: Cost Estimation Conversation (input)
+        story.append(PageBreak())
+        story.extend(self._build_cost_estimation_transcript(db_session))
 
         # Build PDF
         doc.build(story)
@@ -418,78 +426,311 @@ class PDFReportGenerator:
         return elements
 
     def _build_executive_summary(self, db_session: SessionModel) -> list:
-        """Build the executive summary with CRISP-DM Business Understanding findings."""
+        """Build the executive summary with key findings, business case, ROI, and recommendation."""
         elements = []
 
-        elements.append(Paragraph("Executive Summary: Business Understanding", self.styles['SectionHeader']))
-        elements.append(Paragraph(
-            "This section presents the key findings from the CRISP-DM Business Understanding phase of the AI consultation.",
-            self.styles['ReportBody']
-        ))
-        elements.append(Spacer(1, 0.3*inch))
+        elements.append(Paragraph("Executive Summary", self.styles['SectionHeader']))
+        elements.append(Spacer(1, 0.2*inch))
 
-        # Get findings
+        # Get all findings
         findings = self.db.query(ConsultationFinding).filter(
             ConsultationFinding.session_id == db_session.id
         ).all()
 
         findings_dict = {f.factor_type: f.finding_text for f in findings}
 
-        # 1. Business Objectives
-        elements.append(Paragraph("1. Business Objectives", self.styles['SubHeader']))
+        # Get top idea for context
+        from ..models import IdeaSheet, Idea, Prioritization
+        sheets = self.db.query(IdeaSheet).filter(
+            IdeaSheet.session_id == db_session.id
+        ).all()
+
+        top_idea = None
+        if sheets:
+            all_ideas = []
+            for sheet in sheets:
+                ideas = self.db.query(Idea).filter(Idea.sheet_id == sheet.id).all()
+                for idea in ideas:
+                    votes = self.db.query(Prioritization).filter(
+                        Prioritization.idea_id == idea.id
+                    ).all()
+                    total_points = sum(v.score or 0 for v in votes)
+                    all_ideas.append({'content': idea.content, 'points': total_points})
+            if all_ideas:
+                all_ideas.sort(key=lambda x: x['points'], reverse=True)
+                top_idea = all_ideas[0]['content'] if all_ideas[0]['points'] > 0 else all_ideas[0]['content']
+
+        # ============================================================
+        # RECOMMENDATION BOX (prominent at the top)
+        # ============================================================
+        elements.append(Paragraph("Recommendation", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        # Build recommendation based on available data
+        recommendation = self._generate_recommendation(findings_dict, top_idea, db_session.company_name)
+
+        rec_style = ParagraphStyle(
+            'RecommendationText',
+            parent=self.styles['ReportBody'],
+            fontSize=11,
+            leading=16,
+            textColor=colors.HexColor('#1a365d')
+        )
+
+        rec_table = Table(
+            [[Paragraph(recommendation, rec_style)]],
+            colWidths=[15*cm]
+        )
+        rec_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#ebf8ff')),
+            ('BOX', (0, 0), (-1, -1), 2, colors.HexColor('#3182ce')),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(rec_table)
+        elements.append(Spacer(1, 0.3*inch))
+
+        # ============================================================
+        # BUSINESS CASE OVERVIEW (Key metrics at a glance)
+        # ============================================================
+        elements.append(Paragraph("Business Case Overview", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        # Create a summary table with key metrics
+        overview_data = []
+
+        # Focus Project
+        if top_idea:
+            truncated_idea = top_idea[:100] + "..." if len(top_idea) > 100 else top_idea
+            overview_data.append([
+                Paragraph("<b>Focus Project:</b>", self.styles['ReportBody']),
+                Paragraph(truncated_idea, self.styles['ReportBody'])
+            ])
+
+        # Value Classification
+        if findings_dict.get('business_case_classification'):
+            # Extract just the level names
+            classification = findings_dict['business_case_classification']
+            overview_data.append([
+                Paragraph("<b>Value Level:</b>", self.styles['ReportBody']),
+                Paragraph(classification[:150] + "..." if len(classification) > 150 else classification, self.styles['ReportBody'])
+            ])
+
+        # Estimated Benefits
+        if findings_dict.get('business_case_calculation'):
+            calc = findings_dict['business_case_calculation']
+            overview_data.append([
+                Paragraph("<b>Estimated Benefits:</b>", self.styles['ReportBody']),
+                Paragraph(calc[:150] + "..." if len(calc) > 150 else calc, self.styles['ReportBody'])
+            ])
+
+        # Project Complexity
+        if findings_dict.get('cost_complexity'):
+            complexity = findings_dict['cost_complexity']
+            overview_data.append([
+                Paragraph("<b>Project Complexity:</b>", self.styles['ReportBody']),
+                Paragraph(complexity[:150] + "..." if len(complexity) > 150 else complexity, self.styles['ReportBody'])
+            ])
+
+        # Investment Required
+        if findings_dict.get('cost_initial'):
+            initial = findings_dict['cost_initial']
+            overview_data.append([
+                Paragraph("<b>Initial Investment:</b>", self.styles['ReportBody']),
+                Paragraph(initial[:150] + "..." if len(initial) > 150 else initial, self.styles['ReportBody'])
+            ])
+
+        if overview_data:
+            overview_table = Table(overview_data, colWidths=[4*cm, 11*cm])
+            overview_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f7fafc')),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+            ]))
+            elements.append(overview_table)
+        else:
+            elements.append(Paragraph(
+                "Complete Steps 4 and 5 to generate a business case overview.",
+                self.styles['ReportBody']
+            ))
+
+        elements.append(Spacer(1, 0.3*inch))
+
+        # ============================================================
+        # ROI CALCULATION SUMMARY
+        # ============================================================
+        elements.append(Paragraph("ROI & Investment Analysis", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        has_roi_data = (
+            findings_dict.get('cost_tco') or
+            findings_dict.get('cost_roi') or
+            findings_dict.get('business_case_calculation')
+        )
+
+        if has_roi_data:
+            roi_elements = []
+
+            # TCO Summary
+            if findings_dict.get('cost_tco'):
+                roi_elements.append([
+                    Paragraph("<b>3-Year TCO:</b>", self.styles['ReportBody']),
+                    Paragraph(markdown_to_reportlab(findings_dict['cost_tco'][:300]), self.styles['ReportBody'])
+                ])
+
+            # ROI Analysis
+            if findings_dict.get('cost_roi'):
+                roi_elements.append([
+                    Paragraph("<b>ROI Analysis:</b>", self.styles['ReportBody']),
+                    Paragraph(markdown_to_reportlab(findings_dict['cost_roi'][:300]), self.styles['ReportBody'])
+                ])
+
+            # Benefits vs. Costs comparison
+            if findings_dict.get('business_case_calculation') and findings_dict.get('cost_tco'):
+                roi_elements.append([
+                    Paragraph("<b>Benefits:</b>", self.styles['ReportBody']),
+                    Paragraph(markdown_to_reportlab(findings_dict['business_case_calculation'][:200]), self.styles['ReportBody'])
+                ])
+
+            if roi_elements:
+                roi_table = Table(roi_elements, colWidths=[4*cm, 11*cm])
+                roi_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('TOPPADDING', (0, 0), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                    ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#c6f6d5')),
+                    ('BACKGROUND', (1, 0), (1, -1), colors.HexColor('#f0fff4')),
+                    ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#48bb78')),
+                    ('LINEBELOW', (0, 0), (-1, -2), 0.5, colors.HexColor('#9ae6b4')),
+                ]))
+                elements.append(roi_table)
+        else:
+            elements.append(Paragraph(
+                "Complete Step 5b (Cost Estimation) to generate ROI analysis.",
+                self.styles['ReportBody']
+            ))
+
+        elements.append(Spacer(1, 0.3*inch))
+
+        # ============================================================
+        # KEY FINDINGS (CRISP-DM condensed)
+        # ============================================================
+        elements.append(Paragraph("Key Findings", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        findings_items = []
+
         if findings_dict.get('business_objectives'):
-            content_elements = markdown_to_elements(
-                findings_dict['business_objectives'],
-                self.styles['ReportBody'],
-                self.styles['IdeaText']
-            )
-            elements.extend(content_elements)
-        else:
-            elements.append(Paragraph("No business objectives documented.", self.styles['ReportBody']))
+            obj = findings_dict['business_objectives']
+            findings_items.append(f"<b>Business Objectives:</b> {obj[:200]}{'...' if len(obj) > 200 else ''}")
 
-        elements.append(Spacer(1, 0.2*inch))
-
-        # 2. Situation Assessment
-        elements.append(Paragraph("2. Situation Assessment", self.styles['SubHeader']))
-        if findings_dict.get('situation_assessment'):
-            content_elements = markdown_to_elements(
-                findings_dict['situation_assessment'],
-                self.styles['ReportBody'],
-                self.styles['IdeaText']
-            )
-            elements.extend(content_elements)
-        else:
-            elements.append(Paragraph("No situation assessment documented.", self.styles['ReportBody']))
-
-        elements.append(Spacer(1, 0.2*inch))
-
-        # 3. AI/Data Mining Goals
-        elements.append(Paragraph("3. AI/Data Mining Goals", self.styles['SubHeader']))
         if findings_dict.get('ai_goals'):
-            content_elements = markdown_to_elements(
-                findings_dict['ai_goals'],
-                self.styles['ReportBody'],
-                self.styles['IdeaText']
-            )
-            elements.extend(content_elements)
+            goals = findings_dict['ai_goals']
+            findings_items.append(f"<b>AI/Technical Goals:</b> {goals[:200]}{'...' if len(goals) > 200 else ''}")
+
+        if findings_dict.get('project_plan'):
+            plan = findings_dict['project_plan']
+            findings_items.append(f"<b>Implementation Plan:</b> {plan[:200]}{'...' if len(plan) > 200 else ''}")
+
+        if findings_items:
+            for item in findings_items:
+                item_clean = item.replace('\n', ' ').replace('\r', ' ')
+                elements.append(Paragraph(f"&bull; {item_clean}", self.styles['IdeaText']))
+                elements.append(Spacer(1, 0.1*inch))
         else:
-            elements.append(Paragraph("No AI/data mining goals documented.", self.styles['ReportBody']))
+            elements.append(Paragraph(
+                "Complete Step 4 (Consultation) to document key findings.",
+                self.styles['ReportBody']
+            ))
 
         elements.append(Spacer(1, 0.2*inch))
 
-        # 4. Project Plan
-        elements.append(Paragraph("4. Project Plan", self.styles['SubHeader']))
-        if findings_dict.get('project_plan'):
-            content_elements = markdown_to_elements(
-                findings_dict['project_plan'],
-                self.styles['ReportBody'],
-                self.styles['IdeaText']
+        # Management Pitch (if available)
+        if findings_dict.get('business_case_pitch'):
+            elements.append(Paragraph("Management Pitch", self.styles['SubHeader']))
+            elements.append(Spacer(1, 0.1*inch))
+
+            pitch = findings_dict['business_case_pitch']
+            pitch_clean = pitch.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+            pitch_table = Table(
+                [[Paragraph(f"<i>\"{pitch_clean}\"</i>",
+                    ParagraphStyle('Pitch', parent=self.styles['ReportBody'],
+                                   fontSize=11, textColor=colors.HexColor('#2c5282')))]],
+                colWidths=[15*cm]
             )
-            elements.extend(content_elements)
-        else:
-            elements.append(Paragraph("No project plan documented.", self.styles['ReportBody']))
+            pitch_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#bee3f8')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#3182ce')),
+                ('TOPPADDING', (0, 0), (-1, -1), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+                ('LEFTPADDING', (0, 0), (-1, -1), 15),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+            ]))
+            elements.append(pitch_table)
 
         return elements
+
+    def _generate_recommendation(self, findings_dict: dict, top_idea: str, company_name: str) -> str:
+        """Generate a recommendation based on available findings."""
+        parts = []
+
+        # Determine recommendation type based on data completeness
+        has_business_case = findings_dict.get('business_case_classification') or findings_dict.get('business_case_calculation')
+        has_costs = findings_dict.get('cost_tco') or findings_dict.get('cost_initial')
+        has_roi = findings_dict.get('cost_roi')
+        has_objectives = findings_dict.get('business_objectives')
+
+        company = company_name or "the organization"
+
+        if has_business_case and has_costs and has_roi:
+            # Full data available - strong recommendation
+            parts.append(f"<b>Based on the comprehensive analysis conducted, we recommend {company} proceed with the proposed AI initiative.</b>")
+            parts.append("<br/><br/>")
+            parts.append("The business case demonstrates clear value potential, and the cost estimation provides a realistic investment framework. ")
+
+            if findings_dict.get('cost_complexity'):
+                complexity = findings_dict['cost_complexity'].lower()
+                if 'quick win' in complexity:
+                    parts.append("As a <b>Quick Win</b> project, this initiative offers low risk and rapid time-to-value. ")
+                elif 'standard' in complexity:
+                    parts.append("As a <b>Standard</b> complexity project, this initiative balances ambition with manageable risk. ")
+                elif 'complex' in complexity or 'enterprise' in complexity:
+                    parts.append("Given the project's complexity, we recommend a phased approach starting with a pilot. ")
+
+            parts.append("<br/><br/>")
+            parts.append("<b>Next Steps:</b> Validate assumptions with stakeholders, secure budget approval, and initiate the pilot phase.")
+
+        elif has_business_case and has_costs:
+            # Business case and costs but no ROI
+            parts.append(f"<b>The analysis indicates a viable AI opportunity for {company}.</b>")
+            parts.append("<br/><br/>")
+            parts.append("A clear business case has been established with cost estimates. We recommend conducting a detailed ROI analysis to strengthen the investment justification before proceeding.")
+
+        elif has_business_case:
+            # Only business case
+            parts.append(f"<b>The identified AI opportunity shows promise for {company}.</b>")
+            parts.append("<br/><br/>")
+            parts.append("The business case indicates potential value. We recommend completing the cost estimation (Step 5b) to understand the investment requirements before making a go/no-go decision.")
+
+        elif has_objectives and top_idea:
+            # Only objectives and idea
+            parts.append(f"<b>An AI opportunity has been identified for {company}.</b>")
+            parts.append("<br/><br/>")
+            parts.append(f"The focus project \"{top_idea[:80]}{'...' if len(top_idea) > 80 else ''}\" aligns with documented business objectives. ")
+            parts.append("We recommend completing the business case analysis (Step 5a) and cost estimation (Step 5b) to evaluate feasibility.")
+
+        else:
+            # Minimal data
+            parts.append(f"<b>This report documents the initial AI/digitalization exploration for {company}.</b>")
+            parts.append("<br/><br/>")
+            parts.append("To generate a complete recommendation, please ensure all consultation phases are completed, including business case analysis and cost estimation.")
+
+        return "".join(parts)
 
     def _build_business_case_section(self, db_session: SessionModel) -> list:
         """Build the business case indication section (Step 5) with graphical elements."""
@@ -1167,6 +1408,418 @@ class PDFReportGenerator:
                     content = markdown_to_reportlab(content)
                     elements.append(Paragraph(
                         f"<b>Analyst:</b> {content}",
+                        self.styles['ChatAssistant']
+                    ))
+
+        return elements
+
+    def _build_cost_estimation_section(self, db_session: SessionModel) -> list:
+        """Build the cost estimation section (Step 5b) with visual elements."""
+        elements = []
+
+        elements.append(Paragraph("Cost Estimation", self.styles['SectionHeader']))
+        elements.append(Paragraph(
+            "This section presents the cost analysis and investment projection for the proposed AI project.",
+            self.styles['ReportBody']
+        ))
+        elements.append(Spacer(1, 0.3*inch))
+
+        # Get cost estimation findings
+        findings = self.db.query(ConsultationFinding).filter(
+            ConsultationFinding.session_id == db_session.id,
+            ConsultationFinding.factor_type.in_([
+                'cost_complexity',
+                'cost_initial',
+                'cost_recurring',
+                'cost_maintenance',
+                'cost_tco',
+                'cost_drivers',
+                'cost_optimization',
+                'cost_roi'
+            ])
+        ).all()
+
+        findings_dict = {f.factor_type: f.finding_text for f in findings}
+
+        # Check if any cost estimation findings exist
+        if not findings_dict:
+            elements.append(Paragraph(
+                "No cost estimation was completed. Complete Step 5b to populate this section.",
+                self.styles['ReportBody']
+            ))
+            return elements
+
+        # 1. Complexity Assessment with Visual Framework
+        elements.append(Paragraph("Project Complexity Assessment", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        if findings_dict.get('cost_complexity'):
+            elements.extend(self._build_complexity_visual(findings_dict['cost_complexity']))
+        else:
+            elements.append(Paragraph("Not yet assessed.", self.styles['ReportBody']))
+
+        elements.append(Spacer(1, 0.3*inch))
+
+        # 2. Initial Investment
+        elements.append(Paragraph("Initial Investment", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        if findings_dict.get('cost_initial'):
+            elements.extend(self._build_cost_box(
+                "One-Time Investment",
+                findings_dict['cost_initial'],
+                colors.HexColor('#276749'),  # Green
+                colors.HexColor('#c6f6d5')
+            ))
+        else:
+            elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
+
+        elements.append(Spacer(1, 0.2*inch))
+
+        # 3. Recurring Costs
+        elements.append(Paragraph("Recurring Costs", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        if findings_dict.get('cost_recurring'):
+            elements.extend(self._build_cost_box(
+                "Monthly/Annual Recurring Costs",
+                findings_dict['cost_recurring'],
+                colors.HexColor('#2b6cb0'),  # Blue
+                colors.HexColor('#bee3f8')
+            ))
+        else:
+            elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
+
+        elements.append(Spacer(1, 0.2*inch))
+
+        # 4. Total Cost of Ownership (TCO)
+        elements.append(Paragraph("3-Year Total Cost of Ownership (TCO)", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        if findings_dict.get('cost_tco'):
+            elements.extend(self._build_tco_summary(findings_dict['cost_tco']))
+        else:
+            elements.append(Paragraph("Not yet calculated.", self.styles['ReportBody']))
+
+        elements.append(Spacer(1, 0.3*inch))
+
+        # 5. Cost Drivers
+        if findings_dict.get('cost_drivers'):
+            elements.append(Paragraph("Key Cost Drivers", self.styles['SubHeader']))
+            elements.append(Spacer(1, 0.1*inch))
+            content_elements = markdown_to_elements(
+                findings_dict['cost_drivers'],
+                self.styles['ReportBody'],
+                self.styles['IdeaText']
+            )
+            elements.extend(content_elements)
+            elements.append(Spacer(1, 0.2*inch))
+
+        # 6. Cost Optimization
+        if findings_dict.get('cost_optimization'):
+            elements.append(Paragraph("Cost Optimization Options", self.styles['SubHeader']))
+            elements.append(Spacer(1, 0.1*inch))
+            content_elements = markdown_to_elements(
+                findings_dict['cost_optimization'],
+                self.styles['ReportBody'],
+                self.styles['IdeaText']
+            )
+            elements.extend(content_elements)
+            elements.append(Spacer(1, 0.2*inch))
+
+        # 7. Investment vs. Return (ROI)
+        if findings_dict.get('cost_roi'):
+            elements.append(Paragraph("Investment vs. Return Analysis", self.styles['SubHeader']))
+            elements.append(Spacer(1, 0.1*inch))
+            elements.extend(self._build_roi_callout(findings_dict['cost_roi']))
+
+        return elements
+
+    def _build_complexity_visual(self, complexity_text: str) -> list:
+        """Build a visual representation of the project complexity level."""
+        elements = []
+
+        # Define complexity levels
+        levels = [
+            ("Quick Win", "2-4 weeks", "€5k - €15k", colors.HexColor('#48bb78')),
+            ("Standard", "1-3 months", "€15k - €50k", colors.HexColor('#4299e1')),
+            ("Complex", "3-6 months", "€50k - €150k", colors.HexColor('#ed8936')),
+            ("Enterprise", "6-12 months", "€150k+", colors.HexColor('#e53e3e')),
+        ]
+
+        # Detect which level is mentioned
+        text_lower = complexity_text.lower()
+        detected_level = None
+        for i, (level_name, _, _, _) in enumerate(levels):
+            if level_name.lower() in text_lower:
+                detected_level = i
+                break
+
+        # Build table rows
+        table_data = []
+        for i, (level_name, duration, cost_range, base_color) in enumerate(levels):
+            is_selected = (detected_level == i)
+
+            if is_selected:
+                indicator = Paragraph(
+                    "<b>&rarr;</b>",
+                    ParagraphStyle('Arrow', fontSize=14, textColor=colors.HexColor('#276749'), alignment=TA_CENTER)
+                )
+                bg_color = colors.HexColor('#c6f6d5')
+                text_color = colors.HexColor('#22543d')
+            else:
+                indicator = Paragraph("", ParagraphStyle('Empty', fontSize=10))
+                bg_color = colors.HexColor('#f7fafc')
+                text_color = colors.HexColor('#718096')
+
+            name_cell = Paragraph(
+                f"<b>{level_name}</b>",
+                ParagraphStyle('Name', fontSize=10, textColor=text_color)
+            )
+            duration_cell = Paragraph(
+                duration,
+                ParagraphStyle('Duration', fontSize=9, textColor=text_color, alignment=TA_CENTER)
+            )
+            cost_cell = Paragraph(
+                cost_range,
+                ParagraphStyle('Cost', fontSize=9, textColor=text_color, alignment=TA_CENTER)
+            )
+
+            table_data.append([indicator, name_cell, duration_cell, cost_cell])
+
+        # Create table
+        complexity_table = Table(
+            table_data,
+            colWidths=[0.8*cm, 3*cm, 3*cm, 4*cm]
+        )
+
+        # Apply styling
+        style_commands = [
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+        ]
+
+        for i, (_, _, _, base_color) in enumerate(levels):
+            is_selected = (detected_level == i)
+            if is_selected:
+                style_commands.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor('#c6f6d5')))
+            else:
+                style_commands.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor('#f7fafc')))
+
+        complexity_table.setStyle(TableStyle(style_commands))
+        elements.append(complexity_table)
+        elements.append(Spacer(1, 0.2*inch))
+
+        # Add complexity analysis text
+        if complexity_text:
+            analysis_table = Table(
+                [[Paragraph(
+                    f"<b>Analysis:</b><br/>{markdown_to_reportlab(complexity_text)}",
+                    ParagraphStyle('AnalysisBox', parent=self.styles['ReportBody'], fontSize=9, leading=12)
+                )]],
+                colWidths=[15*cm]
+            )
+            analysis_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f0f4f8')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#cbd5e0')),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+            ]))
+            elements.append(analysis_table)
+
+        return elements
+
+    def _build_cost_box(self, title: str, content: str, header_color, bg_color) -> list:
+        """Build a styled cost box with header and content."""
+        elements = []
+
+        header_style = ParagraphStyle(
+            'CostHeader',
+            parent=self.styles['ReportBody'],
+            fontSize=10,
+            textColor=colors.white,
+            alignment=TA_LEFT
+        )
+        content_style = ParagraphStyle(
+            'CostContent',
+            parent=self.styles['ReportBody'],
+            fontSize=9,
+            leading=13,
+            textColor=colors.HexColor('#2d3748')
+        )
+
+        # Header row
+        header_table = Table(
+            [[Paragraph(f"<b>{title}</b>", header_style)]],
+            colWidths=[15*cm]
+        )
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), header_color),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(header_table)
+
+        # Content box
+        content_para = Paragraph(markdown_to_reportlab(content), content_style)
+        content_table = Table(
+            [[content_para]],
+            colWidths=[15*cm]
+        )
+        content_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), bg_color),
+            ('BOX', (0, 0), (-1, -1), 1, header_color),
+            ('TOPPADDING', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(content_table)
+
+        return elements
+
+    def _build_tco_summary(self, tco_text: str) -> list:
+        """Build a prominent TCO summary box."""
+        elements = []
+
+        # TCO Header with icon
+        header_table = Table(
+            [[Paragraph(
+                "<b>&#128176; Total Cost of Ownership (3 Years)</b>",
+                ParagraphStyle('TCOHeader', fontSize=12, textColor=colors.HexColor('#744210'))
+            )]],
+            colWidths=[15*cm]
+        )
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fefcbf')),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(header_table)
+
+        # TCO content
+        tco_style = ParagraphStyle(
+            'TCOContent',
+            parent=self.styles['ReportBody'],
+            fontSize=10,
+            leading=14,
+            textColor=colors.HexColor('#744210')
+        )
+        tco_content = Paragraph(markdown_to_reportlab(tco_text), tco_style)
+        tco_table = Table(
+            [[tco_content]],
+            colWidths=[15*cm]
+        )
+        tco_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fffff0')),
+            ('BOX', (0, 0), (-1, -1), 2, colors.HexColor('#d69e2e')),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(tco_table)
+
+        return elements
+
+    def _build_roi_callout(self, roi_text: str) -> list:
+        """Build a ROI analysis callout box."""
+        elements = []
+
+        # ROI Header
+        header_table = Table(
+            [[Paragraph(
+                "<b>&#128200; Investment vs. Return</b>",
+                ParagraphStyle('ROIHeader', fontSize=11, textColor=colors.HexColor('#276749'))
+            )]],
+            colWidths=[15*cm]
+        )
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#c6f6d5')),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(header_table)
+
+        # ROI content
+        roi_style = ParagraphStyle(
+            'ROIContent',
+            parent=self.styles['ReportBody'],
+            fontSize=10,
+            leading=14,
+            textColor=colors.HexColor('#22543d')
+        )
+        roi_content = Paragraph(markdown_to_reportlab(roi_text), roi_style)
+        roi_table = Table(
+            [[roi_content]],
+            colWidths=[15*cm]
+        )
+        roi_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f0fff4')),
+            ('BOX', (0, 0), (-1, -1), 2, colors.HexColor('#48bb78')),
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        elements.append(roi_table)
+
+        return elements
+
+    def _build_cost_estimation_transcript(self, db_session: SessionModel) -> list:
+        """Build the cost estimation conversation transcript for the appendix."""
+        elements = []
+
+        elements.append(Paragraph("Appendix F: Cost Estimation Transcript", self.styles['SectionHeader']))
+
+        # Filter for cost_estimation messages only
+        messages = self.db.query(ConsultationMessage).filter(
+            ConsultationMessage.session_id == db_session.id,
+            ConsultationMessage.role != 'system',
+            ConsultationMessage.message_type == 'cost_estimation'
+        ).order_by(ConsultationMessage.created_at).all()
+
+        # Filter out the initial trigger message
+        messages = [m for m in messages if m.content != "Please start the cost estimation analysis."]
+
+        if not messages:
+            elements.append(Paragraph("No cost estimation conversation recorded.", self.styles['ReportBody']))
+        else:
+            elements.append(Paragraph(
+                f"The following is the transcript of the cost estimation session ({len(messages)} messages).",
+                self.styles['ReportBody']
+            ))
+            elements.append(Spacer(1, 0.2*inch))
+
+            for msg in messages:
+                content = msg.content
+
+                if msg.role == 'user':
+                    # User messages - simple formatting
+                    content = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                    content = content.replace('\n', '<br/>')
+                    elements.append(Paragraph(
+                        f"<b>User:</b> {content}",
+                        self.styles['ChatUser']
+                    ))
+                else:
+                    # AI responses - apply markdown formatting
+                    # Truncate very long AI responses
+                    if len(content) > 1500:
+                        content = content[:1500] + "..."
+
+                    content = markdown_to_reportlab(content)
+                    elements.append(Paragraph(
+                        f"<b>Cost Analyst:</b> {content}",
                         self.styles['ChatAssistant']
                     ))
 

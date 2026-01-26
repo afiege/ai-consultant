@@ -1,22 +1,19 @@
-"""Consultation router for Step 4 - AI-guided interview using LiteLLM."""
+"""Cost Estimation router for Step 5b - AI-guided cost estimation using LiteLLM."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 import json
 
 from ..database import get_db
-from ..models import Session as SessionModel, Participant, ConsultationMessage
+from ..models import Session as SessionModel, ConsultationMessage, ConsultationFinding
 from ..schemas.consultation import (
     LLMRequest,
     ConsultationMessageCreate,
-    ConsultationMessageResponse,
-    ConsultationStartRequest,
-    ConsultationMessageWithKey,
-    CollaborativeConsultationStatus
+    ConsultationMessageWithKey
 )
-from ..services.consultation_service import ConsultationService
+from ..services.cost_estimation_service import CostEstimationService
 from ..config import settings
 
 router = APIRouter()
@@ -57,14 +54,14 @@ def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, s
     return custom_prompts, language
 
 
-@router.post("/{session_uuid}/consultation/start")
-def start_consultation(
+@router.post("/{session_uuid}/cost-estimation/start")
+def start_cost_estimation(
     session_uuid: str,
-    request: ConsultationStartRequest,
+    request: LLMRequest,
     db: Session = Depends(get_db)
 ):
     """
-    Start the AI consultation session.
+    Start the AI cost estimation session.
     Creates initial context and first AI message.
     """
     db_session = db.query(SessionModel).filter(
@@ -80,7 +77,7 @@ def start_consultation(
     try:
         custom_prompts, language = _get_expert_settings(db_session)
         model, api_base = get_llm_settings(db_session)
-        service = ConsultationService(
+        service = CostEstimationService(
             db,
             model=model,
             custom_prompts=custom_prompts,
@@ -88,23 +85,23 @@ def start_consultation(
             api_key=request.api_key,
             api_base=api_base
         )
-        result = service.start_consultation(session_uuid)
+        result = service.start_cost_estimation(session_uuid)
         return result
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start consultation: {str(e)}"
+            detail=f"Failed to start cost estimation: {str(e)}"
         )
 
 
-@router.post("/{session_uuid}/consultation/start/stream")
-def start_consultation_stream(
+@router.post("/{session_uuid}/cost-estimation/start/stream")
+def start_cost_estimation_stream(
     session_uuid: str,
-    request: ConsultationStartRequest,
+    request: LLMRequest,
     db: Session = Depends(get_db)
 ):
     """
-    Start the AI consultation session with streaming response.
+    Start the AI cost estimation session with streaming response.
     Returns Server-Sent Events (SSE) stream.
     """
     db_session = db.query(SessionModel).filter(
@@ -119,7 +116,7 @@ def start_consultation_stream(
 
     custom_prompts, language = _get_expert_settings(db_session)
     model, api_base = get_llm_settings(db_session)
-    service = ConsultationService(
+    service = CostEstimationService(
         db,
         model=model,
         custom_prompts=custom_prompts,
@@ -129,7 +126,7 @@ def start_consultation_stream(
     )
 
     return StreamingResponse(
-        service.start_consultation_stream(session_uuid),
+        service.start_cost_estimation_stream(session_uuid),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -139,7 +136,7 @@ def start_consultation_stream(
     )
 
 
-@router.post("/{session_uuid}/consultation/message/save")
+@router.post("/{session_uuid}/cost-estimation/message/save")
 def save_message(
     session_uuid: str,
     message: ConsultationMessageCreate,
@@ -147,7 +144,6 @@ def save_message(
 ):
     """
     Save a user message without generating AI response.
-    Used when user is answering questions (no auto-reply needed).
     """
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
@@ -160,7 +156,7 @@ def save_message(
         )
 
     try:
-        service = ConsultationService(db)
+        service = CostEstimationService(db)
         result = service.save_user_message(session_uuid, message.content)
         return result
     except ValueError as e:
@@ -175,7 +171,7 @@ def save_message(
         )
 
 
-@router.post("/{session_uuid}/consultation/message")
+@router.post("/{session_uuid}/cost-estimation/message")
 def send_message(
     session_uuid: str,
     message: ConsultationMessageWithKey,
@@ -197,7 +193,7 @@ def send_message(
     try:
         custom_prompts, language = _get_expert_settings(db_session)
         model, api_base = get_llm_settings(db_session)
-        service = ConsultationService(
+        service = CostEstimationService(
             db,
             model=model,
             custom_prompts=custom_prompts,
@@ -219,7 +215,7 @@ def send_message(
         )
 
 
-@router.post("/{session_uuid}/consultation/message/stream")
+@router.post("/{session_uuid}/cost-estimation/message/stream")
 def send_message_stream(
     session_uuid: str,
     message: ConsultationMessageWithKey,
@@ -241,7 +237,7 @@ def send_message_stream(
 
     custom_prompts, language = _get_expert_settings(db_session)
     model, api_base = get_llm_settings(db_session)
-    service = ConsultationService(
+    service = CostEstimationService(
         db,
         model=model,
         custom_prompts=custom_prompts,
@@ -261,7 +257,7 @@ def send_message_stream(
     )
 
 
-@router.post("/{session_uuid}/consultation/request-response/stream")
+@router.post("/{session_uuid}/cost-estimation/request-response/stream")
 def request_ai_response_stream(
     session_uuid: str,
     request: LLMRequest,
@@ -269,7 +265,6 @@ def request_ai_response_stream(
 ):
     """
     Request AI response based on current conversation (no new user message).
-    Used when user wants AI feedback after answering questions.
     Returns Server-Sent Events (SSE) stream.
     """
     db_session = db.query(SessionModel).filter(
@@ -284,7 +279,7 @@ def request_ai_response_stream(
 
     custom_prompts, language = _get_expert_settings(db_session)
     model, api_base = get_llm_settings(db_session)
-    service = ConsultationService(
+    service = CostEstimationService(
         db,
         model=model,
         custom_prompts=custom_prompts,
@@ -304,13 +299,13 @@ def request_ai_response_stream(
     )
 
 
-@router.get("/{session_uuid}/consultation/messages")
+@router.get("/{session_uuid}/cost-estimation/messages")
 def get_messages(
     session_uuid: str,
     db: Session = Depends(get_db)
 ):
     """
-    Get all consultation messages.
+    Get all cost estimation messages.
     """
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
@@ -322,11 +317,10 @@ def get_messages(
             detail=f"Session {session_uuid} not found"
         )
 
-    # Get messages without needing Mistral key
-    from ..models import ConsultationMessage
-
+    # Get messages with message_type='cost_estimation'
     messages = db.query(ConsultationMessage).filter(
         ConsultationMessage.session_id == db_session.id,
+        ConsultationMessage.message_type == "cost_estimation",
         ConsultationMessage.role != "system"
     ).order_by(ConsultationMessage.created_at).all()
 
@@ -338,16 +332,18 @@ def get_messages(
             "created_at": m.created_at.isoformat()
         }
         for m in messages
+        # Filter out the initial trigger message
+        if m.content != "Please start the cost estimation analysis."
     ]
 
 
-@router.get("/{session_uuid}/consultation/findings")
+@router.get("/{session_uuid}/cost-estimation/findings")
 def get_findings(
     session_uuid: str,
     db: Session = Depends(get_db)
 ):
     """
-    Get extracted consultation findings.
+    Get extracted cost estimation findings.
     """
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
@@ -359,33 +355,58 @@ def get_findings(
             detail=f"Session {session_uuid} not found"
         )
 
-    from ..models import ConsultationFinding
-
     findings = db.query(ConsultationFinding).filter(
-        ConsultationFinding.session_id == db_session.id
+        ConsultationFinding.session_id == db_session.id,
+        ConsultationFinding.factor_type.in_([
+            "cost_complexity",
+            "cost_initial",
+            "cost_recurring",
+            "cost_maintenance",
+            "cost_tco",
+            "cost_drivers",
+            "cost_optimization",
+            "cost_roi"
+        ])
     ).all()
 
     result = {
-        "project": None,
-        "risks": None,
-        "end_user": None,
-        "implementation": None
+        "complexity": None,
+        "initial_investment": None,
+        "recurring_costs": None,
+        "maintenance": None,
+        "tco": None,
+        "cost_drivers": None,
+        "optimization": None,
+        "roi_analysis": None
+    }
+
+    type_mapping = {
+        "cost_complexity": "complexity",
+        "cost_initial": "initial_investment",
+        "cost_recurring": "recurring_costs",
+        "cost_maintenance": "maintenance",
+        "cost_tco": "tco",
+        "cost_drivers": "cost_drivers",
+        "cost_optimization": "optimization",
+        "cost_roi": "roi_analysis"
     }
 
     for f in findings:
-        result[f.factor_type] = f.finding_text
+        key = type_mapping.get(f.factor_type)
+        if key:
+            result[key] = f.finding_text
 
     return result
 
 
-@router.post("/{session_uuid}/consultation/summarize")
-def summarize_consultation(
+@router.post("/{session_uuid}/cost-estimation/extract")
+def extract_findings(
     session_uuid: str,
     request: LLMRequest,
     db: Session = Depends(get_db)
 ):
     """
-    Generate a summary of the consultation with extracted findings.
+    Extract cost estimation findings from the conversation.
     """
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
@@ -400,7 +421,7 @@ def summarize_consultation(
     try:
         custom_prompts, language = _get_expert_settings(db_session)
         model, api_base = get_llm_settings(db_session)
-        service = ConsultationService(
+        service = CostEstimationService(
             db,
             model=model,
             custom_prompts=custom_prompts,
@@ -413,238 +434,5 @@ def summarize_consultation(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate summary: {str(e)}"
-        )
-
-
-@router.post("/{session_uuid}/consultation/extract-incremental")
-def extract_findings_incremental(
-    session_uuid: str,
-    request: LLMRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    Extract findings incrementally from the current conversation.
-    Lighter weight than full summarize - suitable for periodic updates.
-    """
-    db_session = db.query(SessionModel).filter(
-        SessionModel.session_uuid == session_uuid
-    ).first()
-
-    if not db_session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session {session_uuid} not found"
-        )
-
-    try:
-        custom_prompts, language = _get_expert_settings(db_session)
-        model, api_base = get_llm_settings(db_session)
-        service = ConsultationService(
-            db,
-            model=model,
-            custom_prompts=custom_prompts,
-            language=language,
-            api_key=request.api_key,
-            api_base=api_base
-        )
-        result = service.extract_findings_incremental(session_uuid)
-        return result
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to extract findings: {str(e)}"
         )
-
-
-# ============== Collaborative Consultation Endpoints ==============
-
-@router.get("/{session_uuid}/consultation/collaborative-status")
-def get_collaborative_status(
-    session_uuid: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Get the collaborative consultation status including participants and message count.
-    """
-    db_session = db.query(SessionModel).filter(
-        SessionModel.session_uuid == session_uuid
-    ).first()
-
-    if not db_session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session {session_uuid} not found"
-        )
-
-    # Get participants (reuse from 6-3-5)
-    participants = db.query(Participant).filter(
-        Participant.session_id == db_session.id,
-        Participant.connection_status != 'ai_controlled'  # Only human participants
-    ).all()
-
-    # Get message count
-    message_count = db.query(ConsultationMessage).filter(
-        ConsultationMessage.session_id == db_session.id,
-        ConsultationMessage.role != "system"
-    ).count()
-
-    # Check if consultation has started
-    consultation_started = message_count > 0
-
-    return {
-        "collaborative_mode": db_session.collaborative_consultation or False,
-        "participants": [
-            {
-                "uuid": p.participant_uuid,
-                "name": p.name,
-                "is_owner": p.participant_uuid == db_session.owner_participant_uuid
-            }
-            for p in participants
-        ],
-        "message_count": message_count,
-        "consultation_started": consultation_started,
-        "owner_participant_uuid": db_session.owner_participant_uuid
-    }
-
-
-@router.post("/{session_uuid}/consultation/collaborative-mode")
-def set_collaborative_mode(
-    session_uuid: str,
-    enabled: bool,
-    db: Session = Depends(get_db)
-):
-    """
-    Enable or disable collaborative consultation mode.
-    Only the session owner can toggle this.
-    """
-    db_session = db.query(SessionModel).filter(
-        SessionModel.session_uuid == session_uuid
-    ).first()
-
-    if not db_session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session {session_uuid} not found"
-        )
-
-    db_session.collaborative_consultation = enabled
-    db.commit()
-
-    return {
-        "collaborative_mode": enabled,
-        "message": f"Collaborative mode {'enabled' if enabled else 'disabled'}"
-    }
-
-
-@router.post("/{session_uuid}/consultation/message/save-collaborative")
-def save_collaborative_message(
-    session_uuid: str,
-    message: ConsultationMessageCreate,
-    db: Session = Depends(get_db)
-):
-    """
-    Save a user message in collaborative mode with participant info.
-    """
-    db_session = db.query(SessionModel).filter(
-        SessionModel.session_uuid == session_uuid
-    ).first()
-
-    if not db_session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session {session_uuid} not found"
-        )
-
-    # Get participant if provided
-    participant = None
-    participant_name = None
-    if message.participant_uuid:
-        participant = db.query(Participant).filter(
-            Participant.participant_uuid == message.participant_uuid
-        ).first()
-        if participant:
-            participant_name = participant.name
-
-    # Format message content with participant name for collaborative mode
-    if db_session.collaborative_consultation and participant_name:
-        formatted_content = f"[{participant_name}]: {message.content}"
-    else:
-        formatted_content = message.content
-
-    # Save message
-    new_message = ConsultationMessage(
-        session_id=db_session.id,
-        participant_id=participant.id if participant else None,
-        role="user",
-        content=formatted_content,
-        message_type="consultation"
-    )
-    db.add(new_message)
-    db.commit()
-    db.refresh(new_message)
-
-    return {
-        "message_id": new_message.id,
-        "content": formatted_content,
-        "role": "user",
-        "participant_name": participant_name
-    }
-
-
-@router.get("/{session_uuid}/consultation/messages-collaborative")
-def get_collaborative_messages(
-    session_uuid: str,
-    since_id: Optional[int] = None,
-    db: Session = Depends(get_db)
-):
-    """
-    Get consultation messages with participant info.
-    Optionally filter to messages after a specific ID (for polling).
-    """
-    db_session = db.query(SessionModel).filter(
-        SessionModel.session_uuid == session_uuid
-    ).first()
-
-    if not db_session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session {session_uuid} not found"
-        )
-
-    # Build query
-    query = db.query(ConsultationMessage).filter(
-        ConsultationMessage.session_id == db_session.id,
-        ConsultationMessage.role != "system"
-    )
-
-    # Filter by since_id if provided (for polling new messages)
-    if since_id:
-        query = query.filter(ConsultationMessage.id > since_id)
-
-    messages = query.order_by(ConsultationMessage.created_at).all()
-
-    result = []
-    for m in messages:
-        # Skip initial trigger message
-        if m.content == "Please start the consultation.":
-            continue
-
-        # Get participant name if available
-        participant_name = None
-        if m.participant_id:
-            participant = db.query(Participant).filter(
-                Participant.id == m.participant_id
-            ).first()
-            if participant:
-                participant_name = participant.name
-
-        result.append({
-            "id": m.id,
-            "role": m.role,
-            "content": m.content,
-            "created_at": m.created_at.isoformat(),
-            "participant_name": participant_name
-        })
-
-    return result

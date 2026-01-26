@@ -444,6 +444,84 @@ class ConsultationService:
             "findings": self.get_findings(session_uuid)
         }
 
+    def extract_findings_incremental(self, session_uuid: str) -> Dict:
+        """
+        Extract findings incrementally from recent conversation.
+        Uses a lighter prompt for faster, more frequent updates.
+        """
+        db_session = self._get_session(session_uuid)
+        messages = self._get_conversation_history(db_session.id)
+
+        # Only process if we have enough conversation
+        non_system_messages = [m for m in messages if m["role"] != "system"]
+        if len(non_system_messages) < 4:
+            return {"findings": self.get_findings(session_uuid), "updated": False}
+
+        # Use a lighter extraction prompt
+        if self.language == "de":
+            extraction_prompt = """Basierend auf dem bisherigen Gespräch, extrahiere kurz die wichtigsten Punkte für jede Kategorie (nur wenn im Gespräch erwähnt, sonst "noch nicht besprochen"):
+
+GESCHÄFTSZIELE: [1-2 Sätze zu Zielen/Erfolgsmetriken]
+SITUATION: [1-2 Sätze zu Ressourcen/Einschränkungen/Daten]
+KI-ZIELE: [1-2 Sätze zu technischen Anforderungen]
+PROJEKTPLAN: [1-2 Sätze zu Zeitrahmen/Meilensteinen]
+
+Antworte nur mit diesen 4 Kategorien, kurz und prägnant."""
+        else:
+            extraction_prompt = """Based on the conversation so far, briefly extract key points for each category (only if discussed, otherwise say "not yet discussed"):
+
+BUSINESS_OBJECTIVES: [1-2 sentences about goals/success metrics]
+SITUATION: [1-2 sentences about resources/constraints/data]
+AI_GOALS: [1-2 sentences about technical requirements]
+PROJECT_PLAN: [1-2 sentences about timeline/milestones]
+
+Respond only with these 4 categories, brief and concise."""
+
+        extraction_messages = messages + [{"role": "user", "content": extraction_prompt}]
+
+        try:
+            response = self._call_llm(extraction_messages, temperature=0.3, max_tokens=500)
+            content = response.choices[0].message.content
+
+            # Parse the response
+            def extract_value(text, key):
+                import re
+                patterns = [
+                    rf"{key}:\s*(.+?)(?=\n[A-Z_]+:|$)",
+                    rf"{key}:\s*(.+?)(?=\n|$)"
+                ]
+                for pattern in patterns:
+                    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        value = match.group(1).strip()
+                        if value.lower() not in ["not yet discussed", "noch nicht besprochen", ""]:
+                            return value
+                return None
+
+            # Extract and save each finding
+            business_obj = extract_value(content, "BUSINESS_OBJECTIVES") or extract_value(content, "GESCHÄFTSZIELE")
+            if business_obj:
+                self._save_finding(db_session.id, "business_objectives", business_obj)
+
+            situation = extract_value(content, "SITUATION")
+            if situation:
+                self._save_finding(db_session.id, "situation_assessment", situation)
+
+            ai_goals = extract_value(content, "AI_GOALS") or extract_value(content, "KI-ZIELE")
+            if ai_goals:
+                self._save_finding(db_session.id, "ai_goals", ai_goals)
+
+            project_plan = extract_value(content, "PROJECT_PLAN") or extract_value(content, "PROJEKTPLAN")
+            if project_plan:
+                self._save_finding(db_session.id, "project_plan", project_plan)
+
+            self.db.commit()
+
+            return {"findings": self.get_findings(session_uuid), "updated": True}
+        except Exception as e:
+            logger.error(f"Error extracting findings incrementally: {e}")
+            return {"findings": self.get_findings(session_uuid), "updated": False}
+
     def _get_session(self, session_uuid: str) -> SessionModel:
         """Get session by UUID."""
         db_session = self.db.query(SessionModel).filter(
@@ -497,7 +575,8 @@ class ConsultationService:
             "company_name": db_session.company_name or "the company",
             "company_info": company_context,
             "ideas": all_ideas,
-            "top_idea": all_ideas[0] if all_ideas else None
+            "top_idea": all_ideas[0] if all_ideas else None,
+            "collaborative_mode": db_session.collaborative_consultation or False
         }
 
     def _build_system_prompt(self, context: Dict) -> str:
@@ -517,6 +596,39 @@ class ConsultationService:
         top_idea = context.get("top_idea")
         focus_idea = top_idea["content"] if top_idea else "general AI/digitalization improvements"
 
+        # Build multi-participant section based on mode and language
+        collaborative_mode = context.get("collaborative_mode", False)
+        if self.language == "de":
+            if collaborative_mode:
+                multi_participant_section = """## MEHRERE TEILNEHMER
+Diese Beratung umfasst mehrere Teilnehmer aus dem Unternehmen. Nachrichten von verschiedenen Personen werden mit ihren Namen in Klammern markiert, z.B. "[Maria]: Unser Budget beträgt etwa 50.000 €".
+
+Wenn mehrere Personen beitragen:
+- Sprechen Sie Teilnehmer mit Namen an, wenn Sie auf ihre spezifischen Beiträge antworten
+- Fassen Sie Informationen aus verschiedenen Perspektiven zusammen
+- Wenn Teilnehmer widersprüchliche Informationen geben, erkennen Sie beide Ansichten an und bitten Sie um Klärung
+- Betrachten Sie die Gruppe als kollaboratives Team – ihre kombinierten Beiträge geben Ihnen ein reichhaltigeres Bild
+"""
+            else:
+                multi_participant_section = """## EINZELBENUTZER-MODUS
+Sie führen ein Einzelgespräch mit dem Kunden. Antworten Sie direkt und natürlich, ohne Namenspräfixe wie "[Kunde]:" in Ihren Antworten zu verwenden. Sprechen Sie den Kunden einfach direkt an.
+"""
+        else:
+            if collaborative_mode:
+                multi_participant_section = """## MULTI-PARTICIPANT MODE
+This consultation involves multiple participants from the company. Messages from different people will be marked with their names in brackets, e.g., "[Maria]: Our budget is around €50,000".
+
+When multiple people contribute:
+- Address participants by name when responding to their specific input
+- Synthesize information from different perspectives
+- If participants give conflicting information, acknowledge both views and ask for clarification
+- Treat the group as a collaborative team - their combined input gives you a richer picture
+"""
+            else:
+                multi_participant_section = """## SINGLE USER MODE
+You are having a one-on-one conversation with the client. Respond directly and naturally without using any name prefixes like "[Client]:" in your responses. Simply address them conversationally.
+"""
+
         # Get prompt template
         template = get_prompt(
             "consultation_system",
@@ -529,7 +641,8 @@ class ConsultationService:
             company_name=context.get('company_name', 'Unknown'),
             company_info_text=company_info_text,
             top_ideas_text=top_ideas_text,
-            focus_idea=focus_idea
+            focus_idea=focus_idea,
+            multi_participant_section=multi_participant_section
         )
 
     def _build_initial_greeting(self, context: Dict) -> str:
@@ -539,16 +652,71 @@ class ConsultationService:
             return f"Focus on: {top_idea['content']}"
         return "General AI/digitalization consultation"
 
-    def _get_conversation_history(self, session_id: int) -> List[Dict]:
-        """Get conversation history as message list."""
+    def _get_conversation_history(self, session_id: int, summarize_old: bool = True) -> List[Dict]:
+        """
+        Get conversation history as message list.
+        For long conversations (15+ messages), summarizes older messages to preserve context.
+        """
         messages = self.db.query(ConsultationMessage).filter(
             ConsultationMessage.session_id == session_id
         ).order_by(ConsultationMessage.created_at).all()
 
-        return [
+        message_list = [
             {"role": m.role, "content": m.content}
             for m in messages
         ]
+
+        # If conversation is long, summarize older messages
+        if summarize_old and len(message_list) > 15:
+            # Keep the system message (first), summarize middle, keep recent 8 messages
+            system_msgs = [m for m in message_list if m["role"] == "system"]
+            non_system = [m for m in message_list if m["role"] != "system"]
+
+            if len(non_system) > 10:
+                old_messages = non_system[:-8]  # Messages to summarize
+                recent_messages = non_system[-8:]  # Keep last 8 exchanges
+
+                # Create a summary of older messages
+                summary_text = self._summarize_old_messages(old_messages)
+
+                if summary_text:
+                    summary_msg = {
+                        "role": "system",
+                        "content": f"[CONVERSATION SUMMARY - Earlier discussion covered:]\n{summary_text}\n[END SUMMARY - Recent messages follow:]"
+                    }
+                    return system_msgs + [summary_msg] + recent_messages
+
+        return message_list
+
+    def _summarize_old_messages(self, messages: List[Dict]) -> str:
+        """Create a brief summary of older messages to preserve context."""
+        if not messages:
+            return ""
+
+        # Extract key facts mentioned in older messages
+        key_points = []
+        for msg in messages:
+            content = msg.get("content", "")
+            # Look for important information patterns
+            if msg["role"] == "user":
+                # User provided information
+                if len(content) > 20:
+                    # Truncate long messages but keep the essence
+                    key_points.append(f"Client mentioned: {content[:200]}...")
+            elif msg["role"] == "assistant":
+                # AI asked about or discussed
+                if "?" in content:
+                    # Was asking a question - the answer should be in subsequent user message
+                    pass
+                elif len(content) > 50:
+                    # AI shared insights
+                    key_points.append(f"Discussed: {content[:150]}...")
+
+        # Limit to most important points
+        if len(key_points) > 5:
+            key_points = key_points[:5]
+
+        return "\n".join(key_points) if key_points else ""
 
     def _try_extract_findings(self, db_session: SessionModel, messages: List[Dict], last_response: str):
         """Try to extract findings if conversation seems complete."""

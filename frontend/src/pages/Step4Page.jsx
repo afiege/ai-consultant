@@ -39,6 +39,15 @@ const Step4Page = () => {
   const [showSharePanel, setShowSharePanel] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Topic tracking state
+  const [topicsCovered, setTopicsCovered] = useState({
+    businessObjectives: false,
+    situationAssessment: false,
+    aiGoals: false,
+    projectPlan: false
+  });
+  const [skippedTopics, setSkippedTopics] = useState({});
+
   // Load participant UUID from localStorage (reuse from 6-3-5)
   useEffect(() => {
     const stored = localStorage.getItem(`participant_${sessionUuid}`);
@@ -86,6 +95,59 @@ const Step4Page = () => {
       return () => clearInterval(pollInterval);
     }
   }, [collaborativeMode, consultationStarted, sessionUuid, lastMessageId]);
+
+  // Analyze messages to detect which topics have been covered
+  useEffect(() => {
+    if (messages.length < 2) return;
+
+    const allText = messages.map(m => m.content.toLowerCase()).join(' ');
+
+    // Keywords for each topic
+    const topicKeywords = {
+      businessObjectives: ['goal', 'objective', 'problem', 'opportunity', 'success', 'kpi', 'metric', 'achieve', 'ziel', 'erfolg', 'problem', 'chance'],
+      situationAssessment: ['budget', 'team', 'resource', 'timeline', 'constraint', 'data', 'employee', 'staff', 'regulation', 'budget', 'mitarbeiter', 'daten', 'zeitrahmen'],
+      aiGoals: ['accuracy', 'input', 'output', 'model', 'algorithm', 'prediction', 'automat', 'solution', 'genauigkeit', 'modell', 'lösung', 'vorhersage'],
+      projectPlan: ['milestone', 'phase', 'implement', 'pilot', 'timeline', 'rollout', 'start', 'deploy', 'meilenstein', 'umsetzung', 'pilot']
+    };
+
+    const newCovered = { ...topicsCovered };
+    Object.entries(topicKeywords).forEach(([topic, keywords]) => {
+      if (!skippedTopics[topic]) {
+        const matches = keywords.filter(kw => allText.includes(kw)).length;
+        if (matches >= 2) {
+          newCovered[topic] = true;
+        }
+      }
+    });
+
+    if (JSON.stringify(newCovered) !== JSON.stringify(topicsCovered)) {
+      setTopicsCovered(newCovered);
+    }
+  }, [messages, skippedTopics]);
+
+  // Trigger incremental findings extraction after certain message counts
+  const lastExtractionCount = useRef(0);
+  useEffect(() => {
+    const messageCount = messages.filter(m => m.role !== 'system').length;
+    // Extract after every 4 messages (2 exchanges), but only if we have API key
+    if (messageCount >= 4 && messageCount - lastExtractionCount.current >= 4 && apiKeyManager.isSet()) {
+      lastExtractionCount.current = messageCount;
+      // Run extraction in background without blocking UI
+      consultationAPI.extractIncremental(sessionUuid)
+        .then(response => {
+          if (response.data.updated && response.data.findings) {
+            setFindings(response.data.findings);
+          }
+        })
+        .catch(err => console.error('Incremental extraction failed:', err));
+    }
+  }, [messages, sessionUuid]);
+
+  // Handle skipping a topic
+  const handleSkipTopic = (topicKey) => {
+    setSkippedTopics(prev => ({ ...prev, [topicKey]: true }));
+    setTopicsCovered(prev => ({ ...prev, [topicKey]: true }));
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -828,6 +890,73 @@ const Step4Page = () => {
 
             {/* Findings sidebar - 1/3 width (CRISP-DM Business Understanding) */}
             <div className="space-y-4">
+              {/* Topic Progress Tracker */}
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-semibold text-gray-900 mb-3 text-sm">{t('step4.topics.title')}</h3>
+                <div className="space-y-2">
+                  {[
+                    { key: 'businessObjectives', label: t('step4.topics.businessObjectives') },
+                    { key: 'situationAssessment', label: t('step4.topics.situationAssessment') },
+                    { key: 'aiGoals', label: t('step4.topics.aiGoals') },
+                    { key: 'projectPlan', label: t('step4.topics.projectPlan') }
+                  ].map(topic => (
+                    <div key={topic.key} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                          topicsCovered[topic.key]
+                            ? skippedTopics[topic.key]
+                              ? 'bg-gray-300'
+                              : 'bg-green-500'
+                            : 'bg-gray-200'
+                        }`}>
+                          {topicsCovered[topic.key] && (
+                            skippedTopics[topic.key] ? (
+                              <span className="text-white text-xs">–</span>
+                            ) : (
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )
+                          )}
+                        </div>
+                        <span className={`text-sm ${
+                          topicsCovered[topic.key]
+                            ? skippedTopics[topic.key]
+                              ? 'text-gray-400 line-through'
+                              : 'text-green-700'
+                            : 'text-gray-600'
+                        }`}>
+                          {topic.label}
+                        </span>
+                      </div>
+                      {!topicsCovered[topic.key] && consultationStarted && (
+                        <button
+                          onClick={() => handleSkipTopic(topic.key)}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                          title={t('step4.topics.skip')}
+                        >
+                          {t('step4.topics.skipBtn')}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">{t('step4.topics.progress')}</span>
+                    <span className="font-medium text-blue-600">
+                      {Object.values(topicsCovered).filter(Boolean).length}/4
+                    </span>
+                  </div>
+                  <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+                    <div
+                      className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(Object.values(topicsCovered).filter(Boolean).length / 4) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* CRISP-DM Header */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <h3 className="font-semibold text-blue-800 text-sm">{t('step4.findings.crispDmTitle')}</h3>

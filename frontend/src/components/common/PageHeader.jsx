@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpertSettingsModal } from '../expert';
 import { sessionBackupAPI } from '../../services/api';
+import StepProgress from './StepProgress';
 
 const CogIcon = ({ className }) => (
   <svg
@@ -45,8 +46,10 @@ const PageHeader = ({
   title,
   subtitle,
   sessionUuid,
+  session = null,
   showSettings = true,
   showSaveButton = true,
+  showStepProgress = true,
   children,
 }) => {
   const { t } = useTranslation();
@@ -110,6 +113,11 @@ const PageHeader = ({
           </div>
         </div>
       </div>
+
+      {/* Step Progress Indicator */}
+      {showStepProgress && sessionUuid && (
+        <StepProgress session={session} />
+      )}
 
       {showSettings && sessionUuid && (
         <ExpertSettingsModal

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigat
 import { useTranslation } from 'react-i18next';
 import { SessionProvider } from './context/SessionContext';
 import { exportAPI } from './services/api';
+import { PageHeader } from './components/common';
 import HomePage from './pages/HomePage';
 import Step1Page from './pages/Step1Page';
 import Step2Page from './pages/Step2Page';
@@ -45,14 +46,13 @@ const ExportPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">{t('export.title')}</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {t('export.subtitle')}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={t('export.title')}
+        subtitle={t('export.subtitle')}
+        sessionUuid={sessionUuid}
+        showSettings={false}
+        showSaveButton={false}
+      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
@@ -81,11 +81,15 @@ const ExportPage = () => {
               {t('export.executiveSummary')}
             </li>
             <li className="flex items-center text-gray-700">
-              <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3 text-sm font-bold">2</span>
+              <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center mr-3 text-sm font-bold">2</span>
               {t('export.businessCaseSection')}
             </li>
             <li className="flex items-center text-gray-700">
               <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3 text-sm font-bold">3</span>
+              {t('export.costEstimationSection')}
+            </li>
+            <li className="flex items-center text-gray-700">
+              <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3 text-sm font-bold">4</span>
               {t('export.implementationRoadmap')}
             </li>
             <li className="flex items-center text-gray-500 text-sm mt-4 pt-2 border-t">
@@ -107,6 +111,10 @@ const ExportPage = () => {
             <li className="flex items-center text-gray-500 text-sm">
               <span className="w-5 h-5 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center mr-3 text-xs">E</span>
               {t('export.appendixBusinessCase')}
+            </li>
+            <li className="flex items-center text-gray-500 text-sm">
+              <span className="w-5 h-5 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center mr-3 text-xs">F</span>
+              {t('export.appendixCostEstimation')}
             </li>
           </ul>
 

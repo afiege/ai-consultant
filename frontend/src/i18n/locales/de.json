@@ -298,6 +298,16 @@
       "projectPlanPlaceholder": "Umsetzungsphasen und Zeitrahmen",
       "ideas": "Ideen",
       "moreIdeas": "...und {{count}} weitere"
+    },
+    "topics": {
+      "title": "Themenfortschritt",
+      "businessObjectives": "Geschäftsziele",
+      "situationAssessment": "Situation & Ressourcen",
+      "aiGoals": "KI/Technische Ziele",
+      "projectPlan": "Umsetzungsplan",
+      "progress": "Fortschritt",
+      "skip": "Als nicht relevant markieren",
+      "skipBtn": "Überspr."
     }
   },
   "expertSettings": {
@@ -353,10 +363,14 @@
     }
   },
   "step5": {
-    "title": "Schritt 5: Business Case Berechnung",
-    "subtitle": "Bewerten Sie Ihr KI-Projekt mit dem 5-Stufen-Wertrahmen",
+    "title": "Schritt 5: Business Case & Kostenschätzung",
+    "subtitle": "Bewerten Sie Potenziale und schätzen Sie Kosten für Ihr KI-Projekt",
     "backStep4": "Zurück zu Schritt 4",
     "continueExport": "Weiter zum Export",
+    "tabs": {
+      "potentials": "Potenziale",
+      "costs": "Kostenschätzung"
+    },
     "explanation": {
       "title": "Einen Business Case erstellen",
       "description": "Ein solider Business Case hilft Ihnen, das Management zu überzeugen und Investitionen in KI zu rechtfertigen. Wir nutzen den 5-Stufen-Wertrahmen, um den potenziellen Nutzen Ihres Projekts zu quantifizieren.",
@@ -367,17 +381,34 @@
       "bullet5": "Strategische Skalierung: Kann KI Ihnen helfen zu wachsen, ohne die Kosten proportional zu erhöhen?",
       "tip": "Machen Sie sich keine Sorgen um genaue Zahlen. Grobe Schätzungen ('Pi mal Daumen') sind in diesem Stadium völlig in Ordnung."
     },
+    "costsExplanation": {
+      "title": "Projektkosten verstehen",
+      "description": "Eine realistische Kostenschätzung hilft Ihnen bei der Budgetplanung und Erwartungssteuerung mit Stakeholdern. Wir schlüsseln die Kosten in Erstinvestition, laufende Kosten und Gesamtbetriebskosten auf.",
+      "bullet1": "Erstinvestition: Entwicklung, Integration und Schulungskosten (einmalig)",
+      "bullet2": "Laufende Kosten: Cloud-Infrastruktur, Lizenzen, API-Nutzung (monatlich/jährlich)",
+      "bullet3": "Wartung: Updates, Monitoring, Support (15-20% der Erstinvestition jährlich)",
+      "bullet4": "Gesamtbetriebskosten: Vollständige 3-Jahres-Kostenprojektion für die Budgetplanung",
+      "tip": "Kosten variieren stark je nach Komplexität. Ein Quick Win kann 5-15k kosten, während Enterprise-Lösungen 150k überschreiten können."
+    },
     "chat": {
       "contextTitle": "Kontext aus vorherigen Schritten",
       "companyProfile": "Unternehmensprofil",
       "focusIdea": "Fokus-Idee",
       "crispDmSummary": "CRISP-DM Business Understanding",
       "startMessage": "Der KI-Berater hilft Ihnen bei der Entwicklung eines Business Case mit dem 5-Stufen-Wertrahmen.",
-      "startButton": "Business-Case-Analyse starten",
+      "startButton": "Potenzialanalyse starten",
       "starting": "Wird gestartet...",
       "thinking": "Analysiert...",
       "messagePlaceholder": "Ihre Antwort eingeben...",
       "extractFindings": "Business Case extrahieren",
+      "extracting": "Wird extrahiert..."
+    },
+    "costs": {
+      "startMessage": "Der KI-Berater hilft Ihnen, realistische Kosten für Ihr KI-Projekt zu schätzen.",
+      "startButton": "Kostenschätzung starten",
+      "starting": "Wird gestartet...",
+      "thinking": "Berechnet...",
+      "extractFindings": "Kostenschätzung extrahieren",
       "extracting": "Wird extrahiert..."
     },
     "findings": {
@@ -392,6 +423,20 @@
       "managementPitch": "Management-Pitch",
       "managementPitchPlaceholder": "Ein-Satz Executive Statement"
     },
+    "costsFindings": {
+      "title": "Kostenschätzung",
+      "subtitle": "Projektinvestitionsanalyse",
+      "complexity": "Komplexitätsbewertung",
+      "complexityPlaceholder": "Projektkomplexitätsstufe (Quick Win bis Enterprise)",
+      "initialInvestment": "Erstinvestition",
+      "initialPlaceholder": "Einmalige Entwicklungs- und Einrichtungskosten",
+      "recurring": "Laufende Kosten",
+      "recurringPlaceholder": "Monatliche/jährliche Infrastruktur und Lizenzen",
+      "tco": "3-Jahres-TCO",
+      "tcoPlaceholder": "Gesamtbetriebskosten über 3 Jahre",
+      "roi": "Investition vs. Rendite",
+      "roiPlaceholder": "Amortisationszeit und ROI-Analyse"
+    },
     "framework": {
       "title": "5 Wertstufen",
       "level1": "Budgetersatz",
@@ -399,6 +444,15 @@
       "level3": "Projektbeschleunigung",
       "level4": "Risikominderung",
       "level5": "Strategische Skalierung"
+    },
+    "costFramework": {
+      "title": "Kostenreferenz",
+      "quickWin": "Quick Win",
+      "standard": "Standard",
+      "complex": "Komplex",
+      "enterprise": "Enterprise",
+      "weeks": "Wochen",
+      "months": "Monate"
     }
   },
   "export": {
@@ -407,19 +461,32 @@
     "reportTitle": "Beratungsbericht",
     "reportIncludes": "Ihr Bericht enthält:",
     "executiveSummary": "Zusammenfassung (CRISP-DM Geschäftsverständnis)",
-    "businessCaseSection": "Business Case Indikation",
+    "businessCaseSection": "Business Case Indikation (Potenziale)",
+    "costEstimationSection": "Kostenschätzungsanalyse",
     "implementationRoadmap": "Umsetzungsfahrplan",
     "appendixCompany": "Anhang A: Unternehmensübersicht",
     "appendixIdeas": "Anhang B: Brainstorming-Ideen",
     "appendixPrioritization": "Anhang C: Priorisierungsergebnisse",
     "appendixTranscript": "Anhang D: Beratungsprotokoll",
     "appendixBusinessCase": "Anhang E: Business Case Protokoll",
+    "appendixCostEstimation": "Anhang F: Kostenschätzungsprotokoll",
     "generateButton": "PDF erstellen & herunterladen",
     "generating": "PDF wird erstellt...",
     "success": "PDF erfolgreich erstellt! Überprüfen Sie Ihre Downloads.",
     "backToBusinessCase": "Zurück zum Business Case",
     "backToConsultation": "Zurück zur Beratung",
     "startNew": "Neue Sitzung starten"
+  },
+  "stepProgress": {
+    "steps": {
+      "company": "Unternehmen",
+      "brainstorming": "Brainstorming",
+      "prioritization": "Priorisierung",
+      "consultation": "Beratung",
+      "businessCase": "Business Case",
+      "export": "Export"
+    },
+    "skipped": "übersprungen"
   },
   "errors": {
     "failedToLoad": "Laden fehlgeschlagen",

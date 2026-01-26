@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 from .database import init_db
 
 # Import routers
-from .routers import sessions, company_info, six_three_five, prioritization, consultation, export, expert_settings, business_case, session_backup
+from .routers import sessions, company_info, six_three_five, prioritization, consultation, export, expert_settings, business_case, cost_estimation, session_backup
 # from .routers import websocket
 
 app = FastAPI(
@@ -80,6 +80,7 @@ app.include_router(consultation.router, prefix="/api/sessions", tags=["consultat
 app.include_router(export.router, prefix="/api/sessions", tags=["export"])
 app.include_router(expert_settings.router, prefix="/api/sessions", tags=["expert-settings"])
 app.include_router(business_case.router, prefix="/api/sessions", tags=["business-case"])
+app.include_router(cost_estimation.router, prefix="/api/sessions", tags=["cost-estimation"])
 app.include_router(session_backup.router, prefix="/api/sessions", tags=["session-backup"])
 # app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 

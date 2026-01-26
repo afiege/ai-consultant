@@ -91,6 +91,8 @@ export const consultationAPI = {
     api.get(`/api/sessions/${sessionUuid}/consultation/findings`),
   summarize: (sessionUuid, apiKey) =>
     api.post(`/api/sessions/${sessionUuid}/consultation/summarize`, { api_key: apiKey || apiKeyManager.get() }),
+  extractIncremental: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/consultation/extract-incremental`, { api_key: apiKey || apiKeyManager.get() }),
 
   // Collaborative mode endpoints
   getCollaborativeStatus: (sessionUuid) =>
@@ -371,6 +373,167 @@ export const businessCaseAPI = {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/request-response/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else if (data.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.error) {
+                  onError?.(parsed.error);
+                }
+              } catch (e) {
+                onChunk?.(data);
+              }
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+};
+
+// Cost Estimation endpoints (Step 5b)
+export const costEstimationAPI = {
+  start: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/cost-estimation/start`, { api_key: apiKey || apiKeyManager.get() }),
+  sendMessage: (sessionUuid, content, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/cost-estimation/message`, { content, api_key: apiKey || apiKeyManager.get() }),
+  saveMessage: (sessionUuid, content) =>
+    api.post(`/api/sessions/${sessionUuid}/cost-estimation/message/save`, { content }),
+  getMessages: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/cost-estimation/messages`),
+  getFindings: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/cost-estimation/findings`),
+  extract: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/cost-estimation/extract`, { api_key: apiKey || apiKeyManager.get() }),
+
+  // Streaming endpoints using fetch (SSE)
+  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/start/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else if (data.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.status === 'already_started') {
+                  onError?.('Cost estimation already started');
+                }
+              } catch (e) {
+                onChunk?.(data);
+              }
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+
+  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/message/stream`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, api_key: key }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+
+  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/request-response/stream`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
