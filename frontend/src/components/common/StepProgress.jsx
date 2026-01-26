@@ -5,12 +5,13 @@ import { sessionAPI } from '../../services/api';
 
 // Step configuration
 const STEPS = [
-  { id: 1, route: 'step1', key: 'company' },
-  { id: 2, route: 'step2', key: 'brainstorming', skippable: true },
-  { id: 3, route: 'step3', key: 'prioritization', skippable: true },
-  { id: 4, route: 'step4', key: 'consultation' },
-  { id: 5, route: 'step5', key: 'businessCase' },
-  { id: 6, route: 'export', key: 'export' },
+  { id: 1, route: 'step1a', key: 'company', label: '1a' },
+  { id: 2, route: 'step1b', key: 'maturity', label: '1b' },
+  { id: 3, route: 'step2', key: 'brainstorming', skippable: true, label: '2' },
+  { id: 4, route: 'step3', key: 'prioritization', skippable: true, label: '3' },
+  { id: 5, route: 'step4', key: 'consultation', label: '4' },
+  { id: 6, route: 'step5', key: 'businessCase', label: '5' },
+  { id: 7, route: 'step6', key: 'export', label: '6' },
 ];
 
 // Icons
@@ -64,12 +65,13 @@ const StepProgress = ({
     if (currentStepOverride) return currentStepOverride;
 
     const path = location.pathname;
-    if (path.includes('/export')) return 6;
-    if (path.includes('/step5')) return 5;
-    if (path.includes('/step4')) return 4;
-    if (path.includes('/step3')) return 3;
-    if (path.includes('/step2')) return 2;
-    if (path.includes('/step1')) return 1;
+    if (path.includes('/step6') || path.includes('/export')) return 7;
+    if (path.includes('/step5')) return 6;
+    if (path.includes('/step4')) return 5;
+    if (path.includes('/step3')) return 4;
+    if (path.includes('/step2')) return 3;
+    if (path.includes('/step1b')) return 2;
+    if (path.includes('/step1a') || path.includes('/step1')) return 1;
     return 1;
   };
 
@@ -77,24 +79,34 @@ const StepProgress = ({
 
   // Determine step states
   const getStepState = (stepId) => {
-    // Skip check for steps 2 and 3
-    const step2Skipped = session?.six_three_five_skipped;
+    // Skip check for steps 3 and 4 (brainstorming and prioritization)
+    const brainstormingSkipped = session?.six_three_five_skipped;
 
     if (stepId === currentStep) {
       return 'current';
     }
 
     if (stepId < currentStep) {
-      // Step 2 was skipped
-      if (stepId === 2 && step2Skipped) {
+      // Step 3 (brainstorming) was skipped
+      if (stepId === 3 && brainstormingSkipped) {
         return 'skipped';
       }
-      // Step 3 can be skipped by going directly from step 2/3 to step 4
-      // We detect this if there are no prioritization votes
-      if (stepId === 3 && step2Skipped) {
+      // Step 4 (prioritization) was skipped if brainstorming was skipped
+      if (stepId === 4 && brainstormingSkipped) {
         return 'skipped';
       }
       return 'completed';
+    }
+
+    // Step 5 (Consultation) is always accessible from steps 1-4
+    // This allows users to skip brainstorming and prioritization
+    if (stepId === 5 && currentStep >= 1 && currentStep < 5) {
+      return 'next';
+    }
+
+    // Next step (one ahead of current) is navigable
+    if (stepId === currentStep + 1) {
+      return 'next';
     }
 
     return 'upcoming';
@@ -105,11 +117,7 @@ const StepProgress = ({
     const state = getStepState(step.id);
     if (state === 'upcoming') return;
 
-    if (step.route === 'export') {
-      navigate(`/session/${sessionUuid}/export`);
-    } else {
-      navigate(`/session/${sessionUuid}/${step.route}`);
-    }
+    navigate(`/session/${sessionUuid}/${step.route}`);
   };
 
   // Get step styles based on state
@@ -131,6 +139,12 @@ const StepProgress = ({
         return {
           circle: 'bg-gray-300 text-gray-500 border-gray-300',
           text: 'text-gray-400',
+          clickable: true,
+        };
+      case 'next':
+        return {
+          circle: 'bg-white text-blue-600 border-blue-400 border-dashed',
+          text: 'text-blue-500',
           clickable: true,
         };
       default: // upcoming
@@ -157,6 +171,7 @@ const StepProgress = ({
                 state === 'current' ? 'bg-blue-600 w-4' :
                 state === 'completed' ? 'bg-green-500' :
                 state === 'skipped' ? 'bg-gray-300' :
+                state === 'next' ? 'bg-blue-200 ring-1 ring-blue-400' :
                 'bg-gray-200'
               }`}
               title={t(`stepProgress.steps.${step.key}`)}
@@ -195,7 +210,7 @@ const StepProgress = ({
                     >
                       {state === 'completed' && <CheckIcon />}
                       {state === 'skipped' && <SkipIcon />}
-                      {(state === 'current' || state === 'upcoming') && step.id}
+                      {(state === 'current' || state === 'upcoming' || state === 'next') && (step.label || step.id)}
                     </span>
 
                     {/* Step label - hidden on mobile */}

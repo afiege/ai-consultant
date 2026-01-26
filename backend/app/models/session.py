@@ -36,3 +36,4 @@ class Session(Base):
     prioritizations = relationship("Prioritization", back_populates="session", cascade="all, delete-orphan")
     consultation_messages = relationship("ConsultationMessage", back_populates="session", cascade="all, delete-orphan")
     consultation_findings = relationship("ConsultationFinding", back_populates="session", cascade="all, delete-orphan")
+    maturity_assessment = relationship("MaturityAssessment", back_populates="session", uselist=False, cascade="all, delete-orphan")

@@ -417,18 +417,12 @@ const Step2Page = () => {
         )}
 
         {/* Navigation */}
-        <div className="mt-8 flex justify-between">
+        <div className="mt-8 flex justify-start">
           <button
-            onClick={() => navigate(`/session/${sessionUuid}/step1`)}
+            onClick={() => navigate(`/session/${sessionUuid}/step1b`)}
             className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
           >
             {t('step2.backStep1')}
-          </button>
-          <button
-            onClick={() => navigate(`/session/${sessionUuid}/export`)}
-            className="px-6 py-2 text-green-600 hover:text-green-800 font-medium"
-          >
-            {t('common.exportReport')} →
           </button>
         </div>
       </div>

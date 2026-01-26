@@ -8,7 +8,7 @@ import WebCrawlerForm from '../components/step1/WebCrawlerForm';
 import CompanyInfoDisplay from '../components/step1/CompanyInfoDisplay';
 import { PageHeader, ExplanationBox } from '../components/common';
 
-const Step1Page = () => {
+const Step1aPage = () => {
   const { t } = useTranslation();
   const { sessionUuid } = useParams();
   const navigate = useNavigate();
@@ -101,16 +101,12 @@ const Step1Page = () => {
     }
   };
 
-  const handleNext = () => {
-    navigate(`/session/${sessionUuid}/step2`);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <PageHeader
-        title={t('step1.title')}
-        subtitle={t('step1.subtitle')}
+        title={t('step1a.title')}
+        subtitle={t('step1a.subtitle')}
         sessionUuid={sessionUuid}
       />
 
@@ -124,15 +120,15 @@ const Step1Page = () => {
 
         {/* Explanation */}
         <ExplanationBox
-          title={t('step1.explanation.title')}
-          description={t('step1.explanation.description')}
+          title={t('step1a.explanation.title')}
+          description={t('step1a.explanation.description')}
           bullets={[
-            t('step1.explanation.bullet1'),
-            t('step1.explanation.bullet2'),
-            t('step1.explanation.bullet3'),
-            t('step1.explanation.bullet4'),
+            t('step1a.explanation.bullet1'),
+            t('step1a.explanation.bullet2'),
+            t('step1a.explanation.bullet3'),
+            t('step1a.explanation.bullet4'),
           ]}
-          tip={t('step1.explanation.tip')}
+          tip={t('step1a.explanation.tip')}
           defaultOpen={companyInfoList.length === 0}
         />
 
@@ -161,19 +157,12 @@ const Step1Page = () => {
         </div>
 
         {/* Navigation */}
-        <div className="mt-8 flex justify-between">
+        <div className="mt-8 flex justify-start">
           <button
             onClick={() => navigate('/')}
             className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
           >
-            {t('step1.backHome')}
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={companyInfoList.length === 0}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            {t('step1.continueStep2')}
+            {t('step1a.backHome')}
           </button>
         </div>
       </div>
@@ -181,4 +170,4 @@ const Step1Page = () => {
   );
 };
 
-export default Step1Page;
+export default Step1aPage;

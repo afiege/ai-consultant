@@ -42,6 +42,13 @@ from .expert_settings import (
     LLMProviderInfo,
     LLM_PROVIDERS,
 )
+from .maturity_assessment import (
+    MaturityAssessmentCreate,
+    MaturityAssessmentResponse,
+    MaturityLevelInfo,
+    MATURITY_LEVELS,
+    get_maturity_level_name,
+)
 
 __all__ = [
     "SessionCreate",
@@ -82,4 +89,9 @@ __all__ = [
     "LLMConfig",
     "LLMProviderInfo",
     "LLM_PROVIDERS",
+    "MaturityAssessmentCreate",
+    "MaturityAssessmentResponse",
+    "MaturityLevelInfo",
+    "MATURITY_LEVELS",
+    "get_maturity_level_name",
 ]

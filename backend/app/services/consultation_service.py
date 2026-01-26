@@ -14,9 +14,30 @@ from ..models import (
     CompanyInfo,
     Idea,
     IdeaSheet,
-    Prioritization
+    Prioritization,
+    MaturityAssessment
 )
 from .default_prompts import get_prompt
+
+# Maturity level guidance for dynamic injection (only relevant levels shown to reduce prompt size)
+MATURITY_GUIDANCE = {
+    "en": {
+        1: ("Computerization", "Company has basic digital tools but they're isolated. Focus on: digitizing manual processes, introducing basic software (ERP, CRM basics), standardizing data formats. Avoid any AI/ML talk. Use very simple language, explain every technical term. Recommend: spreadsheet automation, basic databases, document management."),
+        2: ("Connectivity", "Systems exist but aren't connected. Focus on: integrating existing systems, establishing data flows between departments, APIs and interfaces. Still too early for AI. Use simple language with some technical terms. Recommend: system integration, central databases, automated data exchange, basic reporting."),
+        3: ("Visibility", "Real-time data is captured - they can see what's happening. Focus on: dashboards, KPI monitoring, basic analytics, data quality improvement. Ready for simple rule-based automation and basic ML (e.g., anomaly detection). Balance explanation with technical detail. Recommend: BI tools, real-time dashboards, simple predictive models, data warehousing."),
+        4: ("Transparency", "They understand WHY things happen through analytics. Focus on: root cause analysis, process mining, advanced analytics, ML for pattern recognition. Ready for supervised ML models. Use technical terms more freely. Recommend: predictive maintenance, demand forecasting, quality prediction, recommendation systems."),
+        5: ("Predictive Capacity", "Can forecast what WILL happen. Focus on: predictive models, simulation, scenario planning, proactive optimization. Ready for advanced ML/AI, deep learning where appropriate. Discuss architecture and trade-offs openly. Recommend: digital twins, advanced forecasting, prescriptive analytics, intelligent automation."),
+        6: ("Adaptability", "Systems can autonomously adapt and optimize. Focus on: self-optimizing systems, autonomous decision-making, continuous learning, AI-driven transformation. Full technical discussions appropriate. Recommend: autonomous systems, reinforcement learning, adaptive processes, AI-native architectures."),
+    },
+    "de": {
+        1: ("Computerisierung", "Unternehmen hat digitale Grundwerkzeuge, aber isoliert. Fokus auf: manuelle Prozesse digitalisieren, Basissoftware einführen (ERP, CRM Grundlagen), Datenformate standardisieren. Keine KI/ML-Themen. Sehr einfache Sprache, jeden Fachbegriff erklären. Empfehlungen: Tabellenautomatisierung, einfache Datenbanken, Dokumentenmanagement."),
+        2: ("Konnektivität", "Systeme existieren, sind aber nicht verbunden. Fokus auf: bestehende Systeme integrieren, Datenflüsse zwischen Abteilungen etablieren, APIs und Schnittstellen. Noch zu früh für KI. Einfache Sprache mit einigen Fachbegriffen. Empfehlungen: Systemintegration, zentrale Datenbanken, automatisierter Datenaustausch, Basis-Reporting."),
+        3: ("Sichtbarkeit", "Echtzeitdaten werden erfasst - sie können sehen, was passiert. Fokus auf: Dashboards, KPI-Monitoring, einfache Analysen, Datenqualität verbessern. Bereit für einfache regelbasierte Automatisierung und Basis-ML (z.B. Anomalieerkennung). Balance zwischen Erklärung und technischen Details. Empfehlungen: BI-Tools, Echtzeit-Dashboards, einfache Vorhersagemodelle, Data Warehousing."),
+        4: ("Transparenz", "Sie verstehen WARUM Dinge passieren durch Analysen. Fokus auf: Ursachenanalyse, Process Mining, erweiterte Analysen, ML für Mustererkennung. Bereit für überwachte ML-Modelle. Fachbegriffe freier verwenden. Empfehlungen: Predictive Maintenance, Bedarfsprognosen, Qualitätsvorhersage, Empfehlungssysteme."),
+        5: ("Prognosefähigkeit", "Kann vorhersagen, was passieren WIRD. Fokus auf: Vorhersagemodelle, Simulation, Szenarioplanung, proaktive Optimierung. Bereit für fortgeschrittenes ML/KI, Deep Learning wo sinnvoll. Architektur und Abwägungen offen diskutieren. Empfehlungen: Digitale Zwillinge, fortgeschrittene Prognosen, präskriptive Analysen, intelligente Automatisierung."),
+        6: ("Adaptierbarkeit", "Systeme können autonom anpassen und optimieren. Fokus auf: selbstoptimierende Systeme, autonome Entscheidungsfindung, kontinuierliches Lernen, KI-getriebene Transformation. Volle technische Diskussionen angemessen. Empfehlungen: Autonome Systeme, Reinforcement Learning, adaptive Prozesse, KI-native Architekturen."),
+    }
+}
 
 
 class ConsultationService:
@@ -548,6 +569,22 @@ Respond only with these 4 categories, brief and concise."""
                     "content": info.content[:2000]  # Limit each entry
                 })
 
+        # Get maturity assessment (Step 1b)
+        maturity = self.db.query(MaturityAssessment).filter(
+            MaturityAssessment.session_id == db_session.id
+        ).first()
+
+        maturity_data = None
+        if maturity:
+            maturity_data = {
+                "overall_score": maturity.overall_score,
+                "maturity_level": maturity.maturity_level,
+                "resources_score": maturity.resources_score,
+                "information_systems_score": maturity.information_systems_score,
+                "culture_score": maturity.culture_score,
+                "organizational_structure_score": maturity.organizational_structure_score,
+            }
+
         # Get ideas and prioritization results
         sheets = self.db.query(IdeaSheet).filter(
             IdeaSheet.session_id == db_session.id
@@ -574,6 +611,7 @@ Respond only with these 4 categories, brief and concise."""
         return {
             "company_name": db_session.company_name or "the company",
             "company_info": company_context,
+            "maturity": maturity_data,
             "ideas": all_ideas,
             "top_idea": all_ideas[0] if all_ideas else None,
             "collaborative_mode": db_session.collaborative_consultation or False
@@ -585,6 +623,57 @@ Respond only with these 4 categories, brief and concise."""
         company_info_text = ""
         for info in context.get("company_info", [])[:3]:
             company_info_text += f"\n[{info['type'].upper()}]\n{info['content']}\n"
+
+        # Format maturity assessment section and dynamic level guidance
+        maturity = context.get("maturity")
+        if maturity and maturity.get("overall_score"):
+            company_level = round(maturity['overall_score'])
+            company_level = max(1, min(6, company_level))  # Clamp to 1-6
+
+            if self.language == "de":
+                maturity_section = f"""Das Unternehmen wurde nach dem acatech Industrie 4.0 Reifegradmodell bewertet:
+
+**Gesamtreifegrad: {maturity['overall_score']:.1f}/6 ({maturity.get('maturity_level', 'Unbekannt')})**
+
+Dimensionen-Scores:
+- Ressourcen (Mitarbeiter, Technik, Material): {maturity.get('resources_score', 'N/A')}/6
+- Informationssysteme (IT-Integration, Datenverarbeitung): {maturity.get('information_systems_score', 'N/A')}/6
+- Kultur (Veränderungsbereitschaft, Wissensaustausch): {maturity.get('culture_score', 'N/A')}/6
+- Organisationsstruktur (Agilität, Zusammenarbeit): {maturity.get('organizational_structure_score', 'N/A')}/6"""
+            else:
+                maturity_section = f"""The company has been assessed using the acatech Industry 4.0 Maturity Index:
+
+**Overall Maturity: {maturity['overall_score']:.1f}/6 ({maturity.get('maturity_level', 'Unknown')})**
+
+Dimension Scores:
+- Resources (employees, technology, materials): {maturity.get('resources_score', 'N/A')}/6
+- Information Systems (IT integration, data processing): {maturity.get('information_systems_score', 'N/A')}/6
+- Culture (willingness to change, knowledge sharing): {maturity.get('culture_score', 'N/A')}/6
+- Organizational Structure (agility, collaboration): {maturity.get('organizational_structure_score', 'N/A')}/6"""
+
+            # Build dynamic maturity level guidance (show company's level ± 1)
+            guidance = MATURITY_GUIDANCE.get(self.language, MATURITY_GUIDANCE["en"])
+            levels_to_show = [l for l in range(company_level - 1, company_level + 2) if 1 <= l <= 6]
+
+            if self.language == "de":
+                maturity_level_guidance = f"Dieses Unternehmen ist auf **Stufe {company_level}**. Hier ist die relevante Orientierung:\n\n"
+                for level in levels_to_show:
+                    name, desc = guidance[level]
+                    marker = " ← AKTUELL" if level == company_level else ""
+                    maturity_level_guidance += f"- **Stufe {level} ({name}){marker}**: {desc}\n\n"
+            else:
+                maturity_level_guidance = f"This company is at **Level {company_level}**. Here is the relevant guidance:\n\n"
+                for level in levels_to_show:
+                    name, desc = guidance[level]
+                    marker = " ← CURRENT" if level == company_level else ""
+                    maturity_level_guidance += f"- **Level {level} ({name}){marker}**: {desc}\n\n"
+        else:
+            if self.language == "de":
+                maturity_section = "Keine Reifegradbewertung vorhanden. Erkunden Sie im Gespräch den aktuellen Stand der Digitalisierung."
+                maturity_level_guidance = "Ohne Reifegradbewertung: Beginnen Sie mit grundlegenden Fragen zur aktuellen IT-Infrastruktur und Digitalisierung, um das Niveau einzuschätzen."
+            else:
+                maturity_section = "No maturity assessment available. Explore the current state of digitalization during the conversation."
+                maturity_level_guidance = "Without maturity assessment: Start with basic questions about current IT infrastructure and digitalization to gauge their level."
 
         # Format top ideas
         top_ideas_text = ""
@@ -642,7 +731,9 @@ You are having a one-on-one conversation with the client. Respond directly and n
             company_info_text=company_info_text,
             top_ideas_text=top_ideas_text,
             focus_idea=focus_idea,
-            multi_participant_section=multi_participant_section
+            multi_participant_section=multi_participant_section,
+            maturity_section=maturity_section,
+            maturity_level_guidance=maturity_level_guidance
         )
 
     def _build_initial_greeting(self, context: Dict) -> str:

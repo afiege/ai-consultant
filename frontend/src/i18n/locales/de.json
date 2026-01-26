@@ -1,5 +1,6 @@
 {
   "common": {
+    "languageCode": "de",
     "save": "Speichern",
     "saveChanges": "Änderungen speichern",
     "saving": "Speichern...",
@@ -124,10 +125,89 @@
       "sourceWeb": "Web-Crawling"
     }
   },
+  "step1a": {
+    "title": "Schritt 1a: Unternehmensübersicht",
+    "subtitle": "Stellen Sie Informationen über Ihr Unternehmen bereit - durch Text, Dokumenten-Upload oder Website-Crawling",
+    "backHome": "Zurück zur Startseite",
+    "explanation": {
+      "title": "Warum wir diese Informationen benötigen",
+      "description": "Das Verständnis Ihres Unternehmens hilft uns, relevante KI- und Digitalisierungsideen zu entwickeln, die auf Ihre spezifische Situation zugeschnitten sind. Je mehr Kontext Sie liefern, desto besser werden die Empfehlungen.",
+      "bullet1": "Teilen Sie Ihr Geschäftsmodell - welche Produkte oder Dienstleistungen bieten Sie an?",
+      "bullet2": "Beschreiben Sie Ihre Kunden und Ihren Zielmarkt",
+      "bullet3": "Nennen Sie aktuelle Herausforderungen im Tagesgeschäft",
+      "bullet4": "Geben Sie Informationen über Ihre Teamgröße und Hauptprozesse an",
+      "tip": "Sie benötigen kein technisches Wissen! Beschreiben Sie Ihr Unternehmen einfach so, wie Sie es einem neuen Kollegen erklären würden."
+    }
+  },
+  "step1b": {
+    "title": "Schritt 1b: Digitale Reifegradanalyse",
+    "subtitle": "Bewerten Sie die Industrie 4.0-Readiness Ihres Unternehmens mit dem acatech Maturity Index",
+    "backToCompanyInfo": "Zurück zur Unternehmensübersicht",
+    "saveAssessment": "Bewertung speichern",
+    "saved": "Bewertung gespeichert",
+    "explanation": {
+      "title": "Was ist der acatech Maturity Index?",
+      "description": "Der acatech Industrie 4.0 Maturity Index ist ein standardisiertes Framework der Deutschen Akademie der Technikwissenschaften. Er hilft Organisationen, ihren aktuellen Status der digitalen Transformation zu verstehen und Verbesserungsbereiche zu identifizieren.",
+      "bullet1": "Bewerten Sie Ihr Unternehmen in 4 Schlüsseldimensionen auf einer Skala von 1-6",
+      "bullet2": "Stufe 1 (Computerisierung) bis Stufe 6 (Adaptabilität) repräsentiert zunehmende digitale Reife",
+      "bullet3": "Die Bewertung hilft, spezifische Bereiche zu identifizieren, in denen Digitalisierung den größten Einfluss haben kann",
+      "bullet4": "Ihre Ergebnisse werden verwendet, um KI-Empfehlungen auf Ihren aktuellen Reifegrad abzustimmen",
+      "tip": "Antworten Sie ehrlich basierend auf Ihrem aktuellen Zustand, nicht wo Sie hoffen zu sein. Das hilft uns, realistische Empfehlungen zu geben."
+    },
+    "maturityLevels": {
+      "computerization": "Computerisierung",
+      "connectivity": "Konnektivität",
+      "visibility": "Sichtbarkeit",
+      "transparency": "Transparenz",
+      "predictiveCapacity": "Prognosefähigkeit",
+      "adaptability": "Adaptabilität"
+    },
+    "levelReference": {
+      "title": "Referenz der Reifegradstufen"
+    },
+    "results": {
+      "title": "Ihr Reifegradprofil",
+      "maturityLevel": "Gesamtstufe"
+    },
+    "dimensions": {
+      "resources": {
+        "title": "Ressourcen",
+        "description": "Digitale Fähigkeiten Ihrer Belegschaft, Ausrüstung, Materialien und Werkzeuge",
+        "q1": "Wie digital kompetent ist Ihre Belegschaft? (1 = grundlegende Computernutzung, 6 = KI/Data-Science-Fähigkeiten)",
+        "q2": "Wie vernetzt und intelligent sind Ihre Anlagen und Maschinen? (1 = manuell, 6 = vollständig autonom)",
+        "q3": "Wie gut werden Ihre Materialien und Bestände digital erfasst? (1 = papierbasiert, 6 = Echtzeit-IoT-Tracking)",
+        "q4": "Wie fortschrittlich sind Ihre digitalen Tools und Software? (1 = einfache Office-Anwendungen, 6 = KI-gestützte Enterprise-Systeme)"
+      },
+      "informationSystems": {
+        "title": "Informationssysteme",
+        "description": "Integration von IT-Systemen und Datenverarbeitungsfähigkeiten",
+        "q1": "Wie integriert sind Ihre IT-Systeme? (1 = isolierte Silos, 6 = vollständig integriertes Ökosystem)",
+        "q2": "Wie zugänglich sind Ihre Geschäftsdaten? (1 = schwer zu finden, 6 = Echtzeit-Dashboards überall)",
+        "q3": "Wie automatisiert ist Ihre Datenerfassung? (1 = manuelle Eingabe, 6 = automatisch aus allen Quellen)",
+        "q4": "Wie fortschrittlich ist Ihre Datenanalyse? (1 = Tabellenkalkulationen, 6 = KI/ML-prädiktive Analytik)"
+      },
+      "culture": {
+        "title": "Kultur",
+        "description": "Organisatorische Bereitschaft für die digitale Transformation",
+        "q1": "Wie offen ist Ihre Organisation für Veränderungen? (1 = widerstandsfähig, 6 = aktiv nach Innovationen suchend)",
+        "q2": "Wie gut fließt Wissen zwischen Abteilungen? (1 = in Silos, 6 = offene Kollaborationskultur)",
+        "q3": "Wie wird mit Fehlern umgegangen? (1 = bestraft, 6 = als Lernmöglichkeit gesehen)",
+        "q4": "Wie engagiert ist die Führung für Digitalisierung? (1 = skeptisch, 6 = strategische Priorität)"
+      },
+      "organizationalStructure": {
+        "title": "Organisationsstruktur",
+        "description": "Agilität, Zusammenarbeit und Entscheidungsprozesse",
+        "q1": "Wie agil sind Ihre Teams? (1 = starre Hierarchien, 6 = selbstorganisierende Teams)",
+        "q2": "Wie schnell können Sie Entscheidungen treffen? (1 = Wochen/Monate, 6 = Echtzeit-datengetrieben)",
+        "q3": "Wie arbeiten Teams funktionsübergreifend zusammen? (1 = selten, 6 = standardmäßig cross-funktional)",
+        "q4": "Wie schnell können Sie sich an Marktveränderungen anpassen? (1 = sehr langsam, 6 = sofortige Pivots möglich)"
+      }
+    }
+  },
   "step2": {
     "title": "Schritt 2: 6-3-5 Brainstorming",
     "subtitle": "Interaktive Brainstorming-Sitzung mit KI-Assistenten",
-    "backStep1": "Zurück zu Schritt 1",
+    "backStep1": "Zurück zur Reifegradanalyse",
     "explanation": {
       "title": "Was ist 6-3-5 Brainstorming?",
       "description": "Die 6-3-5 Methode ist eine bewährte Kreativitätstechnik: 6 Teilnehmer schreiben jeweils 3 Ideen in 5 Minuten, dann geben sie ihr Blatt an die nächste Person weiter, die auf diesen Ideen aufbaut. So entsteht in nur 30 Minuten eine reiche Ideensammlung.",
@@ -455,6 +535,90 @@
       "months": "Monate"
     }
   },
+  "step6": {
+    "title": "Schritt 6: Export & Technische Übergabe",
+    "subtitle": "Überprüfen Sie Ihre Erkenntnisse und bereiten Sie die Technical Understanding Phase vor",
+    "backStep5": "Zurück zum Business Case",
+    "backHome": "Zurück zur Startseite",
+    "explanation": {
+      "title": "DMME-Methodik: Vom Business zum Technical Understanding",
+      "description": "Sie haben die Business Understanding Phase abgeschlossen. Das Technical Transition Briefing bereitet die Übergabe an die nächste Phase vor: Technical Understanding & Conceptualization, in der technische Experten Datenquellen, Systeme und Implementierungsansätze analysieren.",
+      "bullet1": "Überprüfen Sie alle gesammelten Erkenntnisse aus Ihrer Beratungsreise",
+      "bullet2": "Generieren Sie ein Technical Briefing, das Geschäftsanforderungen in technische Fragen übersetzt",
+      "bullet3": "Das Briefing identifiziert Enabler, Blocker und Hypothesen für die Umsetzung",
+      "bullet4": "Exportieren Sie einen umfassenden PDF-Bericht für Stakeholder und Technik-Teams",
+      "tip": "Das Technical Briefing ist für IT/OT-Manager oder externe Berater konzipiert, die die technische Lösung entwickeln werden."
+    },
+    "status": {
+      "title": "Vollständigkeitsstatus",
+      "companyInfo": "Unternehmensdaten",
+      "maturity": "Reifegradanalyse",
+      "crispDm": "CRISP-DM Erkenntnisse",
+      "businessCase": "Business Case",
+      "costs": "Kostenschätzung",
+      "swot": "SWOT-Analyse",
+      "briefing": "Technical Briefing"
+    },
+    "sections": {
+      "companyProfile": "Unternehmensprofil",
+      "maturity": "Digitaler Reifegrad (acatech)",
+      "crispDm": "CRISP-DM Zusammenfassung",
+      "businessCase": "Business Case Indikation",
+      "costs": "Kostenschätzung"
+    },
+    "unknownCompany": "Unbekanntes Unternehmen",
+    "incomplete": {
+      "companyInfo": "Keine Unternehmensdaten erfasst. Gehen Sie zu Schritt 1a.",
+      "maturity": "Keine Reifegradanalyse durchgeführt. Gehen Sie zu Schritt 1b.",
+      "crispDm": "Keine CRISP-DM Erkenntnisse. Schließen Sie die Beratung in Schritt 4 ab.",
+      "businessCase": "Kein Business Case erstellt. Schließen Sie Schritt 5a ab.",
+      "costs": "Keine Kostenschätzung. Schließen Sie Schritt 5b ab."
+    },
+    "maturity": {
+      "resources": "Ressourcen",
+      "infoSystems": "Informationssysteme",
+      "culture": "Kultur",
+      "orgStructure": "Org.-Struktur"
+    },
+    "crispDm": {
+      "objectives": "Geschäftsziele",
+      "aiGoals": "KI-Ziele"
+    },
+    "businessCase": {
+      "classification": "Klassifizierung",
+      "pitch": "Management-Pitch"
+    },
+    "costs": {
+      "complexity": "Komplexität",
+      "tco": "3-Jahres-TCO"
+    },
+    "swot": {
+      "title": "SWOT-Analyse",
+      "subtitle": "Strategische Bewertung von Stärken, Schwächen, Chancen und Risiken",
+      "notGenerated": "Noch keine SWOT-Analyse erstellt.",
+      "generateButton": "SWOT-Analyse generieren",
+      "generating": "Analyse wird erstellt...",
+      "regenerateButton": "Neu generieren",
+      "regenerating": "Wird neu generiert...",
+      "generateNote": "Dies analysiert Ihre Sitzungsdaten, um strategische Faktoren für das vorgeschlagene Projekt zu identifizieren."
+    },
+    "briefing": {
+      "title": "Technical Transition Briefing",
+      "subtitle": "DMME-Übergabedokument für Technical Understanding & Conceptualization",
+      "notGenerated": "Noch kein Technical Briefing erstellt.",
+      "generateButton": "Technical Briefing generieren",
+      "generating": "Briefing wird erstellt...",
+      "regenerateButton": "Neu generieren",
+      "regenerating": "Wird neu generiert...",
+      "generateNote": "Dies ruft die KI auf, um Ihre Sitzungsdaten zu analysieren und ein strukturiertes Übergabedokument zu erstellen."
+    },
+    "export": {
+      "title": "Export-Optionen",
+      "downloadPDF": "Vollständigen PDF-Bericht herunterladen",
+      "generating": "PDF wird erstellt...",
+      "pdfNote": "Das PDF enthält alle Erkenntnisse, das Technical Briefing und vollständige Gesprächsprotokolle."
+    }
+  },
   "export": {
     "title": "Bericht exportieren",
     "subtitle": "Erstellen und laden Sie Ihren Beratungsbericht herunter",
@@ -480,6 +644,7 @@
   "stepProgress": {
     "steps": {
       "company": "Unternehmen",
+      "maturity": "Reifegrad",
       "brainstorming": "Brainstorming",
       "prioritization": "Priorisierung",
       "consultation": "Beratung",

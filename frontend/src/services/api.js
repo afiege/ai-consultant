@@ -44,6 +44,16 @@ export const companyInfoAPI = {
     api.delete(`/api/sessions/${sessionUuid}/company-info/${infoId}`),
 };
 
+// Maturity assessment endpoints (acatech Industry 4.0 Maturity Index)
+export const maturityAPI = {
+  get: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/maturity`),
+  save: (sessionUuid, data) =>
+    api.post(`/api/sessions/${sessionUuid}/maturity`, data),
+  getLevels: () =>
+    api.get('/api/sessions/any/maturity/levels'),
+};
+
 // 6-3-5 method endpoints
 export const sixThreeFiveAPI = {
   start: (sessionUuid, apiKey) =>
@@ -584,10 +594,36 @@ export const costEstimationAPI = {
 // Export endpoints
 export const exportAPI = {
   generatePDF: (sessionUuid) =>
-    api.post(`/api/sessions/${sessionUuid}/export/pdf`),
+    api.post(`/api/sessions/${sessionUuid}/export/pdf`, {}, {
+      responseType: 'blob',
+    }),
   downloadPDF: (sessionUuid, exportId) =>
     api.get(`/api/sessions/${sessionUuid}/export/pdf/${exportId}`, {
       responseType: 'blob',
+    }),
+  getData: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/export/data`),
+
+  // Transition briefing endpoints
+  getTransitionBriefing: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/transition-briefing`),
+  generateTransitionBriefing: (sessionUuid, options = {}) =>
+    api.post(`/api/sessions/${sessionUuid}/transition-briefing/generate`, {
+      model: options.model,
+      api_key: options.apiKey || apiKeyManager.get(),
+      api_base: options.apiBase,
+      language: options.language || 'en',
+    }),
+
+  // SWOT analysis endpoints
+  getSwotAnalysis: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/swot-analysis`),
+  generateSwotAnalysis: (sessionUuid, options = {}) =>
+    api.post(`/api/sessions/${sessionUuid}/swot-analysis/generate`, {
+      model: options.model,
+      api_key: options.apiKey || apiKeyManager.get(),
+      api_base: options.apiBase,
+      language: options.language || 'en',
     }),
 };
 

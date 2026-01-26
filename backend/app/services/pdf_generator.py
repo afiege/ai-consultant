@@ -244,6 +244,14 @@ class PDFReportGenerator:
         story.append(PageBreak())
         story.extend(self._build_recommendations_section(db_session))
 
+        # SWOT Analysis
+        story.append(PageBreak())
+        story.extend(self._build_swot_section(db_session))
+
+        # Technical Transition Briefing (DMME Handover)
+        story.append(PageBreak())
+        story.extend(self._build_technical_briefing_section(db_session))
+
         # Appendix header
         story.append(PageBreak())
         story.extend(self._build_appendix_header())
@@ -1882,5 +1890,448 @@ class PDFReportGenerator:
                 alignment=TA_CENTER
             )
         ))
+
+        return elements
+
+    def _build_swot_section(self, db_session: SessionModel) -> list:
+        """Build the SWOT Analysis section."""
+        elements = []
+
+        # Header
+        elements.append(Paragraph("SWOT Analysis", self.styles['SectionHeader']))
+        elements.append(Paragraph(
+            "Strategic assessment of strengths, weaknesses, opportunities, and threats for the proposed AI/digitalization project.",
+            self.styles['ReportBody']
+        ))
+        elements.append(Spacer(1, 0.2*inch))
+
+        # Get the SWOT analysis from findings
+        finding = self.db.query(ConsultationFinding).filter(
+            ConsultationFinding.session_id == db_session.id,
+            ConsultationFinding.factor_type == 'swot_analysis'
+        ).first()
+
+        if not finding or not finding.finding_text:
+            # Show placeholder
+            placeholder_style = ParagraphStyle(
+                'SwotPlaceholder',
+                parent=self.styles['ReportBody'],
+                fontSize=10,
+                textColor=colors.HexColor('#92400e'),
+                alignment=TA_CENTER
+            )
+
+            content = Paragraph(
+                "<b>SWOT Analysis Not Yet Generated</b><br/><br/>"
+                "To generate this section, go to Step 6 (Export & Handover) in the application "
+                "and click \"Generate SWOT Analysis\".",
+                placeholder_style
+            )
+
+            table = Table([[content]], colWidths=[15*cm])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fef3c7')),
+                ('BOX', (0, 0), (-1, -1), 2, colors.HexColor('#f59e0b')),
+                ('TOPPADDING', (0, 0), (-1, -1), 20),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+                ('LEFTPADDING', (0, 0), (-1, -1), 15),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+            ]))
+            elements.append(table)
+            return elements
+
+        # Parse and render SWOT content
+        swot_text = finding.finding_text
+
+        # Try to extract and format each quadrant
+        quadrants = [
+            ("STRENGTHS", "STÄRKEN", colors.HexColor('#166534'), colors.HexColor('#dcfce7')),
+            ("WEAKNESSES", "SCHWÄCHEN", colors.HexColor('#991b1b'), colors.HexColor('#fee2e2')),
+            ("OPPORTUNITIES", "CHANCEN", colors.HexColor('#1e40af'), colors.HexColor('#dbeafe')),
+            ("THREATS", "RISIKEN", colors.HexColor('#92400e'), colors.HexColor('#fef3c7')),
+        ]
+
+        for en_name, de_name, header_color, bg_color in quadrants:
+            section_content = self._extract_section(swot_text, en_name) or self._extract_section(swot_text, de_name)
+            if section_content:
+                # Header
+                header = Table(
+                    [[Paragraph(f"<b>{en_name}</b>", ParagraphStyle('QH', fontSize=11, textColor=colors.white))]],
+                    colWidths=[15*cm]
+                )
+                header.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), header_color),
+                    ('TOPPADDING', (0, 0), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                ]))
+                elements.append(header)
+
+                # Content
+                content_para = Paragraph(
+                    markdown_to_reportlab(section_content),
+                    ParagraphStyle('QC', parent=self.styles['ReportBody'], fontSize=9, leading=12)
+                )
+                content_box = Table([[content_para]], colWidths=[15*cm])
+                content_box.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), bg_color),
+                    ('BOX', (0, 0), (-1, -1), 1, header_color),
+                    ('TOPPADDING', (0, 0), (-1, -1), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+                ]))
+                elements.append(content_box)
+                elements.append(Spacer(1, 0.15*inch))
+
+        # Strategic Implications section
+        implications = (
+            self._extract_section(swot_text, "STRATEGIC IMPLICATIONS") or
+            self._extract_section(swot_text, "STRATEGISCHE IMPLIKATIONEN")
+        )
+        if implications:
+            elements.append(Spacer(1, 0.1*inch))
+            impl_header = Table(
+                [[Paragraph("<b>STRATEGIC IMPLICATIONS</b>", ParagraphStyle('IH', fontSize=11, textColor=colors.white))]],
+                colWidths=[15*cm]
+            )
+            impl_header.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#4c1d95')),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ]))
+            elements.append(impl_header)
+
+            impl_content = Paragraph(
+                markdown_to_reportlab(implications),
+                ParagraphStyle('IC', parent=self.styles['ReportBody'], fontSize=9, leading=12)
+            )
+            impl_box = Table([[impl_content]], colWidths=[15*cm])
+            impl_box.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f5f3ff')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#4c1d95')),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+            ]))
+            elements.append(impl_box)
+
+        return elements
+
+    def _build_technical_briefing_section(self, db_session: SessionModel) -> list:
+        """Build the Technical Transition Briefing section (DMME Handover)."""
+        elements = []
+
+        # Header with DMME context
+        elements.append(Paragraph("Technical Transition Briefing", self.styles['SectionHeader']))
+        elements.append(Paragraph(
+            "This section bridges the Business Understanding phase to Technical Understanding & Conceptualization (DMME methodology).",
+            self.styles['ReportBody']
+        ))
+        elements.append(Spacer(1, 0.2*inch))
+
+        # Get the technical briefing from findings
+        finding = self.db.query(ConsultationFinding).filter(
+            ConsultationFinding.session_id == db_session.id,
+            ConsultationFinding.factor_type == 'technical_briefing'
+        ).first()
+
+        if not finding or not finding.finding_text:
+            # Show placeholder with instructions
+            elements.append(self._build_briefing_placeholder())
+            return elements
+
+        # Parse and render the briefing content
+        briefing_text = finding.finding_text
+
+        # Create styled sections for the briefing
+        sections = [
+            ("USE CASE PROFILE", "USE CASE PROFIL"),
+            ("TECHNICAL INVESTIGATION QUESTIONS", "TECHNISCHE UNTERSUCHUNGSFRAGEN"),
+            ("IDENTIFIED ENABLERS AND BLOCKERS", "IDENTIFIZIERTE ENABLER UND BLOCKER"),
+            ("HYPOTHESES FOR TECHNICAL IMPLEMENTATION", "HYPOTHESEN FÜR DIE TECHNISCHE UMSETZUNG"),
+            ("RECOMMENDED FIRST STEPS", "EMPFOHLENE ERSTE SCHRITTE"),
+            ("OPEN ITEMS", "OFFENE PUNKTE")
+        ]
+
+        # Try to extract and format each section
+        for en_name, de_name in sections:
+            section_content = self._extract_section(briefing_text, en_name) or self._extract_section(briefing_text, de_name)
+            if section_content:
+                elements.extend(self._build_briefing_subsection(en_name, section_content))
+                elements.append(Spacer(1, 0.15*inch))
+
+        # If no sections were extracted, render the whole content
+        if not any(self._extract_section(briefing_text, name[0]) or self._extract_section(briefing_text, name[1]) for name in sections):
+            content_elements = markdown_to_elements(
+                briefing_text,
+                self.styles['ReportBody'],
+                self.styles['IdeaText']
+            )
+            elements.extend(content_elements)
+
+        return elements
+
+    def _build_briefing_placeholder(self) -> Table:
+        """Build a placeholder box for missing briefing."""
+        placeholder_style = ParagraphStyle(
+            'BriefingPlaceholder',
+            parent=self.styles['ReportBody'],
+            fontSize=10,
+            textColor=colors.HexColor('#744210'),
+            alignment=TA_CENTER
+        )
+
+        content = Paragraph(
+            "<b>Technical Transition Briefing Not Yet Generated</b><br/><br/>"
+            "To generate this section, go to Step 6 (Export & Handover) in the application "
+            "and click \"Generate Technical Briefing\".<br/><br/>"
+            "This document prepares the handover from Business Understanding to "
+            "Technical Understanding & Conceptualization phase.",
+            placeholder_style
+        )
+
+        table = Table([[content]], colWidths=[15*cm])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fefcbf')),
+            ('BOX', (0, 0), (-1, -1), 2, colors.HexColor('#d69e2e')),
+            ('TOPPADDING', (0, 0), (-1, -1), 20),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+            ('LEFTPADDING', (0, 0), (-1, -1), 15),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        ]))
+
+        return table
+
+    def _build_briefing_subsection(self, title: str, content: str) -> list:
+        """Build a styled subsection for the technical briefing."""
+        elements = []
+
+        # Format title
+        display_title = title.replace("_", " ").title()
+
+        # Header
+        header_style = ParagraphStyle(
+            'BriefingSubheader',
+            parent=self.styles['SubHeader'],
+            fontSize=11,
+            textColor=colors.HexColor('#2c5282'),
+            spaceBefore=10,
+            spaceAfter=6
+        )
+        elements.append(Paragraph(f"<b>{display_title}</b>", header_style))
+
+        # Content with styling based on section type
+        if "HYPOTHESIS" in title.upper() or "HYPOTHES" in title.upper():
+            # Special formatting for hypotheses
+            elements.extend(self._format_hypotheses(content))
+        elif "ENABLER" in title.upper() or "BLOCKER" in title.upper():
+            # Special formatting for enablers/blockers
+            elements.extend(self._format_enablers_blockers(content))
+        elif "INVESTIGATION" in title.upper() or "UNTERSUCHUNG" in title.upper():
+            # Special formatting for investigation questions
+            elements.extend(self._format_investigation_questions(content))
+        else:
+            # Standard content formatting
+            content_elements = markdown_to_elements(
+                content,
+                self.styles['ReportBody'],
+                self.styles['IdeaText']
+            )
+            elements.extend(content_elements)
+
+        return elements
+
+    def _format_hypotheses(self, content: str) -> list:
+        """Format hypotheses with styled boxes."""
+        elements = []
+
+        # Parse hypotheses
+        import re
+        hypothesis_pattern = r'\*\*Hypothesis\s*\d*[:\.]?\*\*\s*(.*?)(?=\*\*Hypothesis|\*\*To be validated|$)'
+        validation_pattern = r'\*\*To be validated[:\.]?\*\*\s*(.*?)(?=\*\*Hypothesis|$)'
+
+        # Simple approach: render as formatted content with box
+        content_clean = content.replace('>', '').strip()
+
+        hyp_style = ParagraphStyle(
+            'HypothesisText',
+            parent=self.styles['ReportBody'],
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor('#2d3748'),
+            leftIndent=10
+        )
+
+        # Create a styled box
+        hyp_para = Paragraph(markdown_to_reportlab(content_clean), hyp_style)
+        hyp_table = Table([[hyp_para]], colWidths=[14.5*cm])
+        hyp_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#ebf8ff')),
+            ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#90cdf4')),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(hyp_table)
+
+        return elements
+
+    def _format_enablers_blockers(self, content: str) -> list:
+        """Format enablers and blockers with visual distinction."""
+        elements = []
+
+        # Try to split into enablers and blockers
+        content_lower = content.lower()
+        enabler_idx = max(content_lower.find('enabler'), 0)
+        blocker_idx = content_lower.find('blocker')
+
+        if blocker_idx > enabler_idx:
+            enablers_text = content[enabler_idx:blocker_idx].strip()
+            blockers_text = content[blocker_idx:].strip()
+        else:
+            enablers_text = content
+            blockers_text = ""
+
+        # Enablers box (green)
+        if enablers_text:
+            enabler_header = Table(
+                [[Paragraph("<b>Enablers</b>", ParagraphStyle('EH', fontSize=10, textColor=colors.white))]],
+                colWidths=[14.5*cm]
+            )
+            enabler_header.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#276749')),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ]))
+            elements.append(enabler_header)
+
+            enabler_content = Paragraph(
+                markdown_to_reportlab(enablers_text.replace('**Enablers**', '').replace('**Enabler**', '').strip()),
+                ParagraphStyle('EC', parent=self.styles['ReportBody'], fontSize=9)
+            )
+            enabler_box = Table([[enabler_content]], colWidths=[14.5*cm])
+            enabler_box.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#c6f6d5')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#276749')),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ]))
+            elements.append(enabler_box)
+            elements.append(Spacer(1, 0.1*inch))
+
+        # Blockers box (orange/red)
+        if blockers_text:
+            blocker_header = Table(
+                [[Paragraph("<b>Blockers</b>", ParagraphStyle('BH', fontSize=10, textColor=colors.white))]],
+                colWidths=[14.5*cm]
+            )
+            blocker_header.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#c53030')),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ]))
+            elements.append(blocker_header)
+
+            blocker_content = Paragraph(
+                markdown_to_reportlab(blockers_text.replace('**Blockers**', '').replace('**Blocker**', '').strip()),
+                ParagraphStyle('BC', parent=self.styles['ReportBody'], fontSize=9)
+            )
+            blocker_box = Table([[blocker_content]], colWidths=[14.5*cm])
+            blocker_box.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fed7d7')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#c53030')),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ]))
+            elements.append(blocker_box)
+
+        # Fallback if parsing didn't work
+        if not enablers_text and not blockers_text:
+            content_elements = markdown_to_elements(
+                content,
+                self.styles['ReportBody'],
+                self.styles['IdeaText']
+            )
+            elements.extend(content_elements)
+
+        return elements
+
+    def _format_investigation_questions(self, content: str) -> list:
+        """Format investigation questions organized by infrastructure layer."""
+        elements = []
+
+        # Try to identify the three layers
+        layers = [
+            ("Physical Infrastructure", "Physische Infrastruktur", colors.HexColor('#2c5282')),
+            ("Virtual Infrastructure", "Virtuelle Infrastruktur", colors.HexColor('#2b6cb0')),
+            ("Governance", "Governance", colors.HexColor('#553c9a'))
+        ]
+
+        content_used = False
+        remaining_content = content
+
+        for en_name, de_name, color in layers:
+            # Try to extract this layer
+            layer_content = None
+            for name in [en_name, de_name]:
+                if name.lower() in content.lower():
+                    # Find the section
+                    import re
+                    pattern = rf'\*\*{name}\*\*\s*(.*?)(?=\*\*(?:Physical|Virtual|Governance|Physische|Virtuelle)|$)'
+                    match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        layer_content = match.group(1).strip()
+                        break
+
+            if layer_content:
+                content_used = True
+                # Layer header
+                layer_header = Table(
+                    [[Paragraph(f"<b>{en_name}</b>", ParagraphStyle('LH', fontSize=9, textColor=colors.white))]],
+                    colWidths=[14.5*cm]
+                )
+                layer_header.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), color),
+                    ('TOPPADDING', (0, 0), (-1, -1), 5),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ]))
+                elements.append(layer_header)
+
+                # Layer content
+                layer_para = Paragraph(
+                    markdown_to_reportlab(layer_content),
+                    ParagraphStyle('LC', parent=self.styles['ReportBody'], fontSize=9, leading=12)
+                )
+                layer_box = Table([[layer_para]], colWidths=[14.5*cm])
+                layer_box.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f7fafc')),
+                    ('BOX', (0, 0), (-1, -1), 1, color),
+                    ('TOPPADDING', (0, 0), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                ]))
+                elements.append(layer_box)
+                elements.append(Spacer(1, 0.08*inch))
+
+        # Fallback if no layers found
+        if not content_used:
+            content_elements = markdown_to_elements(
+                content,
+                self.styles['ReportBody'],
+                self.styles['IdeaText']
+            )
+            elements.extend(content_elements)
 
         return elements

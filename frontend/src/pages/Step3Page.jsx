@@ -319,29 +319,13 @@ const Step3Page = () => {
         )}
 
         {/* Navigation */}
-        <div className="mt-8 flex justify-between items-center">
+        <div className="mt-8 flex justify-start">
           <button
             onClick={() => navigate(`/session/${sessionUuid}/step2`)}
             className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
           >
             {t('step3.backStep2')}
           </button>
-          <div className="flex gap-4">
-            {!hasVoted && (
-              <button
-                onClick={() => navigate(`/session/${sessionUuid}/step4`)}
-                className="px-6 py-2 text-gray-500 hover:text-gray-700"
-              >
-                {t('step3.skipToConsultation')}
-              </button>
-            )}
-            <button
-              onClick={() => navigate(`/session/${sessionUuid}/export`)}
-              className="px-6 py-2 text-green-600 hover:text-green-800 font-medium"
-            >
-              {t('common.exportReport')} →
-            </button>
-          </div>
         </div>
       </div>
     </div>

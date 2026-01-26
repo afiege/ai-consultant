@@ -1,5 +1,6 @@
 {
   "common": {
+    "languageCode": "en",
     "save": "Save",
     "saveChanges": "Save Changes",
     "saving": "Saving...",
@@ -124,10 +125,89 @@
       "sourceWeb": "Web Crawl"
     }
   },
+  "step1a": {
+    "title": "Step 1a: Company Overview",
+    "subtitle": "Provide information about your company through text, document uploads, or website crawling",
+    "backHome": "Back to Home",
+    "explanation": {
+      "title": "Why we need this information",
+      "description": "Understanding your company helps us generate relevant AI and digitalization ideas tailored to your specific situation. The more context you provide, the better the recommendations will be.",
+      "bullet1": "Share your business model - what products or services do you offer?",
+      "bullet2": "Describe your customers and target market",
+      "bullet3": "Mention current challenges you face in daily operations",
+      "bullet4": "Include information about your team size and main processes",
+      "tip": "You don't need technical knowledge! Just describe your business as you would to a new colleague."
+    }
+  },
+  "step1b": {
+    "title": "Step 1b: Digital Maturity Assessment",
+    "subtitle": "Evaluate your company's Industry 4.0 readiness using the acatech Maturity Index",
+    "backToCompanyInfo": "Back to Company Info",
+    "saveAssessment": "Save Assessment",
+    "saved": "Assessment Saved",
+    "explanation": {
+      "title": "What is the acatech Maturity Index?",
+      "description": "The acatech Industry 4.0 Maturity Index is a standardized framework developed by the German Academy of Science and Engineering. It helps organizations understand their current digital transformation status and identify areas for improvement.",
+      "bullet1": "Rate your company across 4 key dimensions on a scale of 1-6",
+      "bullet2": "Level 1 (Computerization) to Level 6 (Adaptability) represents increasing digital maturity",
+      "bullet3": "The assessment helps identify specific areas where digitalization can have the most impact",
+      "bullet4": "Your results will be used to tailor AI recommendations to your current maturity level",
+      "tip": "Answer honestly based on your current state, not where you hope to be. This helps us provide realistic recommendations."
+    },
+    "maturityLevels": {
+      "computerization": "Computerization",
+      "connectivity": "Connectivity",
+      "visibility": "Visibility",
+      "transparency": "Transparency",
+      "predictiveCapacity": "Predictive Capacity",
+      "adaptability": "Adaptability"
+    },
+    "levelReference": {
+      "title": "Maturity Level Reference"
+    },
+    "results": {
+      "title": "Your Maturity Profile",
+      "maturityLevel": "Overall Level"
+    },
+    "dimensions": {
+      "resources": {
+        "title": "Resources",
+        "description": "Digital capability of your workforce, equipment, materials, and tools",
+        "q1": "How digitally skilled is your workforce? (1 = basic computer use, 6 = AI/data science capabilities)",
+        "q2": "How connected and smart are your equipment and machines? (1 = manual, 6 = fully autonomous)",
+        "q3": "How well are your materials and inventory tracked digitally? (1 = paper-based, 6 = real-time IoT tracking)",
+        "q4": "How advanced are your digital tools and software? (1 = basic office, 6 = AI-powered enterprise systems)"
+      },
+      "informationSystems": {
+        "title": "Information Systems",
+        "description": "Integration of IT systems and data processing capabilities",
+        "q1": "How integrated are your IT systems? (1 = isolated silos, 6 = fully integrated ecosystem)",
+        "q2": "How accessible is your business data? (1 = hard to find, 6 = real-time dashboards everywhere)",
+        "q3": "How automated is your data collection? (1 = manual entry, 6 = automatic from all sources)",
+        "q4": "How advanced is your data analysis? (1 = spreadsheets, 6 = AI/ML predictive analytics)"
+      },
+      "culture": {
+        "title": "Culture",
+        "description": "Organizational readiness for digital transformation",
+        "q1": "How open is your organization to change? (1 = resistant, 6 = actively seeking innovation)",
+        "q2": "How well does knowledge flow across departments? (1 = siloed, 6 = open collaboration culture)",
+        "q3": "How is failure treated? (1 = punished, 6 = seen as learning opportunity)",
+        "q4": "How committed is leadership to digitalization? (1 = skeptical, 6 = strategic priority)"
+      },
+      "organizationalStructure": {
+        "title": "Organizational Structure",
+        "description": "Agility, collaboration, and decision-making processes",
+        "q1": "How agile are your teams? (1 = rigid hierarchies, 6 = self-organizing teams)",
+        "q2": "How fast can you make decisions? (1 = weeks/months, 6 = real-time data-driven)",
+        "q3": "How do teams collaborate across functions? (1 = rarely, 6 = cross-functional by default)",
+        "q4": "How quickly can you adapt to market changes? (1 = very slow, 6 = immediate pivots possible)"
+      }
+    }
+  },
   "step2": {
     "title": "Step 2: 6-3-5 Brainstorming",
     "subtitle": "Interactive brainstorming session with AI assistants",
-    "backStep1": "Back to Step 1",
+    "backStep1": "Back to Maturity Assessment",
     "explanation": {
       "title": "What is 6-3-5 Brainstorming?",
       "description": "The 6-3-5 method is a proven creativity technique: 6 participants each write 3 ideas in 5 minutes, then pass their sheet to the next person who builds upon those ideas. This creates a rich collection of ideas in just 30 minutes.",
@@ -455,6 +535,90 @@
       "months": "months"
     }
   },
+  "step6": {
+    "title": "Step 6: Export & Technical Handover",
+    "subtitle": "Review your findings and prepare for the Technical Understanding phase",
+    "backStep5": "Back to Business Case",
+    "backHome": "Back to Home",
+    "explanation": {
+      "title": "DMME Methodology: From Business to Technical Understanding",
+      "description": "You've completed the Business Understanding phase. The Technical Transition Briefing prepares the handover to the next phase: Technical Understanding & Conceptualization, where technical experts analyze data sources, systems, and implementation approaches.",
+      "bullet1": "Review all collected findings from your consultation journey",
+      "bullet2": "Generate a Technical Briefing that translates business needs into technical questions",
+      "bullet3": "The briefing identifies enablers, blockers, and hypotheses for implementation",
+      "bullet4": "Export a comprehensive PDF report for stakeholders and technical teams",
+      "tip": "The Technical Briefing is designed for IT/OT managers or external consultants who will develop the technical solution."
+    },
+    "status": {
+      "title": "Completion Status",
+      "companyInfo": "Company Info",
+      "maturity": "Maturity Assessment",
+      "crispDm": "CRISP-DM Findings",
+      "businessCase": "Business Case",
+      "costs": "Cost Estimation",
+      "swot": "SWOT Analysis",
+      "briefing": "Technical Briefing"
+    },
+    "sections": {
+      "companyProfile": "Company Profile",
+      "maturity": "Digital Maturity (acatech)",
+      "crispDm": "CRISP-DM Executive Summary",
+      "businessCase": "Business Case Indication",
+      "costs": "Cost Estimation"
+    },
+    "unknownCompany": "Unknown Company",
+    "incomplete": {
+      "companyInfo": "No company information collected. Go to Step 1a.",
+      "maturity": "No maturity assessment completed. Go to Step 1b.",
+      "crispDm": "No CRISP-DM findings. Complete the consultation in Step 4.",
+      "businessCase": "No business case generated. Complete Step 5a.",
+      "costs": "No cost estimation. Complete Step 5b."
+    },
+    "maturity": {
+      "resources": "Resources",
+      "infoSystems": "Info Systems",
+      "culture": "Culture",
+      "orgStructure": "Org. Structure"
+    },
+    "crispDm": {
+      "objectives": "Business Objectives",
+      "aiGoals": "AI Goals"
+    },
+    "businessCase": {
+      "classification": "Classification",
+      "pitch": "Management Pitch"
+    },
+    "costs": {
+      "complexity": "Complexity",
+      "tco": "3-Year TCO"
+    },
+    "swot": {
+      "title": "SWOT Analysis",
+      "subtitle": "Strategic assessment of strengths, weaknesses, opportunities, and threats",
+      "notGenerated": "No SWOT Analysis generated yet.",
+      "generateButton": "Generate SWOT Analysis",
+      "generating": "Generating analysis...",
+      "regenerateButton": "Regenerate",
+      "regenerating": "Regenerating...",
+      "generateNote": "This will analyze your session data to identify strategic factors for the proposed project."
+    },
+    "briefing": {
+      "title": "Technical Transition Briefing",
+      "subtitle": "DMME handover document for Technical Understanding & Conceptualization",
+      "notGenerated": "No Technical Briefing generated yet.",
+      "generateButton": "Generate Technical Briefing",
+      "generating": "Generating briefing...",
+      "regenerateButton": "Regenerate",
+      "regenerating": "Regenerating...",
+      "generateNote": "This will call the AI to analyze your session data and create a structured handover document."
+    },
+    "export": {
+      "title": "Export Options",
+      "downloadPDF": "Download Complete PDF Report",
+      "generating": "Generating PDF...",
+      "pdfNote": "The PDF includes all findings, the Technical Briefing, and full conversation transcripts."
+    }
+  },
   "export": {
     "title": "Export Report",
     "subtitle": "Generate and download your consultation report",
@@ -480,6 +644,7 @@
   "stepProgress": {
     "steps": {
       "company": "Company",
+      "maturity": "Maturity",
       "brainstorming": "Brainstorming",
       "prioritization": "Prioritize",
       "consultation": "Consultation",

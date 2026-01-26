@@ -876,18 +876,12 @@ const Step5Page = () => {
         </div>
 
         {/* Navigation */}
-        <div className="mt-6 flex justify-between">
+        <div className="mt-6 flex justify-start">
           <button
             onClick={() => navigate(`/session/${sessionUuid}/step4`)}
             className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
           >
             {t('step5.backStep4')}
-          </button>
-          <button
-            onClick={() => navigate(`/session/${sessionUuid}/export`)}
-            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-          >
-            {t('step5.continueExport')}
           </button>
         </div>
       </div>

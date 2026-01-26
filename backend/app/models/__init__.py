@@ -4,6 +4,7 @@ from .participant import Participant
 from .idea import IdeaSheet, Idea
 from .prioritization import Prioritization
 from .consultation import ConsultationMessage, ConsultationFinding
+from .maturity_assessment import MaturityAssessment
 
 __all__ = [
     "Session",
@@ -14,4 +15,5 @@ __all__ = [
     "Prioritization",
     "ConsultationMessage",
     "ConsultationFinding",
+    "MaturityAssessment",
 ]
