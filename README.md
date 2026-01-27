@@ -1,6 +1,6 @@
 # AI & Digitalization Consultant for SMEs
 
-An AI-powered digitalization consultant application for Small and Medium Enterprises (SMEs) that guides companies through a comprehensive 5-step consultation process using LLMs via LiteLLM (supporting OpenAI, Anthropic, Mistral, OpenRouter, and more).
+An AI-powered digitalization consultant application for Small and Medium Enterprises (SMEs) that guides companies through a comprehensive 6-step consultation process using LLMs via LiteLLM (supporting OpenAI, Anthropic, Mistral, OpenRouter, and more).
 
 ## Customer Journey
 
@@ -11,19 +11,18 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 │ Information  │     │  Maturity    │     │ Brainstorming│     │Prioritization│     │ Consultation │
 └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘     └──────┬───────┘
                                                                                            │
-                     ┌─────────────────────────────────────────────────────────────────────┘
-                     ▼
-              ┌──────────────┐
-              │   STEP 5     │     • Executive Summary
-              │   Results    │────▶• Business Case (5-Level Value Framework)
-              │   & Export   │     • Cost Estimation & ROI
-              │              │     • SWOT Analysis
-              └──────────────┘     • PDF Export
+┌──────────────────────────────────────────────────────────────────────────────────────────┘
+│
+│    ┌──────────────┐     ┌──────────────┐
+│    │   STEP 5     │     │   STEP 6     │
+└───▶│  Business    │────▶│   Export &   │────▶ Professional PDF Report
+     │    Case      │     │   Handover   │      with SWOT Analysis &
+     └──────────────┘     └──────────────┘      Technical Briefing
 ```
 
 ## Features
 
-### 5-Step Consultation Process
+### 6-Step Consultation Process
 
 1. **Company Information** (Step 1a)
    - Free text input for company information
@@ -61,21 +60,20 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
      - AI/Data Mining Goals
      - Project Plan
 
-6. **Results & Analysis** (Step 5)
-   - **Executive Summary** - Overview of all findings
+6. **Business Case & Cost Estimation** (Step 5)
    - **Business Case** - 5-Level Value Framework analysis:
      1. Budget Substitution
      2. Process Efficiency
      3. Project Acceleration
      4. Risk Mitigation
      5. Strategic Scaling
-   - **Cost Estimation** - Investment analysis and ROI calculation
-   - **SWOT Analysis** - Company readiness evaluation
+   - **Cost Estimation** - Investment analysis, TCO, and ROI calculation
 
-7. **Professional PDF Export**
-   - Comprehensive report generation
-   - Includes all consultation data from all steps
-   - Professional formatting with executive summary
+7. **Export & Technical Handover** (Step 6)
+   - **Executive Summary** - Overview of all findings
+   - **SWOT Analysis** - Company readiness evaluation
+   - **Technical Transition Briefing** - Handover document for implementation phase
+   - **Professional PDF Export** - Comprehensive report with all consultation data
 
 ### Additional Features
 
@@ -90,11 +88,11 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            FRONTEND (React + Vite)                          │
 │                                                                             │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐         │
-│  │ Step1    │ │ Step2    │ │ Step3    │ │ Step4    │ │ Step5    │         │
-│  │ Company  │ │ 6-3-5    │ │ Prioriti-│ │ CRISP-DM │ │ Business │         │
-│  │ Profile  │ │ Method   │ │ zation   │ │ Consult  │ │ Case     │         │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘         │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐       │
+│  │ Step1  │ │ Step2  │ │ Step3  │ │ Step4  │ │ Step5  │ │ Step6  │       │
+│  │Company │ │ 6-3-5  │ │Priorit-│ │CRISP-DM│ │Business│ │Export &│       │
+│  │Profile │ │ Method │ │ization │ │Consult │ │ Case   │ │Handover│       │
+│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘       │
 │       │            │            │            │            │                │
 │       │      ┌─────┴────────────┴────────────┴────────────┘                │
 │       │      │  ApiKeyPrompt (modal) - prompts for LLM API key             │
@@ -112,7 +110,7 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 │  ┌─────────────────────────────┴─────────────────────────────────┐         │
 │  │                         Routers                                │         │
 │  │  sessions │ six_three_five │ consultation │ business_case     │         │
-│  │  prioritization │ expert_settings │ company_info              │         │
+│  │  prioritization │ expert_settings │ company_info │ export     │         │
 │  └─────────────────────────────┬─────────────────────────────────┘         │
 │                                │                                            │
 │  ┌─────────────────────────────┴─────────────────────────────────┐         │
@@ -156,7 +154,7 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 - **SQLAlchemy** - ORM for database operations
 - **SQLite** - Database with WAL mode for better concurrency
 - **LiteLLM** - Multi-provider LLM integration (OpenAI, Anthropic, Mistral, OpenRouter, etc.)
-- **WeasyPrint** - PDF generation
+- **ReportLab** - PDF generation with charts and professional formatting
 - **BeautifulSoup4** - Web scraping
 - **PyPDF2 & python-docx** - File processing
 
