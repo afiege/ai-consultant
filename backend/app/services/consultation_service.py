@@ -815,13 +815,22 @@ When multiple people contribute:
 
         # If conversation is long, summarize older messages
         if summarize_old and len(message_list) > 15:
-            # Keep the system message (first), summarize middle, keep recent 8 messages
+            # Keep the system message (first), summarize middle, keep recent messages
             system_msgs = [m for m in message_list if m["role"] == "system"]
             non_system = [m for m in message_list if m["role"] != "system"]
 
             if len(non_system) > 10:
-                old_messages = non_system[:-8]  # Messages to summarize
-                recent_messages = non_system[-8:]  # Keep last 8 exchanges
+                # We need to keep enough recent messages, but ensure they START with a user message
+                # (Mistral requires user/assistant alternation after system)
+                recent_count = 8
+                recent_messages = non_system[-recent_count:]
+
+                # If recent_messages starts with assistant, include one more message to get the user
+                while recent_messages and recent_messages[0]["role"] == "assistant" and recent_count < len(non_system):
+                    recent_count += 1
+                    recent_messages = non_system[-recent_count:]
+
+                old_messages = non_system[:-recent_count] if recent_count < len(non_system) else []
 
                 # Create a summary of older messages
                 summary_text = self._summarize_old_messages(old_messages)
