@@ -44,6 +44,22 @@ const Step5Page = () => {
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
+  // Reusable markdown components for findings cards (with table support)
+  const findingsMarkdownComponents = {
+    p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+    ul: ({children}) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+    ol: ({children}) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+    li: ({children}) => <li className="mb-1">{children}</li>,
+    strong: ({children}) => <strong className="font-semibold">{children}</strong>,
+    em: ({children}) => <em className="italic">{children}</em>,
+    table: ({children}) => <div className="overflow-x-auto my-2"><table className="min-w-full border border-gray-300 text-xs">{children}</table></div>,
+    thead: ({children}) => <thead className="bg-gray-100">{children}</thead>,
+    tbody: ({children}) => <tbody>{children}</tbody>,
+    tr: ({children}) => <tr className="border-b border-gray-200">{children}</tr>,
+    th: ({children}) => <th className="px-2 py-1 text-left font-semibold border-r border-gray-200 last:border-r-0">{children}</th>,
+    td: ({children}) => <td className="px-2 py-1 border-r border-gray-200 last:border-r-0">{children}</td>,
+  };
+
   useEffect(() => {
     loadData();
   }, [sessionUuid]);
@@ -420,12 +436,22 @@ const Step5Page = () => {
               ol: ({children}) => <ol className={`list-decimal ml-4 mb-2 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ol>,
               li: ({children}) => <li className="mb-1">{children}</li>,
               strong: ({children}) => <strong className="font-semibold">{children}</strong>,
-              table: ({children}) => <table className="min-w-full border border-gray-300 my-2">{children}</table>,
-              thead: ({children}) => <thead className="bg-gray-100">{children}</thead>,
+              em: ({children}) => <em className="italic">{children}</em>,
+              h1: ({children}) => <h1 className={`text-lg font-bold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h1>,
+              h2: ({children}) => <h2 className={`text-base font-bold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h2>,
+              h3: ({children}) => <h3 className={`text-sm font-bold mb-1 mt-2 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h3>,
+              h4: ({children}) => <h4 className={`text-sm font-semibold mb-1 mt-2 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h4>,
+              code: ({inline, children}) => inline
+                ? <code className={`px-1 py-0.5 rounded text-xs font-mono ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{children}</code>
+                : <code className={`block p-2 rounded text-xs font-mono my-2 overflow-x-auto ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{children}</code>,
+              blockquote: ({children}) => <blockquote className={`border-l-4 pl-3 my-2 italic ${msg.role === 'user' ? 'border-blue-300 text-blue-100' : 'border-gray-300 text-gray-600'}`}>{children}</blockquote>,
+              hr: () => <hr className={`my-3 ${msg.role === 'user' ? 'border-blue-400' : 'border-gray-300'}`} />,
+              table: ({children}) => <div className="overflow-x-auto my-2"><table className="min-w-full border border-gray-300">{children}</table></div>,
+              thead: ({children}) => <thead className={`${msg.role === 'user' ? 'bg-blue-500' : 'bg-gray-200'}`}>{children}</thead>,
               tbody: ({children}) => <tbody>{children}</tbody>,
               tr: ({children}) => <tr className="border-b border-gray-300">{children}</tr>,
-              th: ({children}) => <th className="px-2 py-1 text-left text-xs font-semibold border-r border-gray-300 last:border-r-0">{children}</th>,
-              td: ({children}) => <td className="px-2 py-1 text-xs border-r border-gray-300 last:border-r-0">{children}</td>,
+              th: ({children}) => <th className={`px-2 py-1 text-left text-xs font-semibold border-r border-gray-300 last:border-r-0 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</th>,
+              td: ({children}) => <td className={`px-2 py-1 text-xs border-r border-gray-300 last:border-r-0 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</td>,
             }}
           >
             {msg.content}
@@ -713,7 +739,7 @@ const Step5Page = () => {
                   </h3>
                   {potentialsFindings?.classification ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown>{potentialsFindings.classification}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{potentialsFindings.classification}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.findings.classificationPlaceholder')}</p>
@@ -728,7 +754,7 @@ const Step5Page = () => {
                   </h3>
                   {potentialsFindings?.calculation ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown>{potentialsFindings.calculation}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{potentialsFindings.calculation}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.findings.calculationPlaceholder')}</p>
@@ -743,7 +769,7 @@ const Step5Page = () => {
                   </h3>
                   {potentialsFindings?.validation_questions ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown>{potentialsFindings.validation_questions}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{potentialsFindings.validation_questions}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.findings.validationPlaceholder')}</p>
@@ -758,7 +784,7 @@ const Step5Page = () => {
                   </h3>
                   {potentialsFindings?.management_pitch ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none font-medium">
-                      <ReactMarkdown>{potentialsFindings.management_pitch}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{potentialsFindings.management_pitch}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.findings.managementPitchPlaceholder')}</p>
@@ -793,7 +819,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.complexity ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown>{costsFindings.complexity}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.complexity}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.complexityPlaceholder')}</p>
@@ -808,7 +834,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.initial_investment ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown>{costsFindings.initial_investment}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.initial_investment}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.initialPlaceholder')}</p>
@@ -823,7 +849,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.recurring_costs ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown>{costsFindings.recurring_costs}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.recurring_costs}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.recurringPlaceholder')}</p>
@@ -838,7 +864,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.tco ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none font-medium">
-                      <ReactMarkdown>{costsFindings.tco}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.tco}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.tcoPlaceholder')}</p>
@@ -853,7 +879,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.roi_analysis ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown>{costsFindings.roi_analysis}</ReactMarkdown>
+                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.roi_analysis}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.roiPlaceholder')}</p>

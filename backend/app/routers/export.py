@@ -1,5 +1,6 @@
 """Export router for generating PDF reports and transition briefings."""
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -8,12 +9,31 @@ from pydantic import BaseModel
 from litellm import completion
 
 from ..database import get_db
+
+logger = logging.getLogger(__name__)
 from ..models import Session as SessionModel, ConsultationFinding, CompanyInfo, MaturityAssessment
 from ..services.pdf_generator import PDFReportGenerator
 from ..services.default_prompts import get_prompt
 from ..config import settings
 
 router = APIRouter()
+
+
+def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str]]:
+    """
+    Get LLM settings from a session, falling back to global defaults.
+    This ensures export endpoints use the same LLM configuration as other steps.
+
+    Returns:
+        Tuple of (model, api_base)
+    """
+    # Get model (session override or global default)
+    model = db_session.llm_model or settings.llm_model
+
+    # Get API base (session override or global default)
+    api_base = db_session.llm_api_base or settings.llm_api_base or None
+
+    return model, api_base
 
 
 class TransitionBriefingRequest(BaseModel):
@@ -61,6 +81,9 @@ def generate_pdf_report(
         )
 
     except Exception as e:
+        import traceback
+        logger.error(f"PDF generation failed: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate PDF: {str(e)}"
@@ -198,16 +221,19 @@ def generate_transition_briefing(
             detail=f"Session {session_uuid} not found"
         )
 
-    # Get API key from header or request body
+    # Get LLM settings from session (same as other steps)
+    session_model, session_api_base = get_llm_settings(db_session)
+
+    # Use request overrides if provided, otherwise use session settings
     api_key = x_api_key or request.api_key
-    if not api_key:
-        api_key = getattr(settings, 'openai_api_key', None)
+    model = request.model or session_model
+    api_base = request.api_base or session_api_base
 
     # Build the context for the prompt
     context = _build_transition_context(db, db_session)
 
-    # Get the prompt template
-    language = request.language or "en"
+    # Get the prompt template - use session language setting if available
+    language = request.language or db_session.prompt_language or "en"
     prompt_template = get_prompt("transition_briefing_system", language)
 
     # Fill in the template
@@ -217,9 +243,6 @@ def generate_transition_briefing(
         business_case_summary=context["business_case_summary"],
         cost_estimation_summary=context["cost_estimation_summary"]
     )
-
-    # Call the LLM
-    model = request.model or "mistral/mistral-small-latest"
 
     try:
         completion_kwargs = {
@@ -234,8 +257,8 @@ def generate_transition_briefing(
 
         if api_key:
             completion_kwargs["api_key"] = api_key
-        if request.api_base:
-            completion_kwargs["api_base"] = request.api_base
+        if api_base:
+            completion_kwargs["api_base"] = api_base
 
         response = completion(**completion_kwargs)
         briefing_content = response.choices[0].message.content
@@ -414,16 +437,19 @@ def generate_swot_analysis(
             detail=f"Session {session_uuid} not found"
         )
 
-    # Get API key from header or request body
+    # Get LLM settings from session (same as other steps)
+    session_model, session_api_base = get_llm_settings(db_session)
+
+    # Use request overrides if provided, otherwise use session settings
     api_key = x_api_key or request.api_key
-    if not api_key:
-        api_key = getattr(settings, 'openai_api_key', None)
+    model = request.model or session_model
+    api_base = request.api_base or session_api_base
 
     # Build the context (reuse the transition context builder)
     context = _build_transition_context(db, db_session)
 
-    # Get the prompt template
-    language = request.language or "en"
+    # Get the prompt template - use session language setting if available
+    language = request.language or db_session.prompt_language or "en"
     prompt_template = get_prompt("swot_analysis_system", language)
 
     # Fill in the template
@@ -433,9 +459,6 @@ def generate_swot_analysis(
         business_case_summary=context["business_case_summary"],
         cost_estimation_summary=context["cost_estimation_summary"]
     )
-
-    # Call the LLM
-    model = request.model or "mistral/mistral-small-latest"
 
     try:
         completion_kwargs = {
@@ -450,8 +473,8 @@ def generate_swot_analysis(
 
         if api_key:
             completion_kwargs["api_key"] = api_key
-        if request.api_base:
-            completion_kwargs["api_base"] = request.api_base
+        if api_base:
+            completion_kwargs["api_base"] = api_base
 
         response = completion(**completion_kwargs)
         swot_content = response.choices[0].message.content

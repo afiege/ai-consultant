@@ -636,10 +636,10 @@ export const exportAPI = {
     api.get(`/api/sessions/${sessionUuid}/transition-briefing`),
   generateTransitionBriefing: (sessionUuid, options = {}) =>
     api.post(`/api/sessions/${sessionUuid}/transition-briefing/generate`, {
-      model: options.model,
+      model: options.model,  // Backend uses session's LLM settings if not specified
       api_key: options.apiKey || apiKeyManager.get(),
       api_base: options.apiBase,
-      language: options.language || 'en',
+      language: options.language,  // Backend uses session language if not specified
     }),
 
   // SWOT analysis endpoints
@@ -647,10 +647,10 @@ export const exportAPI = {
     api.get(`/api/sessions/${sessionUuid}/swot-analysis`),
   generateSwotAnalysis: (sessionUuid, options = {}) =>
     api.post(`/api/sessions/${sessionUuid}/swot-analysis/generate`, {
-      model: options.model,
+      model: options.model,  // Backend uses session's LLM settings if not specified
       api_key: options.apiKey || apiKeyManager.get(),
       api_base: options.apiBase,
-      language: options.language || 'en',
+      language: options.language,  // Backend uses session language if not specified
     }),
 };
 

@@ -9,13 +9,69 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, ListFlowable, ListItem, KeepTogether
+    BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle,
+    PageBreak, ListFlowable, ListItem, KeepTogether, Flowable
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY, TA_RIGHT
 from reportlab.graphics.shapes import Drawing, Rect, String, Line
 from reportlab.graphics import renderPDF
 from sqlalchemy.orm import Session
+
+
+class TOCEntry(Flowable):
+    """A flowable that marks a TOC entry and notifies the document."""
+
+    def __init__(self, text, level=0, style_name='TOCHeading'):
+        Flowable.__init__(self)
+        self.text = text
+        self.level = level
+        self.style_name = style_name
+
+    def draw(self):
+        pass  # Nothing to draw, this is just a marker
+
+    def wrap(self, availWidth, availHeight):
+        return (0, 0)  # Takes no space
+
+
+class MyDocTemplate(BaseDocTemplate):
+    """Custom document template that tracks TOC entries."""
+
+    def __init__(self, filename, **kwargs):
+        BaseDocTemplate.__init__(self, filename, **kwargs)
+        self.toc_entries = []
+        self.page_numbers = {}
+
+    def afterFlowable(self, flowable):
+        """Called after each flowable is rendered - track TOC entries."""
+        if isinstance(flowable, Paragraph):
+            style = flowable.style.name
+            if style == 'SectionHeader':
+                # Main section
+                text = flowable.getPlainText()
+                self.toc_entries.append((text, self.page, 0))
+            elif style == 'AppendixHeader':
+                # Appendix section
+                text = flowable.getPlainText()
+                self.toc_entries.append((text, self.page, 1))
+
+
+def add_page_number(canvas, doc):
+    """Add page number to the bottom center of each page (adjusted for title page offset)."""
+    canvas.saveState()
+    # Subtract 1 to account for title page (which has no number)
+    page_num = canvas.getPageNumber() - 1
+    if page_num > 0:  # Only show page number after title page
+        text = f"Page {page_num}"
+        canvas.setFont('Helvetica', 9)
+        canvas.setFillColor(colors.gray)
+        canvas.drawCentredString(A4[0] / 2, 1.5 * cm, text)
+    canvas.restoreState()
+
+
+def no_page_number(canvas, doc):
+    """Empty callback for pages without page numbers (title page)."""
+    pass
 
 from ..models import (
     Session as SessionModel,
@@ -46,9 +102,11 @@ def markdown_to_reportlab(text: str) -> str:
     # Convert *italic* to <i>italic</i> (but not if already part of bold)
     text = re.sub(r'(?<!\*)\*([^*]+?)\*(?!\*)', r'<i>\1</i>', text)
 
-    # Convert headers (## Header) to bold
-    text = re.sub(r'^##\s*(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+    # Convert headers to bold (process longer patterns first to avoid partial matches)
+    text = re.sub(r'^####\s*(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
     text = re.sub(r'^###\s*(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+    text = re.sub(r'^##\s*(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+    text = re.sub(r'^#\s*(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
 
     # Convert newlines to <br/>
     text = text.replace('\n', '<br/>')
@@ -207,10 +265,71 @@ class PDFReportGenerator:
         if not db_session:
             raise ValueError(f"Session {session_uuid} not found")
 
-        # Create PDF in memory
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(
-            buffer,
+        def build_story_without_toc():
+            """Build the main content story (without TOC placeholder)."""
+            story = []
+
+            # Company Profile Summary (main body)
+            story.append(PageBreak())
+            story.extend(self._build_company_profile_summary(db_session))
+
+            # Main Results Section: Executive Summary
+            story.append(PageBreak())
+            story.extend(self._build_executive_summary(db_session))
+
+            # Business Case Section (Step 5a)
+            story.append(PageBreak())
+            story.extend(self._build_business_case_section(db_session))
+
+            # Cost Estimation Section (Step 5b)
+            story.append(PageBreak())
+            story.extend(self._build_cost_estimation_section(db_session))
+
+            # Implementation Roadmap
+            story.append(PageBreak())
+            story.extend(self._build_recommendations_section(db_session))
+
+            # SWOT Analysis
+            story.append(PageBreak())
+            story.extend(self._build_swot_section(db_session))
+
+            # Technical Transition Briefing
+            story.append(PageBreak())
+            story.extend(self._build_technical_briefing_section(db_session))
+
+            # Appendix header
+            story.append(PageBreak())
+            story.extend(self._build_appendix_header())
+
+            # Appendix A: Company Overview
+            story.extend(self._build_company_section(db_session))
+
+            # Appendix B: Brainstorming Ideas
+            story.append(PageBreak())
+            story.extend(self._build_ideas_section(db_session))
+
+            # Appendix C: Prioritization Results
+            story.append(PageBreak())
+            story.extend(self._build_prioritization_section(db_session))
+
+            # Appendix D: Consultation Conversation
+            story.append(PageBreak())
+            story.extend(self._build_consultation_transcript(db_session))
+
+            # Appendix E: Business Case Conversation
+            story.append(PageBreak())
+            story.extend(self._build_business_case_transcript(db_session))
+
+            # Appendix F: Cost Estimation Conversation
+            story.append(PageBreak())
+            story.extend(self._build_cost_estimation_transcript(db_session))
+
+            return story
+
+        # PASS 1: Build document to capture page numbers
+        buffer1 = io.BytesIO()
+        doc1 = MyDocTemplate(
+            buffer1,
             pagesize=A4,
             rightMargin=2*cm,
             leftMargin=2*cm,
@@ -218,73 +337,56 @@ class PDFReportGenerator:
             bottomMargin=2*cm
         )
 
-        # Build content
-        story = []
+        # Create page template with frame and page numbers
+        frame = Frame(
+            doc1.leftMargin, doc1.bottomMargin + 0.5*cm,  # Add space for page number
+            doc1.width, doc1.height - 0.5*cm,
+            id='normal'
+        )
+        doc1.addPageTemplates([PageTemplate(id='main', frames=frame, onPage=add_page_number)])
 
-        # Title page
-        story.extend(self._build_title_page(db_session))
+        # Build first pass with title + placeholder TOC + content
+        story1 = []
+        story1.extend(self._build_title_page(db_session))
+        story1.append(PageBreak())
+        story1.extend(self._build_table_of_contents({}))  # Empty TOC for first pass
+        story1.extend(build_story_without_toc())
 
-        # Company Profile Summary (main body)
-        story.append(PageBreak())
-        story.extend(self._build_company_profile_summary(db_session))
+        doc1.build(story1)
+        buffer1.close()
 
-        # Main Results Section: Executive Summary with findings and recommendations
-        story.append(PageBreak())
-        story.extend(self._build_executive_summary(db_session))
+        # Extract page numbers from first pass (subtract 1 to account for unnumbered title page)
+        page_numbers = {}
+        for entry_text, page_num, level in doc1.toc_entries:
+            page_numbers[entry_text] = page_num - 1  # Adjust for title page offset
 
-        # Business Case Section (Step 5a - Potentials)
-        story.append(PageBreak())
-        story.extend(self._build_business_case_section(db_session))
+        # PASS 2: Build final document with page numbers in TOC
+        buffer2 = io.BytesIO()
+        doc2 = MyDocTemplate(
+            buffer2,
+            pagesize=A4,
+            rightMargin=2*cm,
+            leftMargin=2*cm,
+            topMargin=2*cm,
+            bottomMargin=2*cm
+        )
+        doc2.addPageTemplates([PageTemplate(id='main', frames=Frame(
+            doc2.leftMargin, doc2.bottomMargin + 0.5*cm,  # Add space for page number
+            doc2.width, doc2.height - 0.5*cm,
+            id='normal'
+        ), onPage=add_page_number)])
 
-        # Cost Estimation Section (Step 5b)
-        story.append(PageBreak())
-        story.extend(self._build_cost_estimation_section(db_session))
+        story2 = []
+        story2.extend(self._build_title_page(db_session))
+        story2.append(PageBreak())
+        story2.extend(self._build_table_of_contents(page_numbers))
+        story2.extend(build_story_without_toc())
 
-        # Implementation Roadmap
-        story.append(PageBreak())
-        story.extend(self._build_recommendations_section(db_session))
-
-        # SWOT Analysis
-        story.append(PageBreak())
-        story.extend(self._build_swot_section(db_session))
-
-        # Technical Transition Briefing (DMME Handover)
-        story.append(PageBreak())
-        story.extend(self._build_technical_briefing_section(db_session))
-
-        # Appendix header
-        story.append(PageBreak())
-        story.extend(self._build_appendix_header())
-
-        # Appendix A: Company Overview (input)
-        story.extend(self._build_company_section(db_session))
-
-        # Appendix B: Brainstorming Ideas (input)
-        story.append(PageBreak())
-        story.extend(self._build_ideas_section(db_session))
-
-        # Appendix C: Prioritization Results (input)
-        story.append(PageBreak())
-        story.extend(self._build_prioritization_section(db_session))
-
-        # Appendix D: Consultation Conversation (input)
-        story.append(PageBreak())
-        story.extend(self._build_consultation_transcript(db_session))
-
-        # Appendix E: Business Case Conversation (input)
-        story.append(PageBreak())
-        story.extend(self._build_business_case_transcript(db_session))
-
-        # Appendix F: Cost Estimation Conversation (input)
-        story.append(PageBreak())
-        story.extend(self._build_cost_estimation_transcript(db_session))
-
-        # Build PDF
-        doc.build(story)
+        doc2.build(story2)
 
         # Get PDF bytes
-        pdf_bytes = buffer.getvalue()
-        buffer.close()
+        pdf_bytes = buffer2.getvalue()
+        buffer2.close()
 
         return pdf_bytes
 
@@ -346,11 +448,125 @@ class PDFReportGenerator:
 
         return elements
 
+    def _build_table_of_contents(self, page_numbers: dict) -> list:
+        """Build the table of contents page with page numbers."""
+        elements = []
+
+        # TOC Header
+        elements.append(Paragraph("Table of Contents", self.styles['Title1']))
+        elements.append(Spacer(1, 0.5*inch))
+
+        # Define TOC entries: (number, display_title, lookup_title, section_type)
+        # lookup_title must match the exact text used in SectionHeader paragraphs
+        toc_entries = [
+            ("1.", "Company Profile and Maturity Assessment", "1. Company Profile and Maturity Assessment", "Main Report"),
+            ("2.", "Executive Summary", "2. Executive Summary", "Main Report"),
+            ("3.", "Business Case Indication", "3. Business Case Indication", "Main Report"),
+            ("4.", "Cost Estimation", "4. Cost Estimation", "Main Report"),
+            ("5.", "Implementation Roadmap", "5. Implementation Roadmap", "Main Report"),
+            ("6.", "SWOT Analysis", "6. SWOT Analysis", "Main Report"),
+            ("7.", "Technical Transition Briefing", "7. Technical Transition Briefing", "Main Report"),
+            ("", "", "", ""),  # Spacer
+            ("A.", "Company Profile & Maturity", "Appendix A: Company Profile & Maturity Assessment", "Appendix"),
+            ("B.", "Brainstorming Session", "Appendix B: Brainstorming Session (6-3-5 Method)", "Appendix"),
+            ("C.", "Prioritization Results", "Appendix C: Idea Prioritization Results", "Appendix"),
+            ("D.", "Consultation Transcript", "Appendix D: Consultation Transcript", "Appendix"),
+            ("E.", "Business Case Transcript", "Appendix E: Business Case Transcript", "Appendix"),
+            ("F.", "Cost Estimation Transcript", "Appendix F: Cost Estimation Transcript", "Appendix"),
+        ]
+
+        # Create TOC styles
+        toc_section_style = ParagraphStyle(
+            'TOCSection',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            textColor=colors.gray,
+            spaceBefore=12,
+            spaceAfter=4
+        )
+
+        toc_entry_style = ParagraphStyle(
+            'TOCEntryText',
+            parent=self.styles['Normal'],
+            fontSize=11,
+        )
+
+        toc_page_style = ParagraphStyle(
+            'TOCPageNum',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            alignment=TA_RIGHT
+        )
+
+        current_section = None
+        toc_data = []
+
+        for number, display_title, lookup_title, section_type in toc_entries:
+            if not display_title:  # Spacer entry
+                if toc_data:
+                    # Build table for current section
+                    elements.extend(self._build_toc_table(toc_data, toc_entry_style, toc_page_style))
+                    toc_data = []
+                elements.append(Spacer(1, 0.15*inch))
+                current_section = None
+                continue
+
+            # Add section header if changed
+            if section_type != current_section:
+                if toc_data:
+                    elements.extend(self._build_toc_table(toc_data, toc_entry_style, toc_page_style))
+                    toc_data = []
+                elements.append(Paragraph(f"<b>{section_type}</b>", toc_section_style))
+                current_section = section_type
+
+            # Look up page number
+            page_num = page_numbers.get(lookup_title, "")
+
+            # Add entry
+            toc_data.append((number, display_title, str(page_num) if page_num else ""))
+
+        # Build remaining entries
+        if toc_data:
+            elements.extend(self._build_toc_table(toc_data, toc_entry_style, toc_page_style))
+
+        return elements
+
+    def _build_toc_table(self, toc_data: list, entry_style, page_style) -> list:
+        """Build a table for TOC entries with dot leaders."""
+        elements = []
+
+        for number, title, page_num in toc_data:
+            # Create a row with number+title on left, dots in middle, page on right
+            entry_text = f"<b>{number}</b>&nbsp;&nbsp;{title}"
+
+            # Use a table for proper alignment
+            row = [
+                Paragraph(entry_text, entry_style),
+                Paragraph(page_num, page_style)
+            ]
+
+            # Calculate widths (total width ~16cm)
+            table = Table([row], colWidths=[14*cm, 2*cm])
+            table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ]))
+            elements.append(table)
+
+        return elements
+
+        return elements
+
     def _build_company_profile_summary(self, db_session: SessionModel) -> list:
         """Build the company profile summary section for the main body."""
         elements = []
 
-        elements.append(Paragraph("Company Profile", self.styles['SectionHeader']))
+        elements.append(Paragraph("1. Company Profile and Maturity Assessment", self.styles['SectionHeader']))
         elements.append(Spacer(1, 0.2*inch))
 
         # Get company profile finding
@@ -437,7 +653,7 @@ class PDFReportGenerator:
         """Build the executive summary with key findings, business case, ROI, and recommendation."""
         elements = []
 
-        elements.append(Paragraph("Executive Summary", self.styles['SectionHeader']))
+        elements.append(Paragraph("2. Executive Summary", self.styles['SectionHeader']))
         elements.append(Spacer(1, 0.2*inch))
 
         # Get all findings
@@ -467,6 +683,52 @@ class PDFReportGenerator:
             if all_ideas:
                 all_ideas.sort(key=lambda x: x['points'], reverse=True)
                 top_idea = all_ideas[0]['content'] if all_ideas[0]['points'] > 0 else all_ideas[0]['content']
+
+        # ============================================================
+        # USE CASE OVERVIEW (at the very top)
+        # ============================================================
+        elements.append(Paragraph("Use Case Overview", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        # Build use case description from top idea and AI goals
+        use_case_parts = []
+
+        if top_idea:
+            use_case_parts.append(f"<b>Selected Project:</b> {top_idea}")
+
+        if findings_dict.get('ai_goals'):
+            ai_goals = findings_dict['ai_goals']
+            # Truncate if too long
+            if len(ai_goals) > 400:
+                ai_goals = ai_goals[:400] + "..."
+            use_case_parts.append(f"<b>AI/Data Mining Objectives:</b> {ai_goals}")
+
+        if use_case_parts:
+            use_case_text = "<br/><br/>".join(use_case_parts)
+        else:
+            use_case_text = "No specific use case has been defined yet. Complete the brainstorming and consultation steps to define the project scope."
+
+        use_case_style = ParagraphStyle(
+            'UseCaseText',
+            parent=self.styles['ReportBody'],
+            fontSize=10,
+            leading=14,
+        )
+
+        use_case_table = Table(
+            [[Paragraph(use_case_text, use_case_style)]],
+            colWidths=[15*cm]
+        )
+        use_case_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f0fdf4')),
+            ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#16a34a')),
+            ('TOPPADDING', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(use_case_table)
+        elements.append(Spacer(1, 0.3*inch))
 
         # ============================================================
         # RECOMMENDATION BOX (prominent at the top)
@@ -506,61 +768,64 @@ class PDFReportGenerator:
         elements.append(Paragraph("Business Case Overview", self.styles['SubHeader']))
         elements.append(Spacer(1, 0.1*inch))
 
-        # Create a summary table with key metrics
-        overview_data = []
+        # Create styled sections for each metric with proper table rendering
+        has_overview_data = False
 
         # Focus Project
         if top_idea:
-            truncated_idea = top_idea[:100] + "..." if len(top_idea) > 100 else top_idea
-            overview_data.append([
-                Paragraph("<b>Focus Project:</b>", self.styles['ReportBody']),
-                Paragraph(truncated_idea, self.styles['ReportBody'])
-            ])
+            has_overview_data = True
+            elements.extend(self._build_overview_item(
+                "Focus Project",
+                top_idea,
+                colors.HexColor('#2563eb'),  # Blue
+                colors.HexColor('#eff6ff')
+            ))
+            elements.append(Spacer(1, 0.15*inch))
 
         # Value Classification
         if findings_dict.get('business_case_classification'):
-            # Extract just the level names
-            classification = findings_dict['business_case_classification']
-            overview_data.append([
-                Paragraph("<b>Value Level:</b>", self.styles['ReportBody']),
-                Paragraph(classification[:150] + "..." if len(classification) > 150 else classification, self.styles['ReportBody'])
-            ])
+            has_overview_data = True
+            elements.extend(self._build_overview_item(
+                "Value Classification",
+                findings_dict['business_case_classification'],
+                colors.HexColor('#7c3aed'),  # Purple
+                colors.HexColor('#f5f3ff')
+            ))
+            elements.append(Spacer(1, 0.15*inch))
 
         # Estimated Benefits
         if findings_dict.get('business_case_calculation'):
-            calc = findings_dict['business_case_calculation']
-            overview_data.append([
-                Paragraph("<b>Estimated Benefits:</b>", self.styles['ReportBody']),
-                Paragraph(calc[:150] + "..." if len(calc) > 150 else calc, self.styles['ReportBody'])
-            ])
+            has_overview_data = True
+            elements.extend(self._build_overview_item(
+                "Estimated Benefits",
+                findings_dict['business_case_calculation'],
+                colors.HexColor('#059669'),  # Green
+                colors.HexColor('#ecfdf5')
+            ))
+            elements.append(Spacer(1, 0.15*inch))
 
         # Project Complexity
         if findings_dict.get('cost_complexity'):
-            complexity = findings_dict['cost_complexity']
-            overview_data.append([
-                Paragraph("<b>Project Complexity:</b>", self.styles['ReportBody']),
-                Paragraph(complexity[:150] + "..." if len(complexity) > 150 else complexity, self.styles['ReportBody'])
-            ])
+            has_overview_data = True
+            elements.extend(self._build_overview_item(
+                "Project Complexity",
+                findings_dict['cost_complexity'],
+                colors.HexColor('#d97706'),  # Amber
+                colors.HexColor('#fffbeb')
+            ))
+            elements.append(Spacer(1, 0.15*inch))
 
         # Investment Required
         if findings_dict.get('cost_initial'):
-            initial = findings_dict['cost_initial']
-            overview_data.append([
-                Paragraph("<b>Initial Investment:</b>", self.styles['ReportBody']),
-                Paragraph(initial[:150] + "..." if len(initial) > 150 else initial, self.styles['ReportBody'])
-            ])
+            has_overview_data = True
+            elements.extend(self._build_overview_item(
+                "Initial Investment",
+                findings_dict['cost_initial'],
+                colors.HexColor('#dc2626'),  # Red
+                colors.HexColor('#fef2f2')
+            ))
 
-        if overview_data:
-            overview_table = Table(overview_data, colWidths=[4*cm, 11*cm])
-            overview_table.setStyle(TableStyle([
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f7fafc')),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-            ]))
-            elements.append(overview_table)
-        else:
+        if not has_overview_data:
             elements.append(Paragraph(
                 "Complete Steps 4 and 5 to generate a business case overview.",
                 self.styles['ReportBody']
@@ -625,31 +890,58 @@ class PDFReportGenerator:
         elements.append(Spacer(1, 0.3*inch))
 
         # ============================================================
-        # KEY FINDINGS (CRISP-DM condensed)
+        # KEY FINDINGS (CRISP-DM - full content)
         # ============================================================
         elements.append(Paragraph("Key Findings", self.styles['SubHeader']))
         elements.append(Spacer(1, 0.1*inch))
 
-        findings_items = []
+        has_findings = False
 
+        # Business Objectives
         if findings_dict.get('business_objectives'):
-            obj = findings_dict['business_objectives']
-            findings_items.append(f"<b>Business Objectives:</b> {obj[:200]}{'...' if len(obj) > 200 else ''}")
+            has_findings = True
+            elements.extend(self._build_overview_item(
+                "Business Objectives",
+                findings_dict['business_objectives'],
+                colors.HexColor('#0369a1'),  # Sky blue
+                colors.HexColor('#f0f9ff')
+            ))
+            elements.append(Spacer(1, 0.15*inch))
 
+        # Situation Assessment
+        if findings_dict.get('situation_assessment'):
+            has_findings = True
+            elements.extend(self._build_overview_item(
+                "Situation Assessment",
+                findings_dict['situation_assessment'],
+                colors.HexColor('#4f46e5'),  # Indigo
+                colors.HexColor('#eef2ff')
+            ))
+            elements.append(Spacer(1, 0.15*inch))
+
+        # AI/Technical Goals
         if findings_dict.get('ai_goals'):
-            goals = findings_dict['ai_goals']
-            findings_items.append(f"<b>AI/Technical Goals:</b> {goals[:200]}{'...' if len(goals) > 200 else ''}")
+            has_findings = True
+            elements.extend(self._build_overview_item(
+                "AI/Data Mining Goals",
+                findings_dict['ai_goals'],
+                colors.HexColor('#7c3aed'),  # Violet
+                colors.HexColor('#f5f3ff')
+            ))
+            elements.append(Spacer(1, 0.15*inch))
 
+        # Implementation Plan
         if findings_dict.get('project_plan'):
-            plan = findings_dict['project_plan']
-            findings_items.append(f"<b>Implementation Plan:</b> {plan[:200]}{'...' if len(plan) > 200 else ''}")
+            has_findings = True
+            elements.extend(self._build_overview_item(
+                "Project Plan",
+                findings_dict['project_plan'],
+                colors.HexColor('#0891b2'),  # Cyan
+                colors.HexColor('#ecfeff')
+            ))
+            elements.append(Spacer(1, 0.15*inch))
 
-        if findings_items:
-            for item in findings_items:
-                item_clean = item.replace('\n', ' ').replace('\r', ' ')
-                elements.append(Paragraph(f"&bull; {item_clean}", self.styles['IdeaText']))
-                elements.append(Spacer(1, 0.1*inch))
-        else:
+        if not has_findings:
             elements.append(Paragraph(
                 "Complete Step 4 (Consultation) to document key findings.",
                 self.styles['ReportBody']
@@ -744,7 +1036,7 @@ class PDFReportGenerator:
         """Build the business case indication section (Step 5) with graphical elements."""
         elements = []
 
-        elements.append(Paragraph("Business Case Indication", self.styles['SectionHeader']))
+        elements.append(Paragraph("3. Business Case Indication", self.styles['SectionHeader']))
         elements.append(Paragraph(
             "This section presents the business case analysis using the 5-Level Value Framework.",
             self.styles['ReportBody']
@@ -819,17 +1111,6 @@ class PDFReportGenerator:
 
         if findings_dict.get('business_case_validation'):
             elements.extend(self._build_validation_checklist(findings_dict['business_case_validation']))
-        else:
-            elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
-
-        elements.append(Spacer(1, 0.3*inch))
-
-        # 4. Management Pitch as prominent callout
-        elements.append(Paragraph("Management Pitch", self.styles['SubHeader']))
-        elements.append(Spacer(1, 0.1*inch))
-
-        if findings_dict.get('business_case_pitch'):
-            elements.extend(self._build_pitch_callout(findings_dict['business_case_pitch']))
         else:
             elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
 
@@ -1129,10 +1410,16 @@ class PDFReportGenerator:
         return elements
 
     def _build_company_section(self, db_session: SessionModel) -> list:
-        """Build the company overview section."""
+        """Build the company overview and maturity assessment section."""
+        from ..models import MaturityAssessment
+
         elements = []
 
-        elements.append(Paragraph("Appendix A: Company Overview", self.styles['SectionHeader']))
+        elements.append(Paragraph("Appendix A: Company Profile & Maturity Assessment", self.styles['SectionHeader']))
+
+        # --- Part 1: Company Information ---
+        elements.append(Paragraph("<b>Company Information</b>", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
 
         # Get company info
         company_infos = self.db.query(CompanyInfo).filter(
@@ -1144,38 +1431,225 @@ class PDFReportGenerator:
                 "No company information was provided.",
                 self.styles['ReportBody']
             ))
-            return elements
+        else:
+            for info in company_infos:
+                source_label = info.info_type.upper() if info.info_type else "TEXT"
+                # Include original filename for file uploads, or source URL for web crawls
+                if info.file_name:
+                    source_detail = f" ({info.file_name})"
+                elif info.source_url:
+                    # Truncate long URLs
+                    url_display = info.source_url if len(info.source_url) <= 60 else info.source_url[:57] + "..."
+                    source_detail = f" ({url_display})"
+                else:
+                    source_detail = ""
 
-        for info in company_infos:
-            source_label = info.info_type.upper() if info.info_type else "TEXT"
-            # Include original filename for file uploads, or source URL for web crawls
-            if info.file_name:
-                source_detail = f" ({info.file_name})"
-            elif info.source_url:
-                # Truncate long URLs
-                url_display = info.source_url if len(info.source_url) <= 60 else info.source_url[:57] + "..."
-                source_detail = f" ({url_display})"
-            else:
-                source_detail = ""
+                elements.append(Paragraph(
+                    f"<b>Source: {source_label}{source_detail}</b>",
+                    ParagraphStyle('SourceLabel', parent=self.styles['Normal'], fontSize=10, textColor=colors.HexColor('#4a5568'))
+                ))
 
+                # Full content (no truncation in appendix)
+                content = info.content or ""
+
+                # Apply markdown formatting
+                content_elements = markdown_to_elements(
+                    content,
+                    self.styles['ReportBody'],
+                    self.styles['IdeaText']
+                )
+                elements.extend(content_elements)
+                elements.append(Spacer(1, 0.2*inch))
+
+        # --- Part 2: Digital Maturity Assessment ---
+        elements.append(Spacer(1, 0.2*inch))
+        elements.append(Paragraph("<b>Digital Maturity Assessment</b>", self.styles['SubHeader']))
+        elements.append(Paragraph(
+            "Assessment based on the Acatech Industry 4.0 Maturity Index (scale 1-6).",
+            ParagraphStyle('MaturityIntro', parent=self.styles['ReportBody'], fontSize=9, textColor=colors.gray)
+        ))
+        elements.append(Spacer(1, 0.15*inch))
+
+        # Get maturity assessment
+        maturity = self.db.query(MaturityAssessment).filter(
+            MaturityAssessment.session_id == db_session.id
+        ).first()
+
+        if not maturity:
             elements.append(Paragraph(
-                f"<b>Source: {source_label}{source_detail}</b>",
-                self.styles['SubHeader']
+                "<i>No maturity assessment has been completed for this session.</i>",
+                ParagraphStyle('MaturityPlaceholder', parent=self.styles['ReportBody'],
+                              textColor=colors.gray, alignment=TA_CENTER)
             ))
+        else:
+            import json
 
-            # Truncate very long content
-            content = info.content or ""
-            if len(content) > 2000:
-                content = content[:2000] + "..."
+            # Maturity level descriptions
+            level_descriptions = {
+                1: ("Computerization", "Basic IT systems, isolated digital solutions"),
+                2: ("Connectivity", "Connected systems, basic data exchange"),
+                3: ("Visibility", "Real-time data capture, digital shadow of operations"),
+                4: ("Transparency", "Data analysis for understanding root causes"),
+                5: ("Predictive Capacity", "Simulation and prediction of future scenarios"),
+                6: ("Adaptability", "Automated adaptation and self-optimization"),
+            }
 
-            # Apply markdown formatting
-            content_elements = markdown_to_elements(
-                content,
-                self.styles['ReportBody'],
-                self.styles['IdeaText']
-            )
-            elements.extend(content_elements)
+            # Question texts for each dimension
+            dimension_questions = {
+                "resources": {
+                    "title": "Resources",
+                    "description": "Digital capability of workforce, equipment, materials, and tools",
+                    "questions": {
+                        "q1": "How digitally skilled is your workforce?",
+                        "q2": "How connected and smart are your equipment and machines?",
+                        "q3": "How well are your materials and inventory tracked digitally?",
+                        "q4": "How advanced are your digital tools and software?"
+                    }
+                },
+                "information_systems": {
+                    "title": "Information Systems",
+                    "description": "Integration of IT systems and data processing capabilities",
+                    "questions": {
+                        "q1": "How integrated are your IT systems?",
+                        "q2": "How accessible is your business data?",
+                        "q3": "How automated is your data collection?",
+                        "q4": "How advanced is your data analysis?"
+                    }
+                },
+                "culture": {
+                    "title": "Culture",
+                    "description": "Organizational readiness for digital transformation",
+                    "questions": {
+                        "q1": "How open is your organization to change?",
+                        "q2": "How well does knowledge flow across departments?",
+                        "q3": "How is failure treated?",
+                        "q4": "How committed is leadership to digitalization?"
+                    }
+                },
+                "organizational_structure": {
+                    "title": "Organizational Structure",
+                    "description": "Agility, collaboration, and decision-making processes",
+                    "questions": {
+                        "q1": "How agile are your teams?",
+                        "q2": "How fast can you make decisions?",
+                        "q3": "How do teams collaborate across functions?",
+                        "q4": "How quickly can you adapt to market changes?"
+                    }
+                }
+            }
+
+            def get_score_color(score):
+                if score < 2:
+                    return colors.HexColor('#ef4444')
+                elif score < 3:
+                    return colors.HexColor('#f97316')
+                elif score < 4:
+                    return colors.HexColor('#eab308')
+                elif score < 5:
+                    return colors.HexColor('#84cc16')
+                else:
+                    return colors.HexColor('#22c55e')
+
+            # Overall Score
+            overall_score = maturity.overall_score or 0
+            maturity_level_name = maturity.maturity_level or "Unknown"
+
+            overall_bar_data = [
+                [
+                    Paragraph(f"<b>Overall: {maturity_level_name}</b>",
+                             ParagraphStyle('OverallLabel', fontSize=10, alignment=TA_LEFT)),
+                    self._create_maturity_bar(overall_score, width=9*cm, height=0.5*cm),
+                    Paragraph(f"<b>{overall_score:.1f}</b>/6",
+                             ParagraphStyle('OverallScore', fontSize=10, alignment=TA_RIGHT))
+                ]
+            ]
+            overall_table = Table(overall_bar_data, colWidths=[4.5*cm, 9.2*cm, 1.5*cm])
+            overall_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ]))
+            elements.append(overall_table)
             elements.append(Spacer(1, 0.2*inch))
+
+            # Dimension details with questions
+            dimension_data = [
+                ("resources", maturity.resources_score, maturity.resources_details),
+                ("information_systems", maturity.information_systems_score, maturity.information_systems_details),
+                ("culture", maturity.culture_score, maturity.culture_details),
+                ("organizational_structure", maturity.organizational_structure_score, maturity.organizational_structure_details),
+            ]
+
+            for dim_key, dim_score, dim_details_json in dimension_data:
+                dim_config = dimension_questions[dim_key]
+                score = dim_score or 0
+
+                # Dimension header with bar
+                dim_header_data = [
+                    [
+                        Paragraph(f"<b>{dim_config['title']}</b>",
+                                 ParagraphStyle('DimHeader', fontSize=10, alignment=TA_LEFT)),
+                        self._create_maturity_bar(score, width=8*cm, height=0.4*cm),
+                        Paragraph(f"<b>{score:.1f}</b>",
+                                 ParagraphStyle('DimScore', fontSize=10, alignment=TA_RIGHT))
+                    ]
+                ]
+                dim_header_table = Table(dim_header_data, colWidths=[5*cm, 8.2*cm, 1.5*cm])
+                dim_header_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f3f4f6')),
+                    ('TOPPADDING', (0, 0), (-1, -1), 6),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ]))
+                elements.append(dim_header_table)
+
+                # Description
+                elements.append(Paragraph(
+                    f"<i>{dim_config['description']}</i>",
+                    ParagraphStyle('DimDesc', fontSize=8, textColor=colors.gray, leftIndent=5)
+                ))
+
+                # Parse details JSON
+                details = {}
+                if dim_details_json:
+                    try:
+                        details = json.loads(dim_details_json) if isinstance(dim_details_json, str) else dim_details_json
+                    except:
+                        pass
+
+                # Question scores
+                question_data = []
+                for q_key, q_text in dim_config['questions'].items():
+                    q_score = details.get(q_key, 0)
+                    question_data.append([
+                        Paragraph(q_text, ParagraphStyle('QText', fontSize=8, leftIndent=10)),
+                        self._create_maturity_bar(q_score, width=5*cm, height=0.3*cm),
+                        Paragraph(f"{q_score:.0f}", ParagraphStyle('QScore', fontSize=8, alignment=TA_RIGHT))
+                    ])
+
+                if question_data:
+                    q_table = Table(question_data, colWidths=[8.5*cm, 5.2*cm, 1*cm])
+                    q_table.setStyle(TableStyle([
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                        ('TOPPADDING', (0, 0), (-1, -1), 3),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+                    ]))
+                    elements.append(q_table)
+
+                elements.append(Spacer(1, 0.15*inch))
+
+            # Legend
+            elements.append(Paragraph("<b>Maturity Levels:</b>", ParagraphStyle('LegendTitle', fontSize=8)))
+            legend_text = " | ".join([f"<b>{lvl}</b> {name}" for lvl, (name, _) in level_descriptions.items()])
+            elements.append(Paragraph(
+                legend_text,
+                ParagraphStyle('LegendText', fontSize=7, textColor=colors.gray)
+            ))
 
         return elements
 
@@ -1321,6 +1795,58 @@ class PDFReportGenerator:
 
         return elements
 
+    def _is_prompt_message(self, content: str, role: str = None) -> bool:
+        """Check if a message looks like a system prompt or context injection."""
+        if not content:
+            return False
+
+        content_lower = content.lower().strip()
+
+        # Only filter user messages that look like context injections
+        # AI/assistant responses should not be filtered
+        if role == 'assistant':
+            return False
+
+        # Exact trigger messages to filter
+        trigger_messages = [
+            "please start the consultation.",
+            "please start the business case analysis.",
+            "please start the cost estimation analysis.",
+            "please begin the consultation.",
+            "please begin the analysis.",
+            "start the consultation",
+            "start the analysis",
+        ]
+
+        for trigger in trigger_messages:
+            if content_lower == trigger or content_lower.startswith(trigger):
+                return True
+
+        # Filter context injections (usually long user messages with context headers)
+        context_indicators = [
+            "## context",
+            "## session context",
+            "## company information",
+            "## maturity assessment",
+            "## instructions",
+            "### company profile",
+            "### digital maturity",
+            "### brainstorming ideas",
+        ]
+
+        for indicator in context_indicators:
+            if indicator in content_lower[:500]:
+                return True
+
+        # Filter very long user messages that look like context dumps
+        if role == 'user' and len(content) > 1500:
+            # Check if it contains multiple context sections
+            section_count = content_lower.count('##')
+            if section_count >= 3:
+                return True
+
+        return False
+
     def _build_consultation_transcript(self, db_session: SessionModel) -> list:
         """Build the consultation conversation transcript for the appendix."""
         elements = []
@@ -1334,8 +1860,8 @@ class PDFReportGenerator:
             (ConsultationMessage.message_type == 'consultation') | (ConsultationMessage.message_type.is_(None))
         ).order_by(ConsultationMessage.created_at).all()
 
-        # Filter out the initial trigger message
-        messages = [m for m in messages if m.content != "Please start the consultation."]
+        # Filter out trigger messages and prompt-like content
+        messages = [m for m in messages if not self._is_prompt_message(m.content, m.role)]
 
         if not messages:
             elements.append(Paragraph("No consultation conversation recorded.", self.styles['ReportBody']))
@@ -1358,11 +1884,7 @@ class PDFReportGenerator:
                         self.styles['ChatUser']
                     ))
                 else:
-                    # AI responses - apply markdown formatting
-                    # Truncate very long AI responses
-                    if len(content) > 1500:
-                        content = content[:1500] + "..."
-
+                    # AI responses - apply markdown formatting (no truncation)
                     content = markdown_to_reportlab(content)
                     elements.append(Paragraph(
                         f"<b>Consultant:</b> {content}",
@@ -1384,8 +1906,8 @@ class PDFReportGenerator:
             ConsultationMessage.message_type == 'business_case'
         ).order_by(ConsultationMessage.created_at).all()
 
-        # Filter out the initial trigger message
-        messages = [m for m in messages if m.content != "Please start the business case analysis."]
+        # Filter out trigger messages and prompt-like content
+        messages = [m for m in messages if not self._is_prompt_message(m.content, m.role)]
 
         if not messages:
             elements.append(Paragraph("No business case conversation recorded.", self.styles['ReportBody']))
@@ -1408,11 +1930,7 @@ class PDFReportGenerator:
                         self.styles['ChatUser']
                     ))
                 else:
-                    # AI responses - apply markdown formatting
-                    # Truncate very long AI responses
-                    if len(content) > 1500:
-                        content = content[:1500] + "..."
-
+                    # AI responses - apply markdown formatting (no truncation)
                     content = markdown_to_reportlab(content)
                     elements.append(Paragraph(
                         f"<b>Analyst:</b> {content}",
@@ -1425,7 +1943,7 @@ class PDFReportGenerator:
         """Build the cost estimation section (Step 5b) with visual elements."""
         elements = []
 
-        elements.append(Paragraph("Cost Estimation", self.styles['SectionHeader']))
+        elements.append(Paragraph("4. Cost Estimation", self.styles['SectionHeader']))
         elements.append(Paragraph(
             "This section presents the cost analysis and investment projection for the proposed AI project.",
             self.styles['ReportBody']
@@ -1643,8 +2161,39 @@ class PDFReportGenerator:
 
         return elements
 
+    def _build_overview_item(self, title: str, content: str, header_color, bg_color) -> list:
+        """Build a styled overview item with proper table rendering for Executive Summary."""
+        elements = []
+
+        header_style = ParagraphStyle(
+            'OverviewHeader',
+            parent=self.styles['ReportBody'],
+            fontSize=10,
+            textColor=colors.white,
+            alignment=TA_LEFT
+        )
+
+        # Header row
+        header_table = Table(
+            [[Paragraph(f"<b>{title}</b>", header_style)]],
+            colWidths=[15*cm]
+        )
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), header_color),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ]))
+        elements.append(header_table)
+
+        # Parse content for tables and text (reuse the cost content parser)
+        content_elements = self._parse_cost_content(content, header_color, bg_color)
+        elements.extend(content_elements)
+
+        return elements
+
     def _build_cost_box(self, title: str, content: str, header_color, bg_color) -> list:
-        """Build a styled cost box with header and content."""
+        """Build a styled cost box with header and content, with proper table rendering."""
         elements = []
 
         header_style = ParagraphStyle(
@@ -1653,13 +2202,6 @@ class PDFReportGenerator:
             fontSize=10,
             textColor=colors.white,
             alignment=TA_LEFT
-        )
-        content_style = ParagraphStyle(
-            'CostContent',
-            parent=self.styles['ReportBody'],
-            fontSize=9,
-            leading=13,
-            textColor=colors.HexColor('#2d3748')
         )
 
         # Header row
@@ -1675,23 +2217,156 @@ class PDFReportGenerator:
         ]))
         elements.append(header_table)
 
-        # Content box
-        content_para = Paragraph(markdown_to_reportlab(content), content_style)
-        content_table = Table(
-            [[content_para]],
-            colWidths=[15*cm]
+        # Parse content for tables and text
+        content_elements = self._parse_cost_content(content, header_color, bg_color)
+        elements.extend(content_elements)
+
+        return elements
+
+    def _parse_cost_content(self, content: str, header_color, bg_color) -> list:
+        """Parse cost content and render tables properly."""
+        elements = []
+
+        content_style = ParagraphStyle(
+            'CostContent',
+            parent=self.styles['ReportBody'],
+            fontSize=9,
+            leading=13,
+            textColor=colors.HexColor('#2d3748')
         )
+
+        # Split content into sections (tables vs text)
+        lines = content.split('\n')
+        current_text = []
+        current_table = []
+        in_table = False
+
+        for line in lines:
+            # Check if this is a table row (starts with |)
+            if line.strip().startswith('|') and '|' in line.strip()[1:]:
+                if current_text and not in_table:
+                    # Flush accumulated text
+                    text = '\n'.join(current_text).strip()
+                    if text:
+                        elements.append(self._create_text_box(text, content_style, bg_color, header_color))
+                    current_text = []
+                in_table = True
+                # Skip separator rows (|---|---|)
+                if not re.match(r'^\|[\s\-:|]+\|$', line.strip()):
+                    current_table.append(line)
+            else:
+                if in_table and current_table:
+                    # Flush accumulated table
+                    elements.append(self._create_markdown_table(current_table, header_color, bg_color))
+                    current_table = []
+                in_table = False
+                current_text.append(line)
+
+        # Flush remaining content
+        if current_table:
+            elements.append(self._create_markdown_table(current_table, header_color, bg_color))
+        if current_text:
+            text = '\n'.join(current_text).strip()
+            if text:
+                elements.append(self._create_text_box(text, content_style, bg_color, header_color))
+
+        return elements
+
+    def _create_text_box(self, text: str, style, bg_color, border_color) -> Table:
+        """Create a styled text box."""
+        content_para = Paragraph(markdown_to_reportlab(text), style)
+        content_table = Table([[content_para]], colWidths=[15*cm])
         content_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), bg_color),
-            ('BOX', (0, 0), (-1, -1), 1, header_color),
-            ('TOPPADDING', (0, 0), (-1, -1), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('BOX', (0, 0), (-1, -1), 1, border_color),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
             ('LEFTPADDING', (0, 0), (-1, -1), 12),
             ('RIGHTPADDING', (0, 0), (-1, -1), 12),
         ]))
-        elements.append(content_table)
+        return content_table
 
-        return elements
+    def _create_markdown_table(self, table_lines: list, header_color, bg_color) -> Table:
+        """Convert markdown table lines to a ReportLab table."""
+        # Parse table rows
+        rows = []
+        for line in table_lines:
+            # Remove leading/trailing pipes and split by |
+            cells = [cell.strip() for cell in line.strip('|').split('|')]
+            rows.append(cells)
+
+        if not rows:
+            return Spacer(1, 0)
+
+        # Create paragraph styles for table cells
+        header_cell_style = ParagraphStyle(
+            'TableHeaderCell',
+            parent=self.styles['ReportBody'],
+            fontSize=9,
+            textColor=colors.white,
+            alignment=TA_LEFT
+        )
+        cell_style = ParagraphStyle(
+            'TableCell',
+            parent=self.styles['ReportBody'],
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor('#2d3748')
+        )
+
+        # Convert to Paragraphs
+        table_data = []
+        for i, row in enumerate(rows):
+            if i == 0:
+                # Header row
+                table_data.append([Paragraph(f"<b>{cell}</b>", header_cell_style) for cell in row])
+            else:
+                # Data rows - check for bold markers
+                processed_cells = []
+                for cell in row:
+                    if cell.startswith('**') and cell.endswith('**'):
+                        processed_cells.append(Paragraph(f"<b>{cell[2:-2]}</b>", cell_style))
+                    else:
+                        processed_cells.append(Paragraph(cell, cell_style))
+                table_data.append(processed_cells)
+
+        # Calculate column widths based on number of columns
+        num_cols = len(rows[0]) if rows else 1
+        if num_cols == 2:
+            col_widths = [9*cm, 6*cm]
+        elif num_cols == 3:
+            col_widths = [6*cm, 4.5*cm, 4.5*cm]
+        elif num_cols == 4:
+            col_widths = [5*cm, 3.5*cm, 3.5*cm, 3*cm]
+        else:
+            col_widths = [15*cm / num_cols] * num_cols
+
+        # Create table
+        table = Table(table_data, colWidths=col_widths)
+
+        # Style the table
+        style_commands = [
+            # Header row
+            ('BACKGROUND', (0, 0), (-1, 0), header_color),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            # Data rows
+            ('BACKGROUND', (0, 1), (-1, -1), bg_color),
+            # Alternating row colors for better readability
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [bg_color, colors.white]),
+            # Grid and borders
+            ('GRID', (0, 0), (-1, -1), 0.5, header_color),
+            ('BOX', (0, 0), (-1, -1), 1, header_color),
+            # Padding
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            # Alignment
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]
+
+        table.setStyle(TableStyle(style_commands))
+        return table
 
     def _build_tco_summary(self, tco_text: str) -> list:
         """Build a prominent TCO summary box."""
@@ -1796,8 +2471,8 @@ class PDFReportGenerator:
             ConsultationMessage.message_type == 'cost_estimation'
         ).order_by(ConsultationMessage.created_at).all()
 
-        # Filter out the initial trigger message
-        messages = [m for m in messages if m.content != "Please start the cost estimation analysis."]
+        # Filter out trigger messages and prompt-like content
+        messages = [m for m in messages if not self._is_prompt_message(m.content, m.role)]
 
         if not messages:
             elements.append(Paragraph("No cost estimation conversation recorded.", self.styles['ReportBody']))
@@ -1820,11 +2495,7 @@ class PDFReportGenerator:
                         self.styles['ChatUser']
                     ))
                 else:
-                    # AI responses - apply markdown formatting
-                    # Truncate very long AI responses
-                    if len(content) > 1500:
-                        content = content[:1500] + "..."
-
+                    # AI responses - apply markdown formatting (no truncation)
                     content = markdown_to_reportlab(content)
                     elements.append(Paragraph(
                         f"<b>Cost Analyst:</b> {content}",
@@ -1837,7 +2508,7 @@ class PDFReportGenerator:
         """Build the implementation recommendations section."""
         elements = []
 
-        elements.append(Paragraph("Implementation Roadmap", self.styles['SectionHeader']))
+        elements.append(Paragraph("5. Implementation Roadmap", self.styles['SectionHeader']))
 
         # Get project plan finding (CRISP-DM) or fall back to legacy implementation
         findings = self.db.query(ConsultationFinding).filter(
@@ -1893,12 +2564,68 @@ class PDFReportGenerator:
 
         return elements
 
+    def _extract_section(self, text: str, section_name: str) -> Optional[str]:
+        """
+        Extract a section from markdown text by section header.
+
+        Looks for patterns like:
+        - ## SECTION_NAME or ### SECTION_NAME (with optional parenthetical descriptions)
+        - **SECTION_NAME**
+        - SECTION_NAME:
+
+        Returns the content until the next section header or end of text.
+        """
+        if not text or not section_name:
+            return None
+
+        # Header patterns to find the start of this section
+        # Note: {{2,3}} is escaped braces to produce {2,3} in the regex (f-string escaping)
+        header_patterns = [
+            rf'^#{{2,3}}\s*(\d+\.\s*)?{re.escape(section_name)}[^\n]*$',  # ### 1. USE CASE PROFILE or ### STRENGTHS (...)
+            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}\*\*[:\s]*$',      # **1. USE CASE PROFILE** or **STRENGTHS**
+            rf'^(\d+\.\s*)?{re.escape(section_name)}[:\s]*$',              # 1. USE CASE PROFILE: or STRENGTHS:
+        ]
+
+        # Find where this section starts
+        start_pos = None
+        start_line_end = None
+
+        lines = text.split('\n')
+        for i, line in enumerate(lines):
+            for pattern in header_patterns:
+                if re.match(pattern, line.strip(), re.IGNORECASE):
+                    start_pos = i
+                    start_line_end = i + 1
+                    break
+            if start_pos is not None:
+                break
+
+        if start_pos is None:
+            return None
+
+        # Find where the next section starts (or end of text)
+        end_pos = len(lines)
+        # Match next section: ### HEADER, ### 1. HEADER, **HEADER**, or ALLCAPS:
+        next_section_pattern = r'^(#{2,3}\s+(\d+\.\s*)?[A-Z]|\*\*(\d+\.\s*)?[A-Z]|[A-Z]{2,}[:\s]*$)'
+
+        for i in range(start_line_end, len(lines)):
+            line = lines[i].strip()
+            if line and re.match(next_section_pattern, line):
+                end_pos = i
+                break
+
+        # Extract content between header and next section
+        content_lines = lines[start_line_end:end_pos]
+        content = '\n'.join(content_lines).strip()
+
+        return content if content else None
+
     def _build_swot_section(self, db_session: SessionModel) -> list:
         """Build the SWOT Analysis section."""
         elements = []
 
         # Header
-        elements.append(Paragraph("SWOT Analysis", self.styles['SectionHeader']))
+        elements.append(Paragraph("6. SWOT Analysis", self.styles['SectionHeader']))
         elements.append(Paragraph(
             "Strategic assessment of strengths, weaknesses, opportunities, and threats for the proposed AI/digitalization project.",
             self.styles['ReportBody']
@@ -1943,80 +2670,140 @@ class PDFReportGenerator:
         # Parse and render SWOT content
         swot_text = finding.finding_text
 
-        # Try to extract and format each quadrant
-        quadrants = [
-            ("STRENGTHS", "STÄRKEN", colors.HexColor('#166534'), colors.HexColor('#dcfce7')),
-            ("WEAKNESSES", "SCHWÄCHEN", colors.HexColor('#991b1b'), colors.HexColor('#fee2e2')),
-            ("OPPORTUNITIES", "CHANCEN", colors.HexColor('#1e40af'), colors.HexColor('#dbeafe')),
-            ("THREATS", "RISIKEN", colors.HexColor('#92400e'), colors.HexColor('#fef3c7')),
-        ]
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"SWOT text (first 500 chars): {swot_text[:500] if swot_text else 'EMPTY'}")
 
-        for en_name, de_name, header_color, bg_color in quadrants:
-            section_content = self._extract_section(swot_text, en_name) or self._extract_section(swot_text, de_name)
-            if section_content:
-                # Header
-                header = Table(
-                    [[Paragraph(f"<b>{en_name}</b>", ParagraphStyle('QH', fontSize=11, textColor=colors.white))]],
-                    colWidths=[15*cm]
-                )
-                header.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, -1), header_color),
-                    ('TOPPADDING', (0, 0), (-1, -1), 8),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 12),
-                ]))
-                elements.append(header)
+        # Define quadrant properties: (en_name, de_name, header_color, bg_color)
+        quadrant_config = {
+            "strengths": ("STRENGTHS", "STÄRKEN", colors.HexColor('#166534'), colors.HexColor('#dcfce7')),
+            "weaknesses": ("WEAKNESSES", "SCHWÄCHEN", colors.HexColor('#991b1b'), colors.HexColor('#fee2e2')),
+            "opportunities": ("OPPORTUNITIES", "CHANCEN", colors.HexColor('#1e40af'), colors.HexColor('#dbeafe')),
+            "threats": ("THREATS", "RISIKEN", colors.HexColor('#92400e'), colors.HexColor('#fef3c7')),
+        }
 
-                # Content
+        # Extract content for each quadrant
+        quadrant_contents = {}
+        for key, (en_name, de_name, header_color, bg_color) in quadrant_config.items():
+            content = self._extract_section(swot_text, en_name) or self._extract_section(swot_text, de_name)
+            logger.info(f"Extracted {en_name}: {content[:100] if content else 'NONE'}")
+            quadrant_contents[key] = content
+
+        # Helper function to build a SWOT cell
+        def build_swot_cell(key):
+            en_name, de_name, header_color, bg_color = quadrant_config[key]
+            content = quadrant_contents.get(key, "")
+
+            # Header paragraph
+            header_para = Paragraph(
+                f"<b>{en_name}</b>",
+                ParagraphStyle('SwotHeader', fontSize=8, textColor=colors.white, alignment=TA_CENTER)
+            )
+
+            # Content paragraph (smaller font for matrix layout)
+            if content:
                 content_para = Paragraph(
-                    markdown_to_reportlab(section_content),
-                    ParagraphStyle('QC', parent=self.styles['ReportBody'], fontSize=9, leading=12)
+                    markdown_to_reportlab(content),
+                    ParagraphStyle('SwotContent', parent=self.styles['ReportBody'], fontSize=7, leading=9)
                 )
-                content_box = Table([[content_para]], colWidths=[15*cm])
-                content_box.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, -1), bg_color),
-                    ('BOX', (0, 0), (-1, -1), 1, header_color),
-                    ('TOPPADDING', (0, 0), (-1, -1), 10),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 12),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 12),
-                ]))
-                elements.append(content_box)
-                elements.append(Spacer(1, 0.15*inch))
+            else:
+                content_para = Paragraph(
+                    "<i>Not available</i>",
+                    ParagraphStyle('SwotEmpty', fontSize=7, textColor=colors.gray, alignment=TA_CENTER)
+                )
 
-        # Strategic Implications section
+            # Build cell as nested table (header + content)
+            cell_table = Table(
+                [[header_para], [content_para]],
+                colWidths=[7.3*cm]
+            )
+            cell_table.setStyle(TableStyle([
+                # Header row styling
+                ('BACKGROUND', (0, 0), (0, 0), header_color),
+                ('TOPPADDING', (0, 0), (0, 0), 6),
+                ('BOTTOMPADDING', (0, 0), (0, 0), 6),
+                ('LEFTPADDING', (0, 0), (0, 0), 8),
+                ('RIGHTPADDING', (0, 0), (0, 0), 8),
+                # Content row styling
+                ('BACKGROUND', (0, 1), (0, 1), bg_color),
+                ('TOPPADDING', (0, 1), (0, 1), 8),
+                ('BOTTOMPADDING', (0, 1), (0, 1), 8),
+                ('LEFTPADDING', (0, 1), (0, 1), 8),
+                ('RIGHTPADDING', (0, 1), (0, 1), 8),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                # Border
+                ('BOX', (0, 0), (-1, -1), 1, header_color),
+            ]))
+            return cell_table
+
+        # Build 2x2 SWOT matrix
+        # Row 1: Strengths | Weaknesses (Internal factors)
+        # Row 2: Opportunities | Threats (External factors)
+        swot_matrix = Table(
+            [
+                [build_swot_cell("strengths"), build_swot_cell("weaknesses")],
+                [build_swot_cell("opportunities"), build_swot_cell("threats")],
+            ],
+            colWidths=[7.5*cm, 7.5*cm],
+            hAlign='CENTER'
+        )
+        swot_matrix.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 2),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ]))
+
+        elements.append(swot_matrix)
+        elements.append(Spacer(1, 0.2*inch))
+
+        # Strategic Implications section (below the matrix)
+        # Wrapped in KeepTogether to move to new page if it doesn't fit
         implications = (
             self._extract_section(swot_text, "STRATEGIC IMPLICATIONS") or
             self._extract_section(swot_text, "STRATEGISCHE IMPLIKATIONEN")
         )
         if implications:
-            elements.append(Spacer(1, 0.1*inch))
             impl_header = Table(
-                [[Paragraph("<b>STRATEGIC IMPLICATIONS</b>", ParagraphStyle('IH', fontSize=11, textColor=colors.white))]],
+                [[Paragraph("<b>STRATEGIC IMPLICATIONS</b>", ParagraphStyle('IH', fontSize=9, textColor=colors.white))]],
                 colWidths=[15*cm]
             )
             impl_header.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#4c1d95')),
-                ('TOPPADDING', (0, 0), (-1, -1), 8),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-                ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
             ]))
-            elements.append(impl_header)
 
             impl_content = Paragraph(
                 markdown_to_reportlab(implications),
-                ParagraphStyle('IC', parent=self.styles['ReportBody'], fontSize=9, leading=12)
+                ParagraphStyle('IC', parent=self.styles['ReportBody'], fontSize=8, leading=10)
             )
             impl_box = Table([[impl_content]], colWidths=[15*cm])
             impl_box.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f5f3ff')),
                 ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#4c1d95')),
-                ('TOPPADDING', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-                ('LEFTPADDING', (0, 0), (-1, -1), 12),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
             ]))
-            elements.append(impl_box)
+
+            # Keep header and content together; moves to new page if doesn't fit
+            elements.append(KeepTogether([impl_header, impl_box]))
+
+        # Fallback: if no sections were extracted, render the raw SWOT text
+        # Check if we added any content (more than just header + spacer)
+        if len(elements) <= 3:  # Only header elements, no quadrants
+            logger.warning("No SWOT sections extracted, rendering raw text as fallback")
+            # Render the full SWOT text as paragraphs (not in a table, to allow page splitting)
+            fallback_content = Paragraph(
+                markdown_to_reportlab(swot_text),
+                ParagraphStyle('SwotFallback', parent=self.styles['ReportBody'], fontSize=9, leading=12)
+            )
+            elements.append(fallback_content)
 
         return elements
 
@@ -2025,7 +2812,7 @@ class PDFReportGenerator:
         elements = []
 
         # Header with DMME context
-        elements.append(Paragraph("Technical Transition Briefing", self.styles['SectionHeader']))
+        elements.append(Paragraph("7. Technical Transition Briefing", self.styles['SectionHeader']))
         elements.append(Paragraph(
             "This section bridges the Business Understanding phase to Technical Understanding & Conceptualization (DMME methodology).",
             self.styles['ReportBody']
@@ -2046,6 +2833,11 @@ class PDFReportGenerator:
         # Parse and render the briefing content
         briefing_text = finding.finding_text
 
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Technical briefing text (first 500 chars): {briefing_text[:500] if briefing_text else 'EMPTY'}")
+
         # Create styled sections for the briefing
         sections = [
             ("USE CASE PROFILE", "USE CASE PROFIL"),
@@ -2059,6 +2851,7 @@ class PDFReportGenerator:
         # Try to extract and format each section
         for en_name, de_name in sections:
             section_content = self._extract_section(briefing_text, en_name) or self._extract_section(briefing_text, de_name)
+            logger.info(f"Extracted {en_name}: {section_content[:100] if section_content else 'NONE'}")
             if section_content:
                 elements.extend(self._build_briefing_subsection(en_name, section_content))
                 elements.append(Spacer(1, 0.15*inch))
@@ -2335,3 +3128,203 @@ class PDFReportGenerator:
             elements.extend(content_elements)
 
         return elements
+
+    def _build_maturity_appendix(self, db_session: SessionModel) -> list:
+        """Build the Digital Maturity Assessment appendix with bar charts."""
+        from ..models import MaturityAssessment
+
+        elements = []
+
+        # Header
+        elements.append(Paragraph("Appendix G: Digital Maturity Assessment", self.styles['SectionHeader']))
+        elements.append(Paragraph(
+            "This section presents the digital maturity assessment based on the Acatech Industry 4.0 Maturity Index. "
+            "The assessment evaluates the company across four structural dimensions on a scale of 1-6.",
+            self.styles['ReportBody']
+        ))
+        elements.append(Spacer(1, 0.2*inch))
+
+        # Get maturity assessment
+        maturity = self.db.query(MaturityAssessment).filter(
+            MaturityAssessment.session_id == db_session.id
+        ).first()
+
+        if not maturity:
+            # Placeholder if no assessment
+            placeholder = Paragraph(
+                "<i>No maturity assessment has been completed for this session.</i>",
+                ParagraphStyle('MaturityPlaceholder', parent=self.styles['ReportBody'],
+                              textColor=colors.gray, alignment=TA_CENTER)
+            )
+            elements.append(placeholder)
+            return elements
+
+        # Maturity level descriptions
+        level_descriptions = {
+            1: ("Computerization", "Basic IT systems, isolated digital solutions"),
+            2: ("Connectivity", "Connected systems, basic data exchange"),
+            3: ("Visibility", "Real-time data capture, digital shadow of operations"),
+            4: ("Transparency", "Data analysis for understanding root causes"),
+            5: ("Predictive Capacity", "Simulation and prediction of future scenarios"),
+            6: ("Adaptability", "Automated adaptation and self-optimization"),
+        }
+
+        # Color gradient from red (1) to green (6)
+        def get_score_color(score):
+            if score < 2:
+                return colors.HexColor('#ef4444')  # Red
+            elif score < 3:
+                return colors.HexColor('#f97316')  # Orange
+            elif score < 4:
+                return colors.HexColor('#eab308')  # Yellow
+            elif score < 5:
+                return colors.HexColor('#84cc16')  # Lime
+            else:
+                return colors.HexColor('#22c55e')  # Green
+
+        # Overall Score Section
+        elements.append(Paragraph("<b>Overall Maturity Level</b>", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        overall_score = maturity.overall_score or 0
+        maturity_level_name = maturity.maturity_level or "Unknown"
+
+        # Create overall score bar
+        overall_bar_data = [
+            [
+                Paragraph(f"<b>{maturity_level_name}</b>",
+                         ParagraphStyle('OverallLabel', fontSize=11, alignment=TA_LEFT)),
+                self._create_maturity_bar(overall_score, width=10*cm, height=0.6*cm),
+                Paragraph(f"<b>{overall_score:.1f}</b>/6",
+                         ParagraphStyle('OverallScore', fontSize=11, alignment=TA_RIGHT))
+            ]
+        ]
+        overall_table = Table(overall_bar_data, colWidths=[4*cm, 10.2*cm, 1.5*cm])
+        overall_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ]))
+        elements.append(overall_table)
+        elements.append(Spacer(1, 0.3*inch))
+
+        # Dimension Scores Section
+        elements.append(Paragraph("<b>Dimension Scores</b>", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.15*inch))
+
+        # Dimension data
+        dimensions = [
+            ("Resources", maturity.resources_score or 0,
+             "Digital capability of employees, equipment, and materials"),
+            ("Information Systems", maturity.information_systems_score or 0,
+             "Integration of IT systems and data processing capabilities"),
+            ("Culture", maturity.culture_score or 0,
+             "Willingness to change, knowledge sharing, and openness"),
+            ("Organizational Structure", maturity.organizational_structure_score or 0,
+             "Agility, collaboration, and decision-making processes"),
+        ]
+
+        # Build dimension bars
+        for dim_name, score, description in dimensions:
+            # Dimension row with bar
+            dim_data = [
+                [
+                    Paragraph(f"<b>{dim_name}</b>",
+                             ParagraphStyle('DimLabel', fontSize=9, alignment=TA_LEFT)),
+                    self._create_maturity_bar(score, width=9*cm, height=0.45*cm),
+                    Paragraph(f"<b>{score:.1f}</b>",
+                             ParagraphStyle('DimScore', fontSize=9, alignment=TA_RIGHT))
+                ]
+            ]
+            dim_table = Table(dim_data, colWidths=[4.5*cm, 9.2*cm, 1*cm])
+            dim_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ]))
+            elements.append(dim_table)
+
+            # Description
+            elements.append(Paragraph(
+                f"<i>{description}</i>",
+                ParagraphStyle('DimDesc', fontSize=7, textColor=colors.gray, leftIndent=10)
+            ))
+            elements.append(Spacer(1, 0.12*inch))
+
+        elements.append(Spacer(1, 0.2*inch))
+
+        # Maturity Level Scale Legend
+        elements.append(Paragraph("<b>Maturity Level Scale</b>", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        # Create legend table
+        legend_data = []
+        for level in range(1, 7):
+            name, desc = level_descriptions[level]
+            level_color = get_score_color(level)
+
+            # Color box as a small table cell
+            color_cell = Table([[""]], colWidths=[0.4*cm], rowHeights=[0.4*cm])
+            color_cell.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, 0), level_color),
+                ('BOX', (0, 0), (0, 0), 0.5, colors.gray),
+            ]))
+
+            legend_data.append([
+                Paragraph(f"<b>{level}</b>", ParagraphStyle('LegendNum', fontSize=8, alignment=TA_CENTER)),
+                color_cell,
+                Paragraph(f"<b>{name}</b>", ParagraphStyle('LegendName', fontSize=8)),
+                Paragraph(desc, ParagraphStyle('LegendDesc', fontSize=7, textColor=colors.gray)),
+            ])
+
+        legend_table = Table(legend_data, colWidths=[0.6*cm, 0.6*cm, 3*cm, 10.5*cm])
+        legend_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+            ('LEFTPADDING', (0, 0), (-1, -1), 2),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+        ]))
+        elements.append(legend_table)
+
+        return elements
+
+    def _create_maturity_bar(self, score: float, width: float = 10*cm, height: float = 0.5*cm) -> Drawing:
+        """Create a horizontal bar chart for maturity score (1-6 scale)."""
+        from reportlab.graphics.shapes import Drawing, Rect, String, Line
+
+        # Normalize score to 0-1 range (score is 1-6)
+        normalized = max(0, min(1, (score - 1) / 5)) if score > 0 else 0
+
+        # Create drawing
+        d = Drawing(width, height)
+
+        # Background bar (gray)
+        d.add(Rect(0, 0, width, height, fillColor=colors.HexColor('#e5e7eb'), strokeColor=None))
+
+        # Filled bar (colored based on score)
+        if score > 0:
+            # Color gradient
+            if score < 2:
+                bar_color = colors.HexColor('#ef4444')  # Red
+            elif score < 3:
+                bar_color = colors.HexColor('#f97316')  # Orange
+            elif score < 4:
+                bar_color = colors.HexColor('#eab308')  # Yellow
+            elif score < 5:
+                bar_color = colors.HexColor('#84cc16')  # Lime
+            else:
+                bar_color = colors.HexColor('#22c55e')  # Green
+
+            fill_width = normalized * width
+            d.add(Rect(0, 0, fill_width, height, fillColor=bar_color, strokeColor=None))
+
+        # Border
+        d.add(Rect(0, 0, width, height, fillColor=None, strokeColor=colors.HexColor('#9ca3af'), strokeWidth=0.5))
+
+        # Scale markers (at 1, 2, 3, 4, 5, 6)
+        for i in range(1, 7):
+            x_pos = ((i - 1) / 5) * width
+            d.add(Line(x_pos, 0, x_pos, height, strokeColor=colors.HexColor('#9ca3af'), strokeWidth=0.3))
+
+        return d

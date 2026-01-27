@@ -488,10 +488,11 @@ class BusinessCaseService:
 
         all_ideas.sort(key=lambda x: x["points"], reverse=True)
 
-        # Get CRISP-DM findings from Step 4
+        # Get CRISP-DM findings from Step 4 (including company_profile with maturity)
         step4_findings = self.db.query(ConsultationFinding).filter(
             ConsultationFinding.session_id == db_session.id,
             ConsultationFinding.factor_type.in_([
+                "company_profile",
                 "business_objectives",
                 "situation_assessment",
                 "ai_goals",
@@ -500,6 +501,7 @@ class BusinessCaseService:
         ).all()
 
         crisp_dm = {
+            "company_profile": "",
             "business_objectives": "",
             "situation_assessment": "",
             "ai_goals": "",
@@ -518,8 +520,17 @@ class BusinessCaseService:
 
     def _build_system_prompt(self, context: Dict) -> str:
         """Build the system prompt for the business case consultant."""
-        # Format company info
-        company_info_text = ""
+        # Get CRISP-DM findings from Step 4
+        crisp_dm = context.get("crisp_dm", {})
+
+        # Format company info - prefer company_profile from Step 4 if available (includes maturity)
+        company_profile = crisp_dm.get("company_profile", "")
+        if company_profile:
+            company_info_text = f"\n[COMPANY PROFILE FROM CONSULTATION]\n{company_profile}\n"
+        else:
+            company_info_text = ""
+
+        # Also include raw company info from Step 1 for additional context
         for info in context.get("company_info", [])[:3]:
             company_info_text += f"\n[{info['type'].upper()}]\n{info['content']}\n"
 
@@ -530,8 +541,7 @@ class BusinessCaseService:
         top_idea = context.get("top_idea")
         focus_idea = top_idea["content"] if top_idea else "general AI/digitalization improvements"
 
-        # Get CRISP-DM findings from Step 4
-        crisp_dm = context.get("crisp_dm", {})
+        # Get remaining CRISP-DM findings from Step 4
         business_objectives = crisp_dm.get("business_objectives", "Not yet defined.")
         situation_assessment = crisp_dm.get("situation_assessment", "Not yet assessed.")
         ai_goals = crisp_dm.get("ai_goals", "Not yet defined.")
