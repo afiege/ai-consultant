@@ -9,6 +9,7 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
   const { t, i18n } = useTranslation();
 
   const PROMPT_TABS = [
+    // Brainstorming prompts
     {
       key: 'brainstorming_system',
       label: t('expertSettings.prompts.brainstormingSystem'),
@@ -30,12 +31,20 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
       description: t('expertSettings.prompts.subsequentDesc'),
       variables: ['round_number', 'previous_ideas_numbered', 'uniqueness_note'],
     },
+    // Consultation prompts
     {
       key: 'consultation_system',
       label: t('expertSettings.prompts.consultationSystem'),
-      shortLabel: t('expertSettings.prompts.tabs.consultation'),
-      description: t('expertSettings.prompts.consultationDesc'),
-      variables: ['company_name', 'company_info_text', 'top_ideas_text', 'focus_idea'],
+      shortLabel: t('expertSettings.prompts.tabs.consultSystem'),
+      description: t('expertSettings.prompts.consultationSystemDesc'),
+      variables: ['multi_participant_section'],
+    },
+    {
+      key: 'consultation_context',
+      label: t('expertSettings.prompts.consultationContext'),
+      shortLabel: t('expertSettings.prompts.tabs.consultContext'),
+      description: t('expertSettings.prompts.consultationContextDesc'),
+      variables: ['company_name', 'company_info_text', 'maturity_section', 'focus_idea', 'top_ideas_text'],
     },
     {
       key: 'extraction_summary',
@@ -43,6 +52,51 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
       shortLabel: t('expertSettings.prompts.tabs.summary'),
       description: t('expertSettings.prompts.summaryDesc'),
       variables: [],
+    },
+    // Business case prompts
+    {
+      key: 'business_case_system',
+      label: t('expertSettings.prompts.businessCaseSystem'),
+      shortLabel: t('expertSettings.prompts.tabs.bizCase'),
+      description: t('expertSettings.prompts.businessCaseSystemDesc'),
+      variables: ['company_info_text', 'focus_idea', 'business_objectives', 'situation_assessment', 'ai_goals', 'project_plan'],
+    },
+    {
+      key: 'business_case_extraction',
+      label: t('expertSettings.prompts.businessCaseExtraction'),
+      shortLabel: t('expertSettings.prompts.tabs.bizExtract'),
+      description: t('expertSettings.prompts.businessCaseExtractionDesc'),
+      variables: [],
+    },
+    // Cost estimation prompts
+    {
+      key: 'cost_estimation_system',
+      label: t('expertSettings.prompts.costEstimationSystem'),
+      shortLabel: t('expertSettings.prompts.tabs.costSystem'),
+      description: t('expertSettings.prompts.costEstimationSystemDesc'),
+      variables: ['company_info_text', 'focus_idea', 'business_objectives', 'situation_assessment', 'ai_goals', 'project_plan', 'potentials_summary'],
+    },
+    {
+      key: 'cost_estimation_extraction',
+      label: t('expertSettings.prompts.costEstimationExtraction'),
+      shortLabel: t('expertSettings.prompts.tabs.costExtract'),
+      description: t('expertSettings.prompts.costEstimationExtractionDesc'),
+      variables: [],
+    },
+    // Analysis prompts
+    {
+      key: 'swot_analysis_system',
+      label: t('expertSettings.prompts.swotSystem'),
+      shortLabel: t('expertSettings.prompts.tabs.swot'),
+      description: t('expertSettings.prompts.swotSystemDesc'),
+      variables: ['company_profile', 'executive_summary', 'business_case_summary', 'cost_estimation_summary'],
+    },
+    {
+      key: 'transition_briefing_system',
+      label: t('expertSettings.prompts.transitionSystem'),
+      shortLabel: t('expertSettings.prompts.tabs.transition'),
+      description: t('expertSettings.prompts.transitionSystemDesc'),
+      variables: ['company_profile', 'executive_summary', 'business_case_summary', 'cost_estimation_summary'],
     },
   ];
 
