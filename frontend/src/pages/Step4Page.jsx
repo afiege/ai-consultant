@@ -317,6 +317,22 @@ const Step4Page = () => {
     }
   };
 
+  const handleResetConsultation = async () => {
+    if (!window.confirm(t('step4.chat.resetConfirm') || 'Are you sure you want to start over? All messages will be deleted.')) {
+      return;
+    }
+
+    setError(null);
+    try {
+      await consultationAPI.reset(sessionUuid);
+      setMessages([]);
+      setConsultationStarted(false);
+      setFindings(null);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to reset consultation');
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim() || sendingMessage) return;
@@ -756,12 +772,21 @@ const Step4Page = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Chat area - 2/3 width */}
             <div className="lg:col-span-2 flex flex-col bg-white rounded-lg shadow h-[600px]">
-              {/* Top idea banner */}
+              {/* Top idea banner with reset button */}
               {topIdea && (
-                <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3">
+                <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3 flex justify-between items-center">
                   <p className="text-sm font-medium text-yellow-800">
                     {t('step4.chat.focus')} {topIdea.idea_content}
                   </p>
+                  {consultationStarted && (
+                    <button
+                      onClick={handleResetConsultation}
+                      className="text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                      title={t('step4.chat.resetTitle') || 'Start over'}
+                    >
+                      {t('step4.chat.resetButton') || 'Start Over'}
+                    </button>
+                  )}
                 </div>
               )}
 

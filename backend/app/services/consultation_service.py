@@ -65,7 +65,8 @@ class ConsultationService:
             "model": self.model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens
+            "max_tokens": max_tokens,
+            "timeout": 120  # 2 minute timeout
         }
         if self.api_key:
             completion_kwargs["api_key"] = self.api_key
@@ -81,7 +82,8 @@ class ConsultationService:
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
-            "stream": True
+            "stream": True,
+            "timeout": 120  # 2 minute timeout
         }
         if self.api_key:
             completion_kwargs["api_key"] = self.api_key

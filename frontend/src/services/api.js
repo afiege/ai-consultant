@@ -103,6 +103,8 @@ export const consultationAPI = {
     api.post(`/api/sessions/${sessionUuid}/consultation/summarize`, { api_key: apiKey || apiKeyManager.get() }),
   extractIncremental: (sessionUuid, apiKey) =>
     api.post(`/api/sessions/${sessionUuid}/consultation/extract-incremental`, { api_key: apiKey || apiKeyManager.get() }),
+  reset: (sessionUuid) =>
+    api.delete(`/api/sessions/${sessionUuid}/consultation/reset`),
 
   // Collaborative mode endpoints
   getCollaborativeStatus: (sessionUuid) =>

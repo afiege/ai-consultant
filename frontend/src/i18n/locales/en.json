@@ -355,7 +355,10 @@
       "requestAiResponse": "Request AI Response",
       "generateSummary": "Generate Summary & Findings",
       "generatingSummary": "Generating summary...",
-      "collaborativeHint": "In collaborative mode: Send messages to contribute, then click 'Request AI Response' when ready for feedback."
+      "collaborativeHint": "In collaborative mode: Send messages to contribute, then click 'Request AI Response' when ready for feedback.",
+      "resetButton": "Start Over",
+      "resetTitle": "Reset consultation and start over",
+      "resetConfirm": "Are you sure you want to start over? All messages will be deleted."
     },
     "collaborative": {
       "title": "Collaborative Mode",

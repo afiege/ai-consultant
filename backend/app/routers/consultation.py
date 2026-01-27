@@ -341,6 +341,38 @@ def get_messages(
     ]
 
 
+@router.delete("/{session_uuid}/consultation/reset")
+def reset_consultation(
+    session_uuid: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset/clear all consultation messages to start over.
+    """
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    # Delete all consultation messages for this session
+    deleted_count = db.query(ConsultationMessage).filter(
+        ConsultationMessage.session_id == db_session.id
+    ).delete()
+
+    db.commit()
+
+    return {
+        "status": "success",
+        "messages_deleted": deleted_count,
+        "message": "Consultation has been reset. You can start over."
+    }
+
+
 @router.get("/{session_uuid}/consultation/findings")
 def get_findings(
     session_uuid: str,

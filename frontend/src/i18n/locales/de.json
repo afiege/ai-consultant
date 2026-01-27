@@ -355,7 +355,10 @@
       "requestAiResponse": "KI-Antwort anfordern",
       "generateSummary": "Zusammenfassung & Erkenntnisse generieren",
       "generatingSummary": "Zusammenfassung wird generiert...",
-      "collaborativeHint": "Im Kollaborationsmodus: Senden Sie Nachrichten, um beizutragen, dann klicken Sie auf 'KI-Antwort anfordern', wenn Sie Feedback möchten."
+      "collaborativeHint": "Im Kollaborationsmodus: Senden Sie Nachrichten, um beizutragen, dann klicken Sie auf 'KI-Antwort anfordern', wenn Sie Feedback möchten.",
+      "resetButton": "Neu starten",
+      "resetTitle": "Beratung zurücksetzen und neu starten",
+      "resetConfirm": "Sind Sie sicher, dass Sie neu starten möchten? Alle Nachrichten werden gelöscht."
     },
     "collaborative": {
       "title": "Kollaborationsmodus",
