@@ -73,10 +73,14 @@
     }
   },
   "step1": {
-    "title": "Schritt 1: Unternehmensübersicht",
-    "subtitle": "Stellen Sie Informationen über Ihr Unternehmen bereit - durch Text, Dokumenten-Upload oder Website-Crawling",
+    "title": "Schritt 1: Unternehmensprofil",
+    "subtitle": "Stellen Sie Unternehmensinformationen bereit und bewerten Sie Ihre digitale Reife",
     "backHome": "Zurück zur Startseite",
     "continueStep2": "Weiter zu Schritt 2",
+    "tabs": {
+      "profile": "Unternehmensinformationen",
+      "maturity": "Reifegradanalyse"
+    },
     "explanation": {
       "title": "Warum wir diese Informationen benötigen",
       "description": "Das Verständnis Ihres Unternehmens hilft uns, relevante KI- und Digitalisierungsideen zu entwickeln, die auf Ihre spezifische Situation zugeschnitten sind. Je mehr Kontext Sie liefern, desto besser werden die Empfehlungen.",
@@ -667,8 +671,7 @@
   },
   "stepProgress": {
     "steps": {
-      "company": "Unternehmen",
-      "maturity": "Reifegrad",
+      "companyProfile": "Unternehmensprofil",
       "brainstorming": "Brainstorming",
       "prioritization": "Priorisierung",
       "consultation": "Beratung",

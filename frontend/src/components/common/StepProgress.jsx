@@ -5,13 +5,12 @@ import { sessionAPI } from '../../services/api';
 
 // Step configuration
 const STEPS = [
-  { id: 1, route: 'step1a', key: 'company', label: '1a' },
-  { id: 2, route: 'step1b', key: 'maturity', label: '1b' },
-  { id: 3, route: 'step2', key: 'brainstorming', skippable: true, label: '2' },
-  { id: 4, route: 'step3', key: 'prioritization', skippable: true, label: '3' },
-  { id: 5, route: 'step4', key: 'consultation', label: '4' },
-  { id: 6, route: 'step5', key: 'businessCase', label: '5' },
-  { id: 7, route: 'step6', key: 'export', label: '6' },
+  { id: 1, route: 'step1', key: 'companyProfile', label: '1' },
+  { id: 2, route: 'step2', key: 'brainstorming', skippable: true, label: '2' },
+  { id: 3, route: 'step3', key: 'prioritization', skippable: true, label: '3' },
+  { id: 4, route: 'step4', key: 'consultation', label: '4' },
+  { id: 5, route: 'step5', key: 'businessCase', label: '5' },
+  { id: 6, route: 'step6', key: 'export', label: '6' },
 ];
 
 // Icons
@@ -65,13 +64,12 @@ const StepProgress = ({
     if (currentStepOverride) return currentStepOverride;
 
     const path = location.pathname;
-    if (path.includes('/step6') || path.includes('/export')) return 7;
-    if (path.includes('/step5')) return 6;
-    if (path.includes('/step4')) return 5;
-    if (path.includes('/step3')) return 4;
-    if (path.includes('/step2')) return 3;
-    if (path.includes('/step1b')) return 2;
-    if (path.includes('/step1a') || path.includes('/step1')) return 1;
+    if (path.includes('/step6') || path.includes('/export')) return 6;
+    if (path.includes('/step5')) return 5;
+    if (path.includes('/step4')) return 4;
+    if (path.includes('/step3')) return 3;
+    if (path.includes('/step2')) return 2;
+    if (path.includes('/step1')) return 1;
     return 1;
   };
 
@@ -79,7 +77,7 @@ const StepProgress = ({
 
   // Determine step states
   const getStepState = (stepId) => {
-    // Skip check for steps 3 and 4 (brainstorming and prioritization)
+    // Skip check for steps 2 and 3 (brainstorming and prioritization)
     const brainstormingSkipped = session?.six_three_five_skipped;
 
     if (stepId === currentStep) {
@@ -87,20 +85,20 @@ const StepProgress = ({
     }
 
     if (stepId < currentStep) {
-      // Step 3 (brainstorming) was skipped
-      if (stepId === 3 && brainstormingSkipped) {
+      // Step 2 (brainstorming) was skipped
+      if (stepId === 2 && brainstormingSkipped) {
         return 'skipped';
       }
-      // Step 4 (prioritization) was skipped if brainstorming was skipped
-      if (stepId === 4 && brainstormingSkipped) {
+      // Step 3 (prioritization) was skipped if brainstorming was skipped
+      if (stepId === 3 && brainstormingSkipped) {
         return 'skipped';
       }
       return 'completed';
     }
 
-    // Step 5 (Consultation) is always accessible from steps 1-4
+    // Step 4 (Consultation) is always accessible from steps 1-3
     // This allows users to skip brainstorming and prioritization
-    if (stepId === 5 && currentStep >= 1 && currentStep < 5) {
+    if (stepId === 4 && currentStep >= 1 && currentStep < 4) {
       return 'next';
     }
 

@@ -2,8 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { SessionProvider } from './context/SessionContext';
 import HomePage from './pages/HomePage';
-import Step1aPage from './pages/Step1aPage';
-import Step1bPage from './pages/Step1bPage';
+import Step1Page from './pages/Step1Page';
 import Step2Page from './pages/Step2Page';
 import Step3Page from './pages/Step3Page';
 import Step4Page from './pages/Step4Page';
@@ -17,10 +16,10 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/session/:sessionUuid/step1a" element={<Step1aPage />} />
-            <Route path="/session/:sessionUuid/step1b" element={<Step1bPage />} />
-            {/* Keep old step1 route for backwards compatibility, redirect to step1a */}
-            <Route path="/session/:sessionUuid/step1" element={<Navigate to="../step1a" replace />} />
+            <Route path="/session/:sessionUuid/step1" element={<Step1Page />} />
+            {/* Keep old step1a/step1b routes for backwards compatibility */}
+            <Route path="/session/:sessionUuid/step1a" element={<Navigate to="../step1" replace />} />
+            <Route path="/session/:sessionUuid/step1b" element={<Navigate to="../step1" replace />} />
             <Route path="/session/:sessionUuid/step2" element={<Step2Page />} />
             <Route path="/session/:sessionUuid/step3" element={<Step3Page />} />
             <Route path="/session/:sessionUuid/step4" element={<Step4Page />} />

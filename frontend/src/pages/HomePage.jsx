@@ -84,7 +84,7 @@ const HomePage = () => {
         }
       }
 
-      navigate(`/session/${sessionUuid}/step1a`);
+      navigate(`/session/${sessionUuid}/step1`);
     } catch (err) {
       console.error('Error creating session:', err);
       alert(t('errors.failedToStart'));
@@ -105,7 +105,7 @@ const HomePage = () => {
       const { new_session_uuid, original_company_name } = response.data;
 
       // Navigate to the appropriate step based on restored session state
-      navigate(`/session/${new_session_uuid}/step1a`);
+      navigate(`/session/${new_session_uuid}/step1`);
     } catch (err) {
       console.error('Error restoring session:', err);
       setRestoreError(err.response?.data?.detail || t('errors.failedToRestore'));

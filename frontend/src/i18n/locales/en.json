@@ -73,10 +73,14 @@
     }
   },
   "step1": {
-    "title": "Step 1: Company Overview",
-    "subtitle": "Provide information about your company through text, document uploads, or website crawling",
+    "title": "Step 1: Company Profile",
+    "subtitle": "Provide company information and assess your digital maturity",
     "backHome": "Back to Home",
     "continueStep2": "Continue to Step 2",
+    "tabs": {
+      "profile": "Company Information",
+      "maturity": "Maturity Assessment"
+    },
     "explanation": {
       "title": "Why we need this information",
       "description": "Understanding your company helps us generate relevant AI and digitalization ideas tailored to your specific situation. The more context you provide, the better the recommendations will be.",
@@ -667,8 +671,7 @@
   },
   "stepProgress": {
     "steps": {
-      "company": "Company",
-      "maturity": "Maturity",
+      "companyProfile": "Company Profile",
       "brainstorming": "Brainstorming",
       "prioritization": "Prioritize",
       "consultation": "Consultation",
