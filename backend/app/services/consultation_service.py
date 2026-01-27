@@ -230,7 +230,22 @@ class ConsultationService:
         """
         db_session = self._get_session(session_uuid)
 
+        # Check for duplicate - don't save if the last message is the same content from user
+        last_msg = self.db.query(ConsultationMessage).filter(
+            ConsultationMessage.session_id == db_session.id
+        ).order_by(ConsultationMessage.created_at.desc()).first()
+
+        if last_msg and last_msg.role == "user" and last_msg.content == user_message:
+            logger.warning(f"Skipping duplicate user message: {user_message[:50]}...")
+            return {
+                "message_id": last_msg.id,
+                "content": user_message,
+                "role": "user",
+                "duplicate": True
+            }
+
         # Save user message
+        logger.info(f"Saving user message: {user_message[:50]}...")
         user_msg = ConsultationMessage(
             session_id=db_session.id,
             role="user",
@@ -361,14 +376,23 @@ class ConsultationService:
                 full_response += content
                 yield f"data: {content}\n\n"
 
-        # Save the complete response
-        ai_msg = ConsultationMessage(
-            session_id=db_session.id,
-            role="assistant",
-            content=full_response
-        )
-        self.db.add(ai_msg)
-        self.db.commit()
+        # Check for duplicate before saving
+        last_msg = self.db.query(ConsultationMessage).filter(
+            ConsultationMessage.session_id == db_session.id
+        ).order_by(ConsultationMessage.created_at.desc()).first()
+
+        if last_msg and last_msg.role == "assistant" and last_msg.content == full_response:
+            logger.warning(f"Skipping duplicate AI response: {full_response[:50]}...")
+        else:
+            # Save the complete response
+            logger.info(f"Saving AI response: {full_response[:50]}...")
+            ai_msg = ConsultationMessage(
+                session_id=db_session.id,
+                role="assistant",
+                content=full_response
+            )
+            self.db.add(ai_msg)
+            self.db.commit()
 
         yield "data: [DONE]\n\n"
 
@@ -767,6 +791,14 @@ When multiple people contribute:
             {"role": m.role, "content": m.content}
             for m in messages
         ]
+
+        # Debug: Log conversation history
+        logger.info(f"=== CONVERSATION HISTORY for session {session_id} ===")
+        logger.info(f"Total messages: {len(message_list)}")
+        for i, m in enumerate(message_list):
+            content_preview = m['content'][:100].replace('\n', ' ') if len(m['content']) > 100 else m['content'].replace('\n', ' ')
+            logger.info(f"  [{i}] {m['role']}: {content_preview}...")
+        logger.info(f"=== END HISTORY ===")
 
         # If conversation is long, summarize older messages
         if summarize_old and len(message_list) > 15:
