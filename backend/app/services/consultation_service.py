@@ -119,22 +119,27 @@ class ConsultationService:
         )
         self.db.add(system_msg)
 
-        # Build context and include it in the initial user message
+        # Build context for the initial user message
         context_content = self._build_context_message(context)
-        initial_prompt = f"{context_content}\n\n---\nPlease start the consultation with your first message."
 
-        # Save the initial user prompt with context
+        # For the LLM call, include instruction to start
+        initial_prompt_for_llm = f"{context_content}\n\n---\nPlease start the consultation with your first message."
+
+        # For storage in history, just save the context (without "please start" instruction)
+        context_for_storage = f"[SESSION CONTEXT]\n{context_content}\n[END CONTEXT - The consultant has already introduced themselves above. Continue the conversation.]"
+
+        # Save the context message (without the start instruction)
         initial_user_msg = ConsultationMessage(
             session_id=db_session.id,
             role="user",
-            content=initial_prompt
+            content=context_for_storage
         )
         self.db.add(initial_user_msg)
 
-        # Messages: system rules, then user message with context
+        # Messages for initial LLM call: system rules, then user message with start instruction
         messages = [
             {"role": "system", "content": system_content},
-            {"role": "user", "content": initial_prompt}
+            {"role": "user", "content": initial_prompt_for_llm}
         ]
 
         response = self._call_llm(messages, temperature=0.7, max_tokens=1000)
@@ -183,23 +188,29 @@ class ConsultationService:
         )
         self.db.add(system_msg)
 
-        # Build context and include it in the initial user message
+        # Build context for the initial user message
         context_content = self._build_context_message(context)
-        initial_prompt = f"{context_content}\n\n---\nPlease start the consultation with your first message."
 
-        # Save the initial user prompt with context
+        # For the LLM call, include instruction to start
+        initial_prompt_for_llm = f"{context_content}\n\n---\nPlease start the consultation with your first message."
+
+        # For storage in history, just save the context (without "please start" instruction)
+        # This prevents confusion in subsequent calls where the model might re-read this
+        context_for_storage = f"[SESSION CONTEXT]\n{context_content}\n[END CONTEXT - The consultant has already introduced themselves above. Continue the conversation.]"
+
+        # Save the context message (without the start instruction)
         initial_user_msg = ConsultationMessage(
             session_id=db_session.id,
             role="user",
-            content=initial_prompt
+            content=context_for_storage
         )
         self.db.add(initial_user_msg)
         self.db.commit()
 
-        # Messages: system rules, then user message with context
+        # Messages for initial LLM call: system rules, then user message with start instruction
         messages = [
             {"role": "system", "content": system_content},
-            {"role": "user", "content": initial_prompt}
+            {"role": "user", "content": initial_prompt_for_llm}
         ]
 
         # Stream the response
