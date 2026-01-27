@@ -399,24 +399,17 @@ class ConsultationService:
                 full_response += content
                 yield f"data: {content}\n\n"
 
-        # Check for duplicate before saving - check last ASSISTANT message
-        last_assistant_msg = self.db.query(ConsultationMessage).filter(
-            ConsultationMessage.session_id == db_session.id,
-            ConsultationMessage.role == "assistant"
-        ).order_by(ConsultationMessage.created_at.desc()).first()
-
-        if last_assistant_msg and last_assistant_msg.content == full_response:
-            logger.warning(f"Skipping duplicate AI response: {full_response[:50]}...")
-        else:
-            # Save the complete response
-            logger.info(f"Saving AI response: {full_response[:50]}...")
-            ai_msg = ConsultationMessage(
-                session_id=db_session.id,
-                role="assistant",
-                content=full_response
-            )
-            self.db.add(ai_msg)
-            self.db.commit()
+        # Save the complete response
+        # Note: We rely on the "last message is assistant" check at the start of this method
+        # to prevent consecutive assistant messages, rather than checking for duplicate content
+        logger.info(f"Saving AI response: {full_response[:50]}...")
+        ai_msg = ConsultationMessage(
+            session_id=db_session.id,
+            role="assistant",
+            content=full_response
+        )
+        self.db.add(ai_msg)
+        self.db.commit()
 
         yield "data: [DONE]\n\n"
 
