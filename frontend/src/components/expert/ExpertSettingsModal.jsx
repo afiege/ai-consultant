@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { expertSettingsAPI } from '../../services/api';
+import { expertSettingsAPI, apiKeyManager } from '../../services/api';
 import LanguageSelector from './LanguageSelector';
 import PromptEditor from './PromptEditor';
 import LLMConfigSection from '../common/LLMConfigSection';
@@ -139,11 +139,19 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
       // Load LLM config if present
       if (settingsRes.data.llm_config) {
         const config = settingsRes.data.llm_config;
+        // Pre-fill API key from apiKeyManager if available (since backend doesn't store it)
+        const existingApiKey = apiKeyManager.get() || '';
         setLlmConfig({
           model: config.model || '',
-          api_key: '', // Don't show masked key, user can enter new one
+          api_key: existingApiKey,
           api_base: config.api_base || '',
         });
+      } else {
+        // No LLM config, but still check if there's an API key stored
+        const existingApiKey = apiKeyManager.get() || '';
+        if (existingApiKey) {
+          setLlmConfig(prev => ({ ...prev, api_key: existingApiKey }));
+        }
       }
     } catch (err) {
       console.error('Failed to load expert settings:', err);
@@ -179,6 +187,13 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
         custom_prompts: Object.keys(customPrompts).length > 0 ? customPrompts : null,
         llm_config: llmConfigData,
       });
+
+      // IMPORTANT: Also store the API key in apiKeyManager so it's used by consultation
+      // The backend doesn't store API keys for security, so we keep it in sessionStorage
+      if (llmConfig.api_key) {
+        apiKeyManager.set(llmConfig.api_key);
+      }
+
       onClose();
     } catch (err) {
       console.error('Failed to save settings:', err);

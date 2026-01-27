@@ -132,6 +132,20 @@ def test_llm_connection(request: LLMTestRequest):
         if request.api_base:
             completion_kwargs["api_base"] = request.api_base
 
+        # Debug logging
+        print(f"[LLM Test] Model: {request.model}")
+        print(f"[LLM Test] API Base: {request.api_base}")
+        print(f"[LLM Test] API Key (first 10 chars): {request.api_key[:10] if request.api_key else 'None'}...")
+        print(f"[LLM Test] Full completion_kwargs: {list(completion_kwargs.keys())}")
+
+        # Safety check: if model has openai/ prefix but no api_base, warn
+        if request.model and request.model.startswith("openai/") and not request.api_base:
+            print(f"[LLM Test] WARNING: Model has 'openai/' prefix but no api_base - will call OpenAI API!")
+            return LLMTestResponse(
+                success=False,
+                message="Model uses 'openai/' prefix but no API base URL is set. This would call the OpenAI API. Please select a provider first."
+            )
+
         # Make test call
         response = completion(**completion_kwargs)
 
@@ -146,12 +160,14 @@ def test_llm_connection(request: LLMTestRequest):
 
     except Exception as e:
         error_message = str(e)
+        print(f"[LLM Test] Error: {error_message}")
+        print(f"[LLM Test] Exception type: {type(e).__name__}")
 
         # Provide more helpful error messages
         if "401" in error_message or "Unauthorized" in error_message.lower() or "invalid" in error_message.lower():
             return LLMTestResponse(
                 success=False,
-                message="Authentication failed. Please check your API key."
+                message=f"Authentication failed. Please check your API key. (Details: {error_message[:100]})"
             )
         elif "404" in error_message or "not found" in error_message.lower():
             return LLMTestResponse(

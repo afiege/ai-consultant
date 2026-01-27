@@ -68,8 +68,24 @@ const LLMConfigSection = ({
       return;
     }
 
+    // Check if model has openai/ prefix but no api_base (would call real OpenAI)
+    if (config.model.startsWith('openai/') && !config.api_base) {
+      setTestResult({
+        success: false,
+        message: 'Model uses "openai/" prefix but no API base URL is set. Please select a provider.'
+      });
+      return;
+    }
+
     setTesting(true);
     setTestResult(null);
+
+    // Debug logging
+    console.log('[LLM Test] Sending config:', {
+      model: config.model,
+      api_base: config.api_base,
+      api_key: config.api_key ? `${config.api_key.substring(0, 10)}...` : 'none'
+    });
 
     try {
       const response = await expertSettingsAPI.testLLM({
