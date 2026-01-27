@@ -704,9 +704,18 @@ When multiple people contribute:
             else:
                 maturity_section = "No assessment available."
 
-        # Format top ideas
+        # Format top ideas - only include ideas with at least 1 vote
+        all_ideas = context.get("ideas", [])
+        prioritized_ideas = [idea for idea in all_ideas if idea['points'] > 0]
+
+        # If no ideas were prioritized, fall back to top 3 ideas (less context)
+        if not prioritized_ideas and all_ideas:
+            ideas_to_show = all_ideas[:3]
+        else:
+            ideas_to_show = prioritized_ideas[:5]
+
         top_ideas_text = ""
-        for i, idea in enumerate(context.get("ideas", [])[:5]):
+        for i, idea in enumerate(ideas_to_show):
             points_str = f" ({idea['points']} votes)" if idea['points'] > 0 else ""
             top_ideas_text += f"{i+1}. {idea['content']}{points_str}\n"
 
