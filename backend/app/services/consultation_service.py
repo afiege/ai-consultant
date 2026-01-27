@@ -378,6 +378,17 @@ class ConsultationService:
             yield "data: {\"error\": \"No conversation history\"}\n\n"
             return
 
+        # Check that the last message is from user - don't generate consecutive assistant messages
+        # (This prevents issues when duplicate user messages are skipped)
+        last_msg = self.db.query(ConsultationMessage).filter(
+            ConsultationMessage.session_id == db_session.id
+        ).order_by(ConsultationMessage.created_at.desc()).first()
+
+        if last_msg and last_msg.role == "assistant":
+            logger.warning("Last message is already from assistant - skipping AI response to prevent consecutive assistant messages")
+            yield "data: [DONE]\n\n"
+            return
+
         # Stream the response
         full_response = ""
         stream = self._call_llm_stream(messages, temperature=0.7, max_tokens=1000)
