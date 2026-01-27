@@ -230,15 +230,16 @@ class ConsultationService:
         """
         db_session = self._get_session(session_uuid)
 
-        # Check for duplicate - don't save if the last message is the same content from user
-        last_msg = self.db.query(ConsultationMessage).filter(
-            ConsultationMessage.session_id == db_session.id
+        # Check for duplicate - don't save if the last USER message has the same content
+        last_user_msg = self.db.query(ConsultationMessage).filter(
+            ConsultationMessage.session_id == db_session.id,
+            ConsultationMessage.role == "user"
         ).order_by(ConsultationMessage.created_at.desc()).first()
 
-        if last_msg and last_msg.role == "user" and last_msg.content == user_message:
+        if last_user_msg and last_user_msg.content == user_message:
             logger.warning(f"Skipping duplicate user message: {user_message[:50]}...")
             return {
-                "message_id": last_msg.id,
+                "message_id": last_user_msg.id,
                 "content": user_message,
                 "role": "user",
                 "duplicate": True
@@ -376,12 +377,13 @@ class ConsultationService:
                 full_response += content
                 yield f"data: {content}\n\n"
 
-        # Check for duplicate before saving
-        last_msg = self.db.query(ConsultationMessage).filter(
-            ConsultationMessage.session_id == db_session.id
+        # Check for duplicate before saving - check last ASSISTANT message
+        last_assistant_msg = self.db.query(ConsultationMessage).filter(
+            ConsultationMessage.session_id == db_session.id,
+            ConsultationMessage.role == "assistant"
         ).order_by(ConsultationMessage.created_at.desc()).first()
 
-        if last_msg and last_msg.role == "assistant" and last_msg.content == full_response:
+        if last_assistant_msg and last_assistant_msg.content == full_response:
             logger.warning(f"Skipping duplicate AI response: {full_response[:50]}...")
         else:
             # Save the complete response
