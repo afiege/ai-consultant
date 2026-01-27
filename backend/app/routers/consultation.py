@@ -18,6 +18,9 @@ from ..schemas.consultation import (
 )
 from ..services.consultation_service import ConsultationService
 from ..config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -149,6 +152,9 @@ def save_message(
     Save a user message without generating AI response.
     Used when user is answering questions (no auto-reply needed).
     """
+    # Ensure we see the latest committed data from other connections
+    db.expire_all()
+
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
     ).first()
@@ -459,6 +465,9 @@ def extract_findings_incremental(
     Extract findings incrementally from the current conversation.
     Lighter weight than full summarize - suitable for periodic updates.
     """
+    # Ensure we see the latest committed data from other connections
+    db.expire_all()
+
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
     ).first()

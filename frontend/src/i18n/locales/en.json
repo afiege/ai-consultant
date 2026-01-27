@@ -289,29 +289,68 @@
   },
   "step3": {
     "title": "Step 3: Idea Prioritization",
-    "subtitle": "Allocate your {{points}} points to your favorite ideas",
+    "subtitle": "Allocate your {{points}} points to prioritize ideas",
     "backStep2": "Back to Step 2",
     "skipToConsultation": "Skip to Consultation",
-    "explanation": {
-      "title": "Why prioritize ideas?",
-      "description": "Not all ideas are equally valuable or feasible for your company. By voting on ideas, we identify which opportunities resonate most with your team and should be explored further.",
-      "bullet1": "You have 3 points to distribute - give more points to ideas you find most promising",
-      "bullet2": "Consider both impact (how much value it could create) and feasibility (can you actually do it?)",
-      "bullet3": "The top-rated idea will be the focus for the detailed consultation in the next steps",
-      "tip": "Trust your instincts! You know your business best. Technical feasibility can be assessed later."
+    "tabs": {
+      "clusters": "Cluster Selection",
+      "ideas": "Idea Selection"
     },
     "noIdeas": {
       "title": "No Ideas to Prioritize",
       "message": "You skipped the 6-3-5 brainstorming session without creating any ideas. You can proceed directly to the consultation step where you'll enter ideas manually.",
       "continueButton": "Continue to Consultation (Step 4)"
     },
+    "errors": {
+      "loadFailed": "Failed to load data. Please try again.",
+      "clusterFailed": "Failed to generate clusters. Please try again.",
+      "voteFailed": "Failed to submit votes. Please try again.",
+      "selectFailed": "Failed to select cluster. Please try again.",
+      "allocateAllPoints": "Please allocate all {{total}} points. You have {{remaining}} remaining.",
+      "noParticipant": "No participant found. Please go back to Step 2 and join the session first."
+    },
+    "phase1": {
+      "explanation": {
+        "title": "Step 3a: Choose a Focus Area",
+        "description": "Your brainstorming ideas have been automatically grouped into clusters based on their underlying technology or concept. First, choose which area to focus on.",
+        "bullet1": "Review each cluster and the ideas within it",
+        "bullet2": "Allocate your 3 points to the clusters that best match your priorities",
+        "bullet3": "After voting, select one cluster to explore in detail",
+        "tip": "Consider which technology area would have the biggest impact on your business."
+      },
+      "generateButton": "Cluster Ideas by Technology",
+      "generating": "Analyzing and clustering ideas...",
+      "generateHint": "The AI will analyze your ideas and group them by technology or concept",
+      "voteHint": "Click + to add points to clusters you want to explore",
+      "ideaCount": "{{count}} ideas in this cluster",
+      "ideasInCluster": "Ideas in this cluster:",
+      "moreIdeas": "...and {{count}} more",
+      "ideas": "ideas",
+      "votesRecorded": "Your cluster votes have been recorded! Select a cluster to continue.",
+      "topCluster": "Top Cluster",
+      "topClusters": "Top Clusters (Tied)",
+      "allRanked": "All Clusters Ranked",
+      "selectCluster": "Select This Cluster",
+      "select": "Select",
+      "continueToPhase2": "Continue to Idea Selection"
+    },
+    "phase2": {
+      "selectedCluster": "Selected Focus Area",
+      "explanation": {
+        "title": "Step 3b: Choose the Best Idea",
+        "description": "Now prioritize the individual ideas within your selected cluster. The top-voted idea will be the focus for the detailed consultation.",
+        "bullet1": "Review each idea in this cluster carefully",
+        "bullet2": "Allocate your 3 points to the ideas you find most promising",
+        "bullet3": "The winning idea will proceed to the Business Understanding consultation",
+        "tip": "Consider both impact (value it could create) and feasibility (can you actually do it?)."
+      },
+      "voteHint": "Click + to add points to ideas you want to pursue"
+    },
     "voting": {
       "pointsRemaining": "Points Remaining:",
       "clickToAdd": "Click + to add points to ideas you like",
       "submitVotes": "Submit Votes",
-      "submitting": "Submitting...",
-      "allocateAll": "Please allocate all {{total}} points. You have {{remaining}} remaining.",
-      "noParticipant": "No participant found. Please go back to Step 2 and join the session first."
+      "submitting": "Submitting..."
     },
     "results": {
       "votesRecorded": "Your votes have been recorded! Here are the current results:",
@@ -431,6 +470,7 @@
         "system": "System",
         "round1": "Round 1",
         "rounds26": "Rounds 2-6",
+        "clustering": "Cluster",
         "consultSystem": "Consult",
         "consultContext": "Context",
         "summary": "Summary",
@@ -447,6 +487,8 @@
       "round1Desc": "Instructions for generating ideas in the first round (blank sheet)",
       "subsequentRounds": "Subsequent Rounds",
       "subsequentDesc": "Instructions for building on previous ideas in rounds 2-6",
+      "ideaClustering": "Idea Clustering",
+      "ideaClusteringDesc": "Groups brainstormed ideas into technology/concept clusters for two-phase prioritization",
       "consultationSystem": "Consultation System Prompt",
       "consultationSystemDesc": "Behavioral rules for the AI consultant - response format, what to avoid",
       "consultationContext": "Consultation Context",

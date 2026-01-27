@@ -48,6 +48,16 @@ class Settings(BaseSettings):
         """Parse CORS origins from comma-separated string."""
         return [origin.strip() for origin in self.cors_origins.split(",")]
 
+    @property
+    def DEFAULT_LLM_MODEL(self) -> str:
+        """Default LLM model for AI features."""
+        return self.llm_model
+
+    @property
+    def DEFAULT_LLM_API_BASE(self) -> Optional[str]:
+        """Default API base URL for LLM (if custom endpoint)."""
+        return self.llm_api_base if self.llm_api_base else None
+
 
 # Global settings instance
 settings = Settings()

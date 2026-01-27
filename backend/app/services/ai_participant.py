@@ -228,6 +228,125 @@ class AIParticipantFactory:
         return ai_participants
 
 
+def cluster_ideas(
+    ideas: list,
+    model: str = "mistral/mistral-small-latest",
+    language: str = "en",
+    api_key: str = None,
+    api_base: str = None,
+    custom_prompts: dict = None
+) -> dict:
+    """
+    Cluster brainstorming ideas by technology/concept using LLM.
+
+    Args:
+        ideas: List of idea dicts with 'id' and 'content' keys
+        model: LLM model string
+        language: Language code ("en" or "de")
+        api_key: Optional API key
+        api_base: Optional custom API base URL
+        custom_prompts: Optional custom prompt overrides
+
+    Returns:
+        Dict with 'clusters' key containing list of cluster dicts
+    """
+    import json
+
+    if not ideas:
+        return {"clusters": []}
+
+    # Build the ideas list for the prompt
+    ideas_text = "\n".join([f"- ID {idea['id']}: {idea['content']}" for idea in ideas])
+
+    # Get the clustering prompt
+    system_prompt = get_prompt(
+        "idea_clustering_system",
+        language,
+        custom_prompts or {}
+    )
+
+    user_prompt = f"""Please analyze and cluster the following {len(ideas)} ideas:
+
+{ideas_text}
+
+Return the clustering as JSON."""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+
+    try:
+        # Build completion kwargs
+        completion_kwargs = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.3,  # Lower temperature for more consistent clustering
+            "max_tokens": 1500
+        }
+        if api_key:
+            completion_kwargs["api_key"] = api_key
+        if api_base:
+            completion_kwargs["api_base"] = api_base
+
+        response = completion(**completion_kwargs)
+        content = response.choices[0].message.content
+
+        # Parse JSON from response (handle potential markdown code blocks)
+        content = content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+
+        result = json.loads(content)
+
+        # Validate that all ideas are assigned
+        assigned_ids = set()
+        for cluster in result.get("clusters", []):
+            assigned_ids.update(cluster.get("idea_ids", []))
+
+        all_ids = {idea["id"] for idea in ideas}
+        missing_ids = all_ids - assigned_ids
+
+        # If some ideas weren't assigned, create an "Other" cluster
+        if missing_ids:
+            result["clusters"].append({
+                "id": len(result["clusters"]) + 1,
+                "name": "Other" if language == "en" else "Sonstige",
+                "description": "Ideas that didn't fit into other clusters" if language == "en" else "Ideen, die nicht in andere Cluster passten",
+                "idea_ids": list(missing_ids)
+            })
+
+        return result
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse clustering response as JSON: {e}")
+        # Fallback: put all ideas in one cluster
+        return {
+            "clusters": [{
+                "id": 1,
+                "name": "All Ideas" if language == "en" else "Alle Ideen",
+                "description": "All brainstormed ideas" if language == "en" else "Alle Brainstorming-Ideen",
+                "idea_ids": [idea["id"] for idea in ideas]
+            }]
+        }
+    except Exception as e:
+        logger.error(f"Clustering error: {e}")
+        # Fallback: put all ideas in one cluster
+        return {
+            "clusters": [{
+                "id": 1,
+                "name": "All Ideas" if language == "en" else "Alle Ideen",
+                "description": "All brainstormed ideas" if language == "en" else "Alle Brainstorming-Ideen",
+                "idea_ids": [idea["id"] for idea in ideas]
+            }]
+        }
+
+
 def get_company_context_summary(company_infos, max_total_chars: int = 4000) -> str:
     """
     Create a comprehensive summary of company information for AI context.

@@ -16,6 +16,7 @@ class CustomPrompts(BaseModel):
     brainstorming_system: Optional[str] = None
     brainstorming_round1: Optional[str] = None
     brainstorming_subsequent: Optional[str] = None
+    idea_clustering_system: Optional[str] = None
     consultation_system: Optional[str] = None
     consultation_context: Optional[str] = None
     extraction_summary: Optional[str] = None
@@ -146,6 +147,12 @@ PROMPT_METADATA = [
         label="Subsequent Rounds Prompt",
         description="Instructions for building on previous ideas in rounds 2-6",
         variables=["round_number", "previous_ideas_numbered", "uniqueness_note"]
+    ),
+    PromptInfo(
+        key="idea_clustering_system",
+        label="Idea Clustering System Prompt",
+        description="Groups brainstormed ideas into technology/concept clusters for two-phase prioritization",
+        variables=[]
     ),
     PromptInfo(
         key="consultation_system",

@@ -5,8 +5,10 @@ from typing import Optional
 
 class PrioritizationBase(BaseModel):
     """Base schema for Prioritization."""
-    idea_id: int
+    idea_id: Optional[int] = None
+    cluster_id: Optional[int] = None
     vote_type: str = "score"  # 'score', 'rank', 'vote'
+    vote_phase: str = "idea"  # 'cluster' for phase 1, 'idea' for phase 2
     score: Optional[int] = Field(None, ge=1, le=10)
     rank_position: Optional[int] = None
 
@@ -35,4 +37,28 @@ class IdeaWithScore(BaseModel):
     round_number: int
     average_score: float
     total_votes: int
+    rank: int
+
+
+class IdeaCluster(BaseModel):
+    """Schema for an idea cluster."""
+    id: int
+    name: str
+    description: str
+    idea_ids: list[int]
+
+
+class ClusteringResult(BaseModel):
+    """Schema for clustering result."""
+    clusters: list[IdeaCluster]
+
+
+class ClusterWithScore(BaseModel):
+    """Schema for cluster with aggregated score."""
+    cluster_id: int
+    cluster_name: str
+    cluster_description: str
+    idea_count: int
+    total_points: int
+    vote_count: int
     rank: int

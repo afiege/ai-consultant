@@ -289,29 +289,68 @@
   },
   "step3": {
     "title": "Schritt 3: Ideenpriorisierung",
-    "subtitle": "Verteilen Sie Ihre {{points}} Punkte auf Ihre Lieblingsideen",
+    "subtitle": "Verteilen Sie Ihre {{points}} Punkte zur Priorisierung",
     "backStep2": "Zurück zu Schritt 2",
     "skipToConsultation": "Zur Beratung springen",
-    "explanation": {
-      "title": "Warum Ideen priorisieren?",
-      "description": "Nicht alle Ideen sind gleich wertvoll oder umsetzbar für Ihr Unternehmen. Durch das Abstimmen über Ideen identifizieren wir, welche Möglichkeiten bei Ihrem Team am meisten Anklang finden und näher untersucht werden sollten.",
-      "bullet1": "Sie haben 3 Punkte zu verteilen - geben Sie mehr Punkte für Ideen, die Sie am vielversprechendsten finden",
-      "bullet2": "Berücksichtigen Sie sowohl Wirkung (wie viel Wert könnte es schaffen?) als auch Machbarkeit (können Sie es tatsächlich umsetzen?)",
-      "bullet3": "Die bestbewertete Idee wird der Fokus für die detaillierte Beratung in den nächsten Schritten sein",
-      "tip": "Vertrauen Sie Ihrem Bauchgefühl! Sie kennen Ihr Unternehmen am besten. Die technische Machbarkeit kann später bewertet werden."
+    "tabs": {
+      "clusters": "Cluster-Auswahl",
+      "ideas": "Ideenauswahl"
     },
     "noIdeas": {
       "title": "Keine Ideen zu priorisieren",
       "message": "Sie haben die 6-3-5 Brainstorming-Sitzung übersprungen, ohne Ideen zu erstellen. Sie können direkt zum Beratungsschritt gehen, wo Sie Ideen manuell eingeben können.",
       "continueButton": "Weiter zur Beratung (Schritt 4)"
     },
+    "errors": {
+      "loadFailed": "Laden der Daten fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "clusterFailed": "Cluster-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "voteFailed": "Abstimmung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "selectFailed": "Cluster-Auswahl fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "allocateAllPoints": "Bitte vergeben Sie alle {{total}} Punkte. Sie haben noch {{remaining}} übrig.",
+      "noParticipant": "Kein Teilnehmer gefunden. Bitte gehen Sie zurück zu Schritt 2 und treten Sie zuerst der Sitzung bei."
+    },
+    "phase1": {
+      "explanation": {
+        "title": "Schritt 3a: Schwerpunktbereich wählen",
+        "description": "Ihre Brainstorming-Ideen wurden automatisch nach zugrundeliegender Technologie oder Konzept gruppiert. Wählen Sie zunächst, welchen Bereich Sie fokussieren möchten.",
+        "bullet1": "Überprüfen Sie jeden Cluster und die darin enthaltenen Ideen",
+        "bullet2": "Vergeben Sie Ihre 3 Punkte an die Cluster, die am besten zu Ihren Prioritäten passen",
+        "bullet3": "Nach der Abstimmung wählen Sie einen Cluster zur detaillierten Analyse",
+        "tip": "Überlegen Sie, welcher Technologiebereich den größten Einfluss auf Ihr Unternehmen hätte."
+      },
+      "generateButton": "Ideen nach Technologie clustern",
+      "generating": "Ideen werden analysiert und gruppiert...",
+      "generateHint": "Die KI analysiert Ihre Ideen und gruppiert sie nach Technologie oder Konzept",
+      "voteHint": "Klicken Sie +, um Punkte zu Clustern hinzuzufügen, die Sie erkunden möchten",
+      "ideaCount": "{{count}} Ideen in diesem Cluster",
+      "ideasInCluster": "Ideen in diesem Cluster:",
+      "moreIdeas": "...und {{count}} weitere",
+      "ideas": "Ideen",
+      "votesRecorded": "Ihre Cluster-Stimmen wurden aufgezeichnet! Wählen Sie einen Cluster, um fortzufahren.",
+      "topCluster": "Top-Cluster",
+      "topClusters": "Top-Cluster (Gleichstand)",
+      "allRanked": "Alle Cluster im Ranking",
+      "selectCluster": "Diesen Cluster auswählen",
+      "select": "Auswählen",
+      "continueToPhase2": "Weiter zur Ideenauswahl"
+    },
+    "phase2": {
+      "selectedCluster": "Gewählter Schwerpunktbereich",
+      "explanation": {
+        "title": "Schritt 3b: Beste Idee auswählen",
+        "description": "Priorisieren Sie nun die einzelnen Ideen innerhalb Ihres gewählten Clusters. Die meistgewählte Idee wird der Fokus für die detaillierte Beratung.",
+        "bullet1": "Prüfen Sie jede Idee in diesem Cluster sorgfältig",
+        "bullet2": "Vergeben Sie Ihre 3 Punkte an die Ideen, die Sie am vielversprechendsten finden",
+        "bullet3": "Die Gewinner-Idee geht in die Business-Understanding-Beratung",
+        "tip": "Berücksichtigen Sie sowohl Wirkung (Wert, den es schaffen könnte) als auch Machbarkeit (können Sie es umsetzen?)."
+      },
+      "voteHint": "Klicken Sie +, um Punkte zu Ideen hinzuzufügen, die Sie verfolgen möchten"
+    },
     "voting": {
       "pointsRemaining": "Verbleibende Punkte:",
       "clickToAdd": "Klicken Sie +, um Punkte zu Ideen hinzuzufügen, die Ihnen gefallen",
       "submitVotes": "Stimmen abgeben",
-      "submitting": "Wird abgegeben...",
-      "allocateAll": "Bitte vergeben Sie alle {{total}} Punkte. Sie haben noch {{remaining}} übrig.",
-      "noParticipant": "Kein Teilnehmer gefunden. Bitte gehen Sie zurück zu Schritt 2 und treten Sie zuerst der Sitzung bei."
+      "submitting": "Wird abgegeben..."
     },
     "results": {
       "votesRecorded": "Ihre Stimmen wurden aufgezeichnet! Hier sind die aktuellen Ergebnisse:",
@@ -431,6 +470,7 @@
         "system": "System",
         "round1": "Runde 1",
         "rounds26": "Runden 2-6",
+        "clustering": "Cluster",
         "consultSystem": "Beratung",
         "consultContext": "Kontext",
         "summary": "Zusammenf.",
@@ -447,6 +487,8 @@
       "round1Desc": "Anweisungen zur Ideengenerierung in der ersten Runde (leeres Blatt)",
       "subsequentRounds": "Folgerunden",
       "subsequentDesc": "Anweisungen zum Aufbauen auf vorherigen Ideen in den Runden 2-6",
+      "ideaClustering": "Ideen-Clustering",
+      "ideaClusteringDesc": "Gruppiert Brainstorming-Ideen in Technologie-/Konzept-Cluster für zweiphasige Priorisierung",
       "consultationSystem": "Beratungs-System-Prompt",
       "consultationSystemDesc": "Verhaltensregeln für den KI-Berater - Antwortformat, was zu vermeiden ist",
       "consultationContext": "Beratungs-Kontext",

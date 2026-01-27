@@ -19,6 +19,7 @@ class SessionUpdate(BaseModel):
     current_step: Optional[int] = Field(None, ge=1, le=4)
     status: Optional[str] = None
     six_three_five_skipped: Optional[bool] = None
+    selected_cluster_id: Optional[int] = None
 
 
 class SessionResponse(SessionBase):
@@ -30,6 +31,8 @@ class SessionResponse(SessionBase):
     current_step: int
     status: str
     six_three_five_skipped: bool
+    idea_clusters: Optional[str] = None  # JSON string
+    selected_cluster_id: Optional[int] = None
 
     class Config:
         from_attributes = True

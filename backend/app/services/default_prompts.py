@@ -633,6 +633,42 @@ Questions that were not fully answered in the Business Understanding phase and n
 - If information is missing, explicitly mark this as an open item – do not invent details.
 - The document is addressed to technical consultants or internal IT/OT managers who will further develop the use case.""",
 
+        "idea_clustering_system": """You are an expert in AI and digital transformation for SMEs. Your task is to analyze a list of brainstormed ideas and group them into meaningful clusters based on their underlying technology, concept, or application domain.
+
+## Guidelines for Clustering
+
+1. **Group by Technology/Concept**: Cluster ideas that share similar underlying technologies (e.g., Computer Vision, NLP/Chatbots, Process Automation, Predictive Analytics, IoT/Sensors) or application domains.
+
+2. **Create 3-6 Clusters**: Aim for 3-6 meaningful clusters. Too few clusters lose the benefit of grouping; too many defeat the purpose.
+
+3. **Meaningful Names**: Give each cluster a clear, descriptive name that captures the essence of the technology or concept (e.g., "Computer Vision Quality Control", "Predictive Maintenance & Analytics", "Document Automation & NLP").
+
+4. **Brief Description**: Provide a 1-2 sentence description of what the cluster encompasses.
+
+5. **Assign All Ideas**: Every idea must belong to exactly one cluster.
+
+## Output Format (JSON)
+
+Return your response as valid JSON with this structure:
+```json
+{{
+  "clusters": [
+    {{
+      "id": 1,
+      "name": "Cluster Name",
+      "description": "Brief description of the cluster focus",
+      "idea_ids": [1, 3, 7]
+    }},
+    ...
+  ]
+}}
+```
+
+Important:
+- Use the exact idea IDs provided in the input
+- Every idea ID must appear in exactly one cluster
+- Return ONLY the JSON, no additional text""",
+
         "swot_analysis_system": """You are a strategic business analyst specializing in AI and digital transformation for manufacturing SMEs. Your task is to create a SWOT analysis that evaluates the company's readiness and potential for the proposed AI/digitalization project.
 
 ## Input Data
@@ -1331,6 +1367,42 @@ Fragen, die in der Business Understanding Phase nicht vollständig beantwortet w
 - Wenn Informationen fehlen, kennzeichnen Sie dies explizit als offenen Punkt – erfinden Sie keine Details.
 - Das Dokument richtet sich an technische Berater oder interne IT/OT-Verantwortliche, die den Use Case weiterentwickeln.""",
 
+        "idea_clustering_system": """Sie sind Experte für KI und digitale Transformation in KMU. Ihre Aufgabe ist es, eine Liste von Brainstorming-Ideen zu analysieren und sie in sinnvolle Cluster zu gruppieren, basierend auf ihrer zugrundeliegenden Technologie, ihrem Konzept oder Anwendungsbereich.
+
+## Richtlinien für das Clustering
+
+1. **Gruppierung nach Technologie/Konzept**: Clustern Sie Ideen, die ähnliche zugrundeliegende Technologien teilen (z.B. Computer Vision, NLP/Chatbots, Prozessautomatisierung, Predictive Analytics, IoT/Sensorik) oder Anwendungsbereiche.
+
+2. **3-6 Cluster erstellen**: Streben Sie 3-6 sinnvolle Cluster an. Zu wenige Cluster verlieren den Nutzen der Gruppierung; zu viele verfehlen den Zweck.
+
+3. **Aussagekräftige Namen**: Geben Sie jedem Cluster einen klaren, beschreibenden Namen, der das Wesentliche der Technologie oder des Konzepts erfasst (z.B. "Computer Vision Qualitätskontrolle", "Predictive Maintenance & Analytics", "Dokumentenautomatisierung & NLP").
+
+4. **Kurze Beschreibung**: Geben Sie eine 1-2 Sätze umfassende Beschreibung, was der Cluster beinhaltet.
+
+5. **Alle Ideen zuordnen**: Jede Idee muss genau einem Cluster zugeordnet werden.
+
+## Ausgabeformat (JSON)
+
+Geben Sie Ihre Antwort als valides JSON mit dieser Struktur zurück:
+```json
+{{
+  "clusters": [
+    {{
+      "id": 1,
+      "name": "Cluster-Name",
+      "description": "Kurze Beschreibung des Cluster-Fokus",
+      "idea_ids": [1, 3, 7]
+    }},
+    ...
+  ]
+}}
+```
+
+Wichtig:
+- Verwenden Sie die exakten Ideen-IDs aus der Eingabe
+- Jede Ideen-ID muss in genau einem Cluster erscheinen
+- Geben Sie NUR das JSON zurück, keinen zusätzlichen Text""",
+
         "swot_analysis_system": """Sie sind ein strategischer Business-Analyst, spezialisiert auf KI und digitale Transformation für produzierende KMU. Ihre Aufgabe ist es, eine SWOT-Analyse zu erstellen, die die Bereitschaft und das Potenzial des Unternehmens für das vorgeschlagene KI-/Digitalisierungsprojekt bewertet.
 
 ## Eingabedaten
@@ -1460,5 +1532,6 @@ def get_prompt_keys() -> list:
         "cost_estimation_system",
         "cost_estimation_extraction",
         "transition_briefing_system",
-        "swot_analysis_system"
+        "swot_analysis_system",
+        "idea_clustering_system"
     ]

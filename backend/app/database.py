@@ -1,17 +1,18 @@
 from sqlalchemy import create_engine, event, Engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool
 from .config import settings
 
 # Create database engine with SQLite-specific configuration
+# Using NullPool for better concurrent request handling - each request gets a fresh connection
 engine = create_engine(
     settings.database_url,
     connect_args={
         "check_same_thread": False,  # Allow multiple threads (needed for FastAPI)
         "timeout": 30  # Wait up to 30 seconds for database locks
     },
-    poolclass=StaticPool,  # Use StaticPool for SQLite
+    poolclass=NullPool,  # Use NullPool for SQLite to avoid connection sharing issues
     echo=settings.debug  # Log SQL queries in debug mode
 )
 

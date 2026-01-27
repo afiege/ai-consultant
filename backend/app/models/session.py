@@ -29,6 +29,10 @@ class Session(Base):
     llm_model = Column(String(100), nullable=True)  # e.g., "meta-llama-3.1-8b-instruct"
     llm_api_base = Column(String(255), nullable=True)  # e.g., "https://chat-ai.academiccloud.de/v1"
 
+    # Idea clustering for two-phase prioritization (Step 3)
+    idea_clusters = Column(Text, nullable=True)  # JSON string of clustered ideas
+    selected_cluster_id = Column(Integer, nullable=True)  # Which cluster was selected in phase 1
+
     # Relationships
     company_info = relationship("CompanyInfo", back_populates="session", cascade="all, delete-orphan")
     participants = relationship("Participant", back_populates="session", cascade="all, delete-orphan")

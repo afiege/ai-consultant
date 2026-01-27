@@ -287,6 +287,7 @@ def reset_prompt_to_default(
         "brainstorming_system",
         "brainstorming_round1",
         "brainstorming_subsequent",
+        "idea_clustering_system",
         "consultation_system",
         "consultation_context",
         "extraction_summary",

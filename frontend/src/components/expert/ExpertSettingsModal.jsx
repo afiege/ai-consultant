@@ -31,6 +31,14 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
       description: t('expertSettings.prompts.subsequentDesc'),
       variables: ['round_number', 'previous_ideas_numbered', 'uniqueness_note'],
     },
+    // Clustering prompt (between brainstorming and consultation)
+    {
+      key: 'idea_clustering_system',
+      label: t('expertSettings.prompts.ideaClustering'),
+      shortLabel: t('expertSettings.prompts.tabs.clustering'),
+      description: t('expertSettings.prompts.ideaClusteringDesc'),
+      variables: [],
+    },
     // Consultation prompts
     {
       key: 'consultation_system',

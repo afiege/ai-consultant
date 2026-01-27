@@ -11,9 +11,11 @@ class Prioritization(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
-    idea_id = Column(Integer, ForeignKey("ideas.id", ondelete="CASCADE"), nullable=False)
+    idea_id = Column(Integer, ForeignKey("ideas.id", ondelete="CASCADE"), nullable=True)  # NULL for cluster votes
+    cluster_id = Column(Integer, nullable=True)  # For cluster votes in phase 1
     participant_id = Column(Integer, ForeignKey("participants.id"), nullable=True)  # NULL if collective ranking
     vote_type = Column(String(50), nullable=True)  # 'score', 'rank', 'vote'
+    vote_phase = Column(String(20), default="idea")  # 'cluster' for phase 1, 'idea' for phase 2
     score = Column(Integer, nullable=True)  # Numerical score
     rank_position = Column(Integer, nullable=True)  # Ranking position
     created_at = Column(DateTime(timezone=True), server_default=func.now())

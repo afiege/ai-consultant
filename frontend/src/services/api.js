@@ -76,14 +76,39 @@ export const sixThreeFiveAPI = {
     api.post(`/api/sessions/${sessionUuid}/six-three-five/manual-ideas`, ideas),
 };
 
-// Prioritization endpoints
+// Prioritization endpoints (two-phase: cluster then idea)
 export const prioritizationAPI = {
+  // Legacy endpoints (kept for backwards compatibility)
   submitVote: (sessionUuid, data) =>
     api.post(`/api/sessions/${sessionUuid}/prioritization/vote`, data),
   getStatus: (sessionUuid) =>
     api.get(`/api/sessions/${sessionUuid}/prioritization/status`),
   getResults: (sessionUuid) =>
     api.get(`/api/sessions/${sessionUuid}/prioritization/results`),
+
+  // Phase 1: Cluster prioritization
+  generateClusters: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/prioritization/cluster`, { api_key: apiKey || apiKeyManager.get() }),
+  getClusters: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/prioritization/clusters`),
+  submitClusterVote: (sessionUuid, data) =>
+    api.post(`/api/sessions/${sessionUuid}/prioritization/cluster-vote`, data),
+  getClusterResults: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/prioritization/cluster-results`),
+  getClusterStatus: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/prioritization/cluster-status`),
+  selectCluster: (sessionUuid, clusterId) =>
+    api.post(`/api/sessions/${sessionUuid}/prioritization/select-cluster`, { cluster_id: clusterId }),
+
+  // Phase 2: Idea prioritization (within selected cluster)
+  getClusterIdeas: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/prioritization/cluster-ideas`),
+  submitIdeaVote: (sessionUuid, data) =>
+    api.post(`/api/sessions/${sessionUuid}/prioritization/idea-vote`, data),
+  getIdeaResults: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/prioritization/idea-results`),
+  getIdeaStatus: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/prioritization/idea-status`),
 };
 
 // Consultation endpoints
