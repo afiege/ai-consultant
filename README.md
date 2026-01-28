@@ -5,19 +5,36 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 ## Customer Journey
 
 ```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   STEP 1a    │     │   STEP 1b    │     │   STEP 2     │     │   STEP 3     │     │   STEP 4     │
-│   Company    │────▶│   Digital    │────▶│    6-3-5     │────▶│    Idea      │────▶│     AI       │
-│ Information  │     │  Maturity    │     │ Brainstorming│     │Prioritization│     │ Consultation │
-└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘     └──────┬───────┘
-                                                                                           │
-┌──────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                         STEP 1                                                    │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐                                      │
+│  │   STEP 1a    │     │   STEP 1b    │     │   STEP 1c    │                                      │
+│  │   Company    │────▶│   Company    │────▶│   Digital    │                                      │
+│  │ Information  │     │   Profile    │     │  Maturity    │                                      │
+│  │   Input      │     │  Extraction  │     │ Assessment   │                                      │
+│  └──────────────┘     └──────────────┘     └──────────────┘                                      │
+│   Text, Files,          AI extracts          acatech I4.0                                        │
+│   Web Crawling         structured data       Maturity Index                                      │
+└──────────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                                   │
+┌──────────────────────────────────────────────────┘
 │
-│    ┌──────────────┐     ┌──────────────┐
-│    │   STEP 5     │     │   STEP 6     │
-└───▶│  Business    │────▶│   Export &   │────▶ Professional PDF Report
-     │    Case      │     │   Handover   │      with SWOT Analysis &
-     └──────────────┘     └──────────────┘      Technical Briefing
+│    ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│    │   STEP 2     │     │   STEP 3     │     │   STEP 4     │     │   STEP 5     │
+└───▶│    6-3-5     │────▶│    Idea      │────▶│     AI       │────▶│  Business    │
+     │ Brainstorming│     │Prioritization│     │ Consultation │     │    Case      │
+     └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+      Collaborative        Vote & rank          CRISP-DM            5-Level Value
+      ideation with        generated            methodology         Framework &
+      AI participants      ideas                                    Cost Estimation
+                                                       │
+┌──────────────────────────────────────────────────────┘
+│
+│    ┌──────────────┐
+│    │   STEP 6     │
+└───▶│   Export &   │────▶ Professional PDF Report with SWOT Analysis & Technical Briefing
+     │   Handover   │
+     └──────────────┘
 ```
 
 ## Features
@@ -29,7 +46,21 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
    - File uploads (PDF, DOCX) with automatic text extraction
    - Web crawling to gather information from company websites
 
-2. **Digital Maturity Assessment** (Step 1b)
+2. **Company Profile Extraction** (Step 1b)
+   - AI-powered extraction of structured company data
+   - Extracts 25+ business attributes including:
+     - Basic info (name, industry, founding year, ownership)
+     - Location data (headquarters, other locations, markets served)
+     - Financial KPIs (revenue, profit margin, cash flow, growth rate)
+     - Operational KPIs (production volume, capacity utilization)
+     - Business model (products/services, customer segments)
+     - Technology status (current systems, automation level)
+     - Strategic context (pain points, digitalization goals)
+   - Editable form for user corrections and additions
+   - Strict no-hallucination policy: missing data returns null, not invented values
+   - Reduces token usage by ~80% compared to raw text context
+
+3. **Digital Maturity Assessment** (Step 1c)
    - Based on acatech Industry 4.0 Maturity Index
    - Rate 4 dimensions on a 1-6 scale:
      - Resources (employees, technology, materials)
@@ -38,19 +69,19 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
      - Organizational Structure (agility, collaboration)
    - Visual results with dimension breakdown
 
-3. **Interactive 6-3-5 Brainstorming** (Step 2)
+4. **Interactive 6-3-5 Brainstorming** (Step 2)
    - Real-time collaborative ideation with up to 6 participants
    - AI participants that contribute ideas alongside humans
    - Each participant contributes 3 ideas per round
    - 5-minute rounds with automatic sheet rotation
    - QR code sharing for easy session joining
 
-4. **Idea Prioritization** (Step 3)
+5. **Idea Prioritization** (Step 3)
    - Vote and score generated ideas
    - Collaborative ranking system
    - Select focus project for consultation
 
-5. **CRISP-DM Business Understanding** (Step 4)
+6. **CRISP-DM Business Understanding** (Step 4)
    - AI-guided consultation using CRISP-DM methodology
    - Streaming chat responses (Server-Sent Events)
    - Topic progress tracking
@@ -60,7 +91,7 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
      - AI/Data Mining Goals
      - Project Plan
 
-6. **Business Case & Cost Estimation** (Step 5)
+7. **Business Case & Cost Estimation** (Step 5)
    - **Business Case** - 5-Level Value Framework analysis:
      1. Budget Substitution
      2. Process Efficiency
@@ -69,7 +100,7 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
      5. Strategic Scaling
    - **Cost Estimation** - Investment analysis, TCO, and ROI calculation
 
-7. **Export & Technical Handover** (Step 6)
+8. **Export & Technical Handover** (Step 6)
    - **Executive Summary** - Overview of all findings
    - **SWOT Analysis** - Company readiness evaluation
    - **Technical Transition Briefing** - Handover document for implementation phase
@@ -88,47 +119,50 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            FRONTEND (React + Vite)                          │
 │                                                                             │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐       │
-│  │ Step1  │ │ Step2  │ │ Step3  │ │ Step4  │ │ Step5  │ │ Step6  │       │
-│  │Company │ │ 6-3-5  │ │Priorit-│ │CRISP-DM│ │Business│ │Export &│       │
-│  │Profile │ │ Method │ │ization │ │Consult │ │ Case   │ │Handover│       │
-│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘       │
-│       │            │            │            │            │                │
-│       │      ┌─────┴────────────┴────────────┴────────────┘                │
-│       │      │  ApiKeyPrompt (modal) - prompts for LLM API key             │
-│       │      └─────┬─────────────────────────────────────────              │
-│  ┌────┴────────────┴──────────────────────────────────────────┐            │
-│  │                    services/api.js                          │            │
-│  │  apiKeyManager (sessionStorage) + API client functions      │            │
-│  └─────────────────────────────┬──────────────────────────────┘            │
-└────────────────────────────────┼────────────────────────────────────────────┘
-                                 │ HTTP/REST + SSE
-                                 │ (API key in request body)
-┌────────────────────────────────┼────────────────────────────────────────────┐
-│                         BACKEND (FastAPI)                                   │
-│                                │                                            │
-│  ┌─────────────────────────────┴─────────────────────────────────┐         │
-│  │                         Routers                                │         │
-│  │  sessions │ six_three_five │ consultation │ business_case     │         │
-│  │  prioritization │ expert_settings │ company_info │ export     │         │
-│  └─────────────────────────────┬─────────────────────────────────┘         │
-│                                │                                            │
-│  ┌─────────────────────────────┴─────────────────────────────────┐         │
-│  │                         Services                               │         │
-│  │  llm_service.py ──► LiteLLM ──► OpenAI/Anthropic/Mistral/etc  │         │
-│  │  six_three_five_service │ consultation_service                 │         │
-│  │  business_case_service │ pdf_generator │ web_crawler           │         │
-│  └─────────────────────────────┬─────────────────────────────────┘         │
-│                                │                                            │
-│  ┌─────────────────────────────┴─────────────────────────────────┐         │
-│  │                    Models (SQLAlchemy)                         │         │
-│  │  Session │ CompanyInfo │ Participant │ IdeaSheet │ Idea       │         │
-│  │  Prioritization │ ConsultationMessage │ ConsultationFinding   │         │
-│  └───────────────────────────────────────────────────────────────┘         │
-└─────────────────────────────────┬───────────────────────────────────────────┘
-                                  │
-        ┌─────────────────────────┼─────────────────────────┐
-        ▼                         ▼                         ▼
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐        │
+│  │ Step1  │ │ Step2  │ │ Step3  │ │ Step4  │ │ Step5  │ │ Step6  │        │
+│  │Company │ │ 6-3-5  │ │Priorit-│ │CRISP-DM│ │Business│ │Export &│        │
+│  │Profile │ │ Method │ │ization │ │Consult │ │ Case   │ │Handover│        │
+│  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘        │
+│      │          │          │          │          │          │              │
+│  ┌───┴──────────┴──────────┴──────────┴──────────┴──────────┴────────┐    │
+│  │  CompanyProfileEditor │ ApiKeyPrompt │ ExpertSettingsModal        │    │
+│  └───────────────────────────────┬───────────────────────────────────┘    │
+│  ┌───────────────────────────────┴───────────────────────────────────┐    │
+│  │                    services/api.js                                 │    │
+│  │  apiKeyManager (sessionStorage) + companyProfileAPI + ...          │    │
+│  └───────────────────────────────┬───────────────────────────────────┘    │
+└──────────────────────────────────┼────────────────────────────────────────┘
+                                   │ HTTP/REST + SSE
+                                   │ (API key in request body)
+┌──────────────────────────────────┼────────────────────────────────────────┐
+│                         BACKEND (FastAPI)                                  │
+│                                  │                                         │
+│  ┌───────────────────────────────┴───────────────────────────────────┐    │
+│  │                         Routers                                    │    │
+│  │  sessions │ company_info │ maturity_assessment │ six_three_five   │    │
+│  │  prioritization │ consultation │ business_case │ cost_estimation  │    │
+│  │  export │ expert_settings │ session_backup                        │    │
+│  └───────────────────────────────┬───────────────────────────────────┘    │
+│                                  │                                         │
+│  ┌───────────────────────────────┴───────────────────────────────────┐    │
+│  │                         Services                                   │    │
+│  │  llm_service.py ──► LiteLLM ──► OpenAI/Anthropic/Mistral/etc      │    │
+│  │  company_profile_service │ consultation_service                    │    │
+│  │  business_case_service │ cost_estimation_service                   │    │
+│  │  ai_participant │ pdf_generator │ web_crawler │ file_processor    │    │
+│  └───────────────────────────────┬───────────────────────────────────┘    │
+│                                  │                                         │
+│  ┌───────────────────────────────┴───────────────────────────────────┐    │
+│  │                    Models (SQLAlchemy)                             │    │
+│  │  Session (+ company_profile JSON) │ CompanyInfo │ MaturityAssess. │    │
+│  │  Participant │ IdeaSheet │ Idea │ Prioritization                  │    │
+│  │  ConsultationMessage │ ConsultationFinding                        │    │
+│  └───────────────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────┬────────────────────────────────────────┘
+                                   │
+        ┌──────────────────────────┼──────────────────────────┐
+        ▼                          ▼                          ▼
 ┌───────────────┐      ┌──────────────────┐      ┌──────────────────┐
 │    SQLite     │      │  LLM Providers   │      │  File Storage    │
 │  sessions.db  │      │  (via LiteLLM)   │      │  uploads/        │
@@ -178,16 +212,17 @@ ai-consultant/
 │   │   ├── config.py            # Configuration (env vars)
 │   │   ├── database.py          # Database setup
 │   │   ├── models/              # SQLAlchemy models
-│   │   │   ├── session.py       # Session, CompanyInfo, MaturityAssessment
+│   │   │   ├── session.py       # Session (+ company_profile), CompanyInfo, MaturityAssessment
 │   │   │   ├── brainstorm.py    # Participant, IdeaSheet, Idea
 │   │   │   ├── prioritization.py
 │   │   │   └── consultation.py  # Messages, Findings
 │   │   ├── schemas/             # Pydantic request/response schemas
-│   │   │   ├── expert_settings.py  # Custom prompts, LLM config
+│   │   │   ├── company_profile.py   # Structured company profile schema (25+ fields)
+│   │   │   ├── expert_settings.py   # Custom prompts, LLM config
 │   │   │   └── ...
 │   │   ├── routers/             # API endpoint handlers
 │   │   │   ├── sessions.py
-│   │   │   ├── company_info.py
+│   │   │   ├── company_info.py      # Includes company profile extraction endpoints
 │   │   │   ├── maturity_assessment.py
 │   │   │   ├── six_three_five.py
 │   │   │   ├── prioritization.py
@@ -198,13 +233,17 @@ ai-consultant/
 │   │   │   ├── expert_settings.py
 │   │   │   └── session_backup.py
 │   │   └── services/            # Business logic
+│   │       ├── company_profile_service.py  # AI-powered profile extraction
 │   │       ├── ai_participant.py    # AI brainstorming participant
 │   │       ├── consultation_service.py
 │   │       ├── business_case_service.py
 │   │       ├── cost_estimation_service.py
 │   │       ├── pdf_generator.py
 │   │       ├── web_crawler.py
+│   │       ├── file_processor.py    # PDF/DOCX text extraction
 │   │       └── default_prompts.py   # All AI prompts (EN/DE)
+│   ├── migrations/              # Database migrations
+│   │   └── add_company_profile.py
 │   ├── uploads/                 # Uploaded files
 │   ├── exports/                 # Generated PDF reports
 │   └── requirements.txt
@@ -215,25 +254,37 @@ ai-consultant/
 │   │   ├── main.jsx             # Entry point
 │   │   ├── pages/               # Page components
 │   │   │   ├── HomePage.jsx
-│   │   │   ├── Step1aPage.jsx   # Company Information
-│   │   │   ├── Step1bPage.jsx   # Digital Maturity Assessment
+│   │   │   ├── Step1Page.jsx    # Company Info + Profile Extraction + Maturity
 │   │   │   ├── Step2Page.jsx    # 6-3-5 Brainstorming
 │   │   │   ├── Step3Page.jsx    # Idea Prioritization
-│   │   │   ├── Step4Page.jsx    # AI Consultation
-│   │   │   └── Step5Page.jsx    # Results & Export
+│   │   │   ├── Step4Page.jsx    # AI Consultation (CRISP-DM)
+│   │   │   ├── Step5Page.jsx    # Business Case & Cost Estimation
+│   │   │   └── Step6Page.jsx    # Export & Handover
 │   │   ├── components/          # Reusable components
 │   │   │   ├── common/          # Shared UI components
 │   │   │   │   ├── ApiKeyPrompt.jsx
 │   │   │   │   ├── PageHeader.jsx
 │   │   │   │   ├── StepProgress.jsx
+│   │   │   │   ├── LLMConfigSection.jsx
 │   │   │   │   └── ExplanationBox.jsx
 │   │   │   ├── step1/
+│   │   │   │   ├── CompanyInfoForm.jsx
+│   │   │   │   ├── CompanyInfoDisplay.jsx
+│   │   │   │   ├── CompanyProfileEditor.jsx  # Editable profile form
+│   │   │   │   ├── FileUploader.jsx
+│   │   │   │   └── WebCrawlerForm.jsx
 │   │   │   ├── step2/
-│   │   │   └── step4/
+│   │   │   │   ├── ParticipantJoin.jsx
+│   │   │   │   ├── ShareSession.jsx
+│   │   │   │   └── IdeaSheet.jsx
+│   │   │   └── expert/
+│   │   │       ├── ExpertSettingsModal.jsx
+│   │   │       ├── PromptEditor.jsx
+│   │   │       └── LanguageSelector.jsx
 │   │   ├── services/
-│   │   │   └── api.js           # API client + apiKeyManager
+│   │   │   └── api.js           # API client + apiKeyManager + companyProfileAPI
 │   │   └── i18n/
-│   │       └── locales/         # en.json, de.json
+│   │       └── locales/         # en.json, de.json (with profile translations)
 │   ├── package.json
 │   └── vite.config.js
 │
@@ -329,12 +380,18 @@ ai-consultant/
    - Enter company information via text, upload files, or provide a website URL
    - The AI will use this context throughout the consultation
 
-3. **Step 1b: Digital Maturity Assessment**
+3. **Step 1b: Company Profile Extraction**
+   - Click "Extract Profile" to generate a structured company profile from your data
+   - Review the extracted information (industry, location, KPIs, technology, etc.)
+   - Edit any fields to correct or add missing information
+   - The structured profile reduces token usage by ~80% in subsequent AI interactions
+
+4. **Step 1c: Digital Maturity Assessment**
    - Rate your company on 4 dimensions (1-6 scale each)
    - View your overall maturity level and dimension breakdown
    - This helps the AI tailor recommendations to your level
 
-4. **Step 2: 6-3-5 Brainstorming**
+5. **Step 2: 6-3-5 Brainstorming**
    - Share the session link or QR code with participants
    - Each participant enters their name to join
    - Enter your API key when prompted (for AI participants)
@@ -342,12 +399,12 @@ ai-consultant/
    - Write 3 ideas during each 5-minute round
    - Sheets rotate to the next participant after each round
 
-5. **Step 3: Prioritization**
+6. **Step 3: Prioritization**
    - Review all generated ideas
    - Allocate points to your favorite ideas
    - Select the top-voted idea as your focus project
 
-6. **Step 4: AI Consultation**
+7. **Step 4: AI Consultation**
    - Enter your API key for the LLM provider (if not already set)
    - Engage in an AI-guided consultation following CRISP-DM methodology
    - Track progress on 4 key topics:
@@ -357,11 +414,14 @@ ai-consultant/
      - Project Plan
    - Click "Generate Summary" to extract findings
 
-7. **Step 5: Results & Export**
-   - View the **Executive Summary** of your consultation
+8. **Step 5: Business Case & Cost Estimation**
    - Generate a **Business Case** using the 5-level value framework
    - Get **Cost Estimation** with ROI analysis
+
+9. **Step 6: Results & Export**
+   - View the **Executive Summary** of your consultation
    - Review the **SWOT Analysis** for project readiness
+   - Generate **Technical Transition Briefing** for implementation handover
    - Export everything as a professional **PDF report**
 
 ## Expert Mode
@@ -369,7 +429,8 @@ ai-consultant/
 Expert Mode allows customization of AI behavior and LLM settings:
 
 ### Custom Prompts
-All 12 AI prompts can be customized:
+All AI prompts can be customized:
+- Company profile extraction prompt (structured data extraction)
 - Brainstorming prompts (system, round 1, subsequent rounds)
 - Consultation prompts (system rules, context template)
 - Extraction prompts (summary, business case, cost estimation)
@@ -411,15 +472,51 @@ Once the backend is running, visit:
 ## Database Schema
 
 The application uses these main tables:
-- `sessions` - Consultation sessions with settings and expert mode config
-- `company_info` - Company data from Step 1a
-- `maturity_assessments` - Digital maturity scores from Step 1b
+- `sessions` - Consultation sessions with settings, expert mode config, and structured company profile (JSON)
+- `company_info` - Raw company data from Step 1a (text, uploaded files, crawled content)
+- `maturity_assessments` - Digital maturity scores from Step 1c (acatech I4.0 index)
 - `participants` - 6-3-5 session participants
 - `idea_sheets` - Idea sheets that rotate between participants
 - `ideas` - Individual ideas (3 per round per sheet)
 - `prioritizations` - Votes and point allocations
 - `consultation_messages` - Chat messages (CRISP-DM and Business Case)
 - `consultation_findings` - Extracted findings from consultations
+
+### Company Profile Schema
+
+The `company_profile` field in sessions stores a structured JSON object with 25+ fields:
+
+```
+CompanyProfile {
+  name: string                    # Company name (required)
+  industry: string?               # Primary industry
+  sub_industry: string?           # Specific sub-industry/niche
+  employee_count: string?         # Number range (e.g., "50-100")
+  founding_year: int?             # Year founded
+  ownership: string?              # "family-owned", "founder-led", etc.
+  headquarters: string?           # Main office location
+  other_locations: string[]?      # Additional offices/plants
+  markets_served: string[]?       # Geographic markets
+  annual_revenue: string?         # Revenue range (e.g., "€5-10M")
+  profit_margin: string?          # Profitability status
+  cash_flow_status: string?       # Cash flow situation
+  growth_rate: string?            # Recent growth trends
+  production_volume: string?      # Output metrics
+  capacity_utilization: string?   # Utilization percentage
+  core_business: string?          # Main business description
+  products_services: string[]?    # Key offerings
+  customer_segments: string[]?    # Target customers
+  key_processes: string[]?        # Main business processes
+  current_systems: string[]?      # IT/software systems in use
+  data_sources: string[]?         # Available data sources
+  automation_level: string?       # Current automation status
+  pain_points: string[]?          # Business challenges
+  digitalization_goals: string[]? # AI/digital transformation goals
+  competitive_pressures: string?  # Market competition context
+}
+```
+
+All fields except `name` are nullable to prevent AI hallucination of missing data.
 
 ## Security Features
 
