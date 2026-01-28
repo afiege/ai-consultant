@@ -42,32 +42,36 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 ### 6-Step Consultation Process
 
 1. **Company Information** (Step 1a)
-   - Free text input for company information
-   - File uploads (PDF, DOCX) with automatic text extraction
-   - Web crawling to gather information from company websites
+   - **Free text input**: Describe your company, challenges, and goals in your own words
+   - **File uploads**: Upload PDF or DOCX documents (annual reports, presentations, org charts)
+   - **Web crawling**: Automatically extract content from company website by entering URL
+   - All sources are combined to build comprehensive company context
 
 2. **Company Profile Extraction** (Step 1b)
-   - AI-powered extraction of structured company data
-   - Extracts 25+ business attributes including:
-     - Basic info (name, industry, founding year, ownership)
+   - **AI-powered extraction**: Automatically analyzes all company data to extract structured information
+   - **25+ business attributes** organized in categories:
+     - Basic info (name, industry, founding year, ownership type)
      - Location data (headquarters, other locations, markets served)
-     - Financial KPIs (revenue, profit margin, cash flow, growth rate)
+     - Financial KPIs (revenue range, profit margin, cash flow, growth rate)
      - Operational KPIs (production volume, capacity utilization)
-     - Business model (products/services, customer segments)
-     - Technology status (current systems, automation level)
-     - Strategic context (pain points, digitalization goals)
-   - Editable form for user corrections and additions
-   - Strict no-hallucination policy: missing data returns null, not invented values
-   - Reduces token usage by ~80% compared to raw text context
+     - Business model (products/services, customer segments, key processes)
+     - Technology status (current systems, data sources, automation level)
+     - Strategic context (pain points, digitalization goals, competitive pressures)
+   - **Fully editable**: Click any field to correct AI extraction or fill in missing data
+   - **Add list items**: Expand lists (locations, products, goals) with "+" button
+   - **Quality indicator**: Shows extraction completeness (high/medium/low)
+   - **No hallucination**: AI only extracts explicitly stated information; missing data stays empty
+   - **Token optimization**: Reduces context size by ~80% for all subsequent AI interactions
 
 3. **Digital Maturity Assessment** (Step 1c)
-   - Based on acatech Industry 4.0 Maturity Index
-   - Rate 4 dimensions on a 1-6 scale:
-     - Resources (employees, technology, materials)
-     - Information Systems (IT integration, data processing)
-     - Culture (willingness to change, knowledge sharing)
-     - Organizational Structure (agility, collaboration)
-   - Visual results with dimension breakdown
+   - Based on **acatech Industry 4.0 Maturity Index** framework
+   - Self-assessment on 4 dimensions (1-6 scale):
+     - **Resources**: Digital skills, technology infrastructure, smart materials
+     - **Information Systems**: IT integration, data collection, analytics capabilities
+     - **Culture**: Change readiness, innovation openness, knowledge sharing
+     - **Organizational Structure**: Agility, cross-functional teams, flat hierarchies
+   - Visual radar chart showing dimension breakdown
+   - Overall maturity level helps AI calibrate recommendations
 
 4. **Interactive 6-3-5 Brainstorming** (Step 2)
    - Real-time collaborative ideation with up to 6 participants
@@ -377,19 +381,37 @@ ai-consultant/
    - Click "Start New Consultation"
 
 2. **Step 1a: Company Information**
-   - Enter company information via text, upload files, or provide a website URL
-   - The AI will use this context throughout the consultation
+   - **Text input**: Type or paste company information directly into the text area
+   - **File upload**: Upload PDF or DOCX documents (annual reports, company profiles, etc.)
+   - **Web crawling**: Enter your company website URL to automatically extract content
+   - Combine multiple sources - all information is aggregated for the AI context
 
 3. **Step 1b: Company Profile Extraction**
-   - Click "Extract Profile" to generate a structured company profile from your data
-   - Review the extracted information (industry, location, KPIs, technology, etc.)
-   - Edit any fields to correct or add missing information
-   - The structured profile reduces token usage by ~80% in subsequent AI interactions
+   - Click **"Extract Profile"** to let AI analyze your company data and create a structured profile
+   - Enter your LLM API key when prompted (stored only in browser session)
+   - Review the extracted information organized in sections:
+     - Basic info (name, industry, founding year, ownership type)
+     - Locations (headquarters, other sites, markets served)
+     - Financial KPIs (revenue, profit margin, cash flow, growth rate)
+     - Operational KPIs (production volume, capacity utilization)
+     - Business model (products/services, customer segments)
+     - Technology (current systems, automation level, data sources)
+     - Strategy (pain points, digitalization goals, competitive pressures)
+   - **Edit fields**: Click any field to correct extracted data or add missing information
+   - **Add new entries**: Use the "+" buttons to add items to list fields (locations, products, etc.)
+   - **Save changes**: Click "Save Profile" to store your corrections
+   - **Re-extract**: Click "Re-extract" to run extraction again with updated company info
+   - **Quality indicator**: Shows extraction completeness (high/medium/low based on filled fields)
+   - The structured profile reduces token usage by ~80% in all subsequent AI interactions
 
 4. **Step 1c: Digital Maturity Assessment**
-   - Rate your company on 4 dimensions (1-6 scale each)
-   - View your overall maturity level and dimension breakdown
-   - This helps the AI tailor recommendations to your level
+   - Rate your company on 4 dimensions using a 1-6 scale (based on acatech Industry 4.0 Maturity Index):
+     - **Resources**: Digital competence of employees, technology infrastructure
+     - **Information Systems**: IT integration, data collection and processing
+     - **Culture**: Willingness to change, openness to innovation
+     - **Organizational Structure**: Agility, cross-functional collaboration
+   - View your overall maturity level and dimension breakdown chart
+   - This assessment helps the AI tailor recommendations to your company's readiness level
 
 5. **Step 2: 6-3-5 Brainstorming**
    - Share the session link or QR code with participants
