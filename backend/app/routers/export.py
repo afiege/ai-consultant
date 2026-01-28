@@ -168,7 +168,7 @@ def get_export_data(
         'company_info': [
             {
                 'info_type': ci.info_type,
-                'content': ci.content[:1000] if ci.content else None
+                'content': ci.content if ci.content else None
             }
             for ci in company_infos
         ],
@@ -252,7 +252,7 @@ def generate_transition_briefing(
                 {"role": "user", "content": "Please generate the Technical Transition Briefing based on the provided context."}
             ],
             "temperature": 0.4,
-            "max_tokens": 3000
+            "max_tokens": 4096
         }
 
         if api_key:
@@ -342,9 +342,9 @@ def _build_transition_context(db: Session, db_session: SessionModel) -> dict:
     if findings_dict.get("company_profile"):
         company_profile_parts.append(f"\n**Profile Summary:**\n{findings_dict['company_profile']}")
     elif company_infos:
-        for info in company_infos[:2]:
+        for info in company_infos:
             if info.content:
-                company_profile_parts.append(f"\n**{info.info_type.upper()}:**\n{info.content[:500]}...")
+                company_profile_parts.append(f"\n**{info.info_type.upper()}:**\n{info.content}")
 
     company_profile = "\n".join(company_profile_parts)
 
@@ -468,7 +468,7 @@ def generate_swot_analysis(
                 {"role": "user", "content": "Please generate the SWOT analysis based on the provided context."}
             ],
             "temperature": 0.4,
-            "max_tokens": 2500
+            "max_tokens": 4096
         }
 
         if api_key:

@@ -603,12 +603,9 @@ class PDFReportGenerator:
                 ))
                 elements.append(Spacer(1, 0.1*inch))
 
-                for info in company_infos[:2]:  # Limit to first 2 entries
+                for info in company_infos:
                     source_label = info.info_type.upper() if info.info_type else "TEXT"
-                    # Truncate for summary view
                     content = info.content or ""
-                    if len(content) > 500:
-                        content = content[:500] + "..."
 
                     elements.append(Paragraph(
                         f"<b>Source: {source_label}</b>",
@@ -698,9 +695,6 @@ class PDFReportGenerator:
 
         if findings_dict.get('ai_goals'):
             ai_goals = findings_dict['ai_goals']
-            # Truncate if too long
-            if len(ai_goals) > 400:
-                ai_goals = ai_goals[:400] + "..."
             use_case_parts.append(f"<b>AI/Data Mining Objectives:</b> {ai_goals}")
 
         if use_case_parts:
@@ -852,21 +846,21 @@ class PDFReportGenerator:
             if findings_dict.get('cost_tco'):
                 roi_elements.append([
                     Paragraph("<b>3-Year TCO:</b>", self.styles['ReportBody']),
-                    Paragraph(markdown_to_reportlab(findings_dict['cost_tco'][:300]), self.styles['ReportBody'])
+                    Paragraph(markdown_to_reportlab(findings_dict['cost_tco']), self.styles['ReportBody'])
                 ])
 
             # ROI Analysis
             if findings_dict.get('cost_roi'):
                 roi_elements.append([
                     Paragraph("<b>ROI Analysis:</b>", self.styles['ReportBody']),
-                    Paragraph(markdown_to_reportlab(findings_dict['cost_roi'][:300]), self.styles['ReportBody'])
+                    Paragraph(markdown_to_reportlab(findings_dict['cost_roi']), self.styles['ReportBody'])
                 ])
 
             # Benefits vs. Costs comparison
             if findings_dict.get('business_case_calculation') and findings_dict.get('cost_tco'):
                 roi_elements.append([
                     Paragraph("<b>Benefits:</b>", self.styles['ReportBody']),
-                    Paragraph(markdown_to_reportlab(findings_dict['business_case_calculation'][:200]), self.styles['ReportBody'])
+                    Paragraph(markdown_to_reportlab(findings_dict['business_case_calculation']), self.styles['ReportBody'])
                 ])
 
             if roi_elements:
@@ -1021,7 +1015,7 @@ class PDFReportGenerator:
             # Only objectives and idea
             parts.append(f"<b>An AI opportunity has been identified for {company}.</b>")
             parts.append("<br/><br/>")
-            parts.append(f"The focus project \"{top_idea[:80]}{'...' if len(top_idea) > 80 else ''}\" aligns with documented business objectives. ")
+            parts.append(f"The focus project \"{top_idea}\" aligns with documented business objectives. ")
             parts.append("We recommend completing the business case analysis (Step 5a) and cost estimation (Step 5b) to evaluate feasibility.")
 
         else:
@@ -1772,10 +1766,10 @@ class PDFReportGenerator:
         elements.append(Paragraph("Top Ranked Ideas:", self.styles['SubHeader']))
 
         table_data = [['Rank', 'Idea', 'Points']]
-        for i, idea in enumerate(ranked_ideas[:10]):  # Top 10
+        for i, idea in enumerate(ranked_ideas):
             if idea['points'] == 0:
                 continue
-            content = idea['content'][:80] + '...' if len(idea['content']) > 80 else idea['content']
+            content = idea['content']
             table_data.append([str(i+1), content, str(idea['points'])])
 
         if len(table_data) > 1:
