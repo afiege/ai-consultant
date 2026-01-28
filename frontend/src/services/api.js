@@ -44,6 +44,22 @@ export const companyInfoAPI = {
     api.delete(`/api/sessions/${sessionUuid}/company-info/${infoId}`),
 };
 
+// Company profile endpoints (structured extraction)
+export const companyProfileAPI = {
+  extract: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/company-profile/extract`, {
+      api_key: apiKey || apiKeyManager.get()
+    }),
+  get: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/company-profile`),
+  getContext: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/company-profile/context`),
+  delete: (sessionUuid) =>
+    api.delete(`/api/sessions/${sessionUuid}/company-profile`),
+  save: (sessionUuid, profile) =>
+    api.put(`/api/sessions/${sessionUuid}/company-profile`, profile),
+};
+
 // Maturity assessment endpoints (acatech Industry 4.0 Maturity Index)
 export const maturityAPI = {
   get: (sessionUuid) =>

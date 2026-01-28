@@ -49,6 +49,10 @@ from .maturity_assessment import (
     MATURITY_LEVELS,
     get_maturity_level_name,
 )
+from .company_profile import (
+    CompanyProfile,
+    CompanyProfileResponse,
+)
 
 __all__ = [
     "SessionCreate",
@@ -94,4 +98,6 @@ __all__ = [
     "MaturityLevelInfo",
     "MATURITY_LEVELS",
     "get_maturity_level_name",
+    "CompanyProfile",
+    "CompanyProfileResponse",
 ]

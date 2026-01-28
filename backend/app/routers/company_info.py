@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 import uuid
 import os
 
@@ -9,11 +10,25 @@ from ..models import Session as SessionModel, CompanyInfo
 from ..schemas import (
     CompanyInfoTextCreate,
     CompanyInfoWebCrawlCreate,
-    CompanyInfoResponse
+    CompanyInfoResponse,
+    CompanyProfile,
+    CompanyProfileResponse,
 )
 from ..services.file_processor import FileProcessor
 from ..services.web_crawler import WebCrawler
+from ..services.company_profile_service import (
+    extract_company_profile,
+    get_company_profile,
+    get_profile_as_context,
+)
 from ..config import settings
+
+
+class ProfileExtractionRequest(BaseModel):
+    """Request model for profile extraction."""
+    api_key: Optional[str] = None
+    model: Optional[str] = None
+    api_base: Optional[str] = None
 
 router = APIRouter()
 
@@ -231,3 +246,165 @@ def delete_company_info(
     db.commit()
 
     return None
+
+
+@router.post("/{session_uuid}/company-profile/extract", response_model=CompanyProfileResponse)
+def extract_profile(
+    session_uuid: str,
+    request: ProfileExtractionRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Extract a structured company profile from raw company information.
+
+    This uses an LLM to analyze all company info entries and create a
+    condensed, structured profile. The profile is stored in the session
+    and used by subsequent steps to reduce token usage.
+
+    The LLM is instructed to ONLY extract explicitly stated information
+    and return null for any fields not mentioned in the source material.
+    """
+    # Verify session exists
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with UUID {session_uuid} not found"
+        )
+
+    # Get model settings from session or request
+    model = request.model or db_session.llm_model or "mistral/mistral-small-latest"
+    api_base = request.api_base or db_session.llm_api_base
+    language = db_session.prompt_language or "en"
+
+    try:
+        result = extract_company_profile(
+            db=db,
+            session_uuid=session_uuid,
+            model=model,
+            api_key=request.api_key,
+            api_base=api_base,
+            language=language
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error extracting profile: {str(e)}"
+        )
+
+
+@router.get("/{session_uuid}/company-profile", response_model=Optional[CompanyProfile])
+def get_profile(
+    session_uuid: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get the extracted company profile for a session.
+
+    Returns null if no profile has been extracted yet.
+    """
+    # Verify session exists
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with UUID {session_uuid} not found"
+        )
+
+    return get_company_profile(db, session_uuid)
+
+
+@router.get("/{session_uuid}/company-profile/context")
+def get_profile_context(
+    session_uuid: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get the company profile formatted as context text.
+
+    This returns a token-efficient text representation suitable for
+    inclusion in LLM prompts.
+    """
+    # Verify session exists
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with UUID {session_uuid} not found"
+        )
+
+    language = db_session.prompt_language or "en"
+    context = get_profile_as_context(db, session_uuid, language)
+
+    return {"context": context}
+
+
+@router.delete("/{session_uuid}/company-profile", status_code=status.HTTP_204_NO_CONTENT)
+def delete_profile(
+    session_uuid: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete the extracted company profile.
+
+    This allows re-extraction after updating company information.
+    """
+    # Verify session exists
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with UUID {session_uuid} not found"
+        )
+
+    db_session.company_profile = None
+    db.commit()
+
+    return None
+
+
+@router.put("/{session_uuid}/company-profile", response_model=CompanyProfile)
+def update_profile(
+    session_uuid: str,
+    profile: CompanyProfile,
+    db: Session = Depends(get_db)
+):
+    """
+    Update/save the company profile.
+
+    This allows users to correct or augment the extracted profile.
+    """
+    # Verify session exists
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with UUID {session_uuid} not found"
+        )
+
+    # Save the profile
+    db_session.company_profile = profile.model_dump_json()
+    db.commit()
+
+    return profile

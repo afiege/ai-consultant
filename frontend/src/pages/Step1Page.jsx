@@ -6,6 +6,7 @@ import CompanyInfoForm from '../components/step1/CompanyInfoForm';
 import FileUploader from '../components/step1/FileUploader';
 import WebCrawlerForm from '../components/step1/WebCrawlerForm';
 import CompanyInfoDisplay from '../components/step1/CompanyInfoDisplay';
+import CompanyProfileEditor from '../components/step1/CompanyProfileEditor';
 import { PageHeader, ExplanationBox } from '../components/common';
 
 // Maturity level names for reference
@@ -478,12 +479,18 @@ const Step1Page = () => {
             </div>
 
             {/* Collected Information Display */}
-            <div className="bg-gray-100 rounded-lg p-6">
+            <div className="bg-gray-100 rounded-lg p-6 mb-6">
               <CompanyInfoDisplay
                 companyInfoList={companyInfoList}
                 onDelete={handleDeleteCompanyInfo}
               />
             </div>
+
+            {/* Structured Company Profile */}
+            <CompanyProfileEditor
+              sessionUuid={sessionUuid}
+              hasCompanyInfo={companyInfoList.length > 0}
+            />
           </>
         ) : (
           // === Step 1b: Maturity Assessment ===

@@ -14,6 +14,7 @@ from ..models import (
     Prioritization
 )
 from .default_prompts import get_prompt
+from .company_profile_service import get_profile_as_context
 
 
 class BusinessCaseService:
@@ -454,18 +455,25 @@ class BusinessCaseService:
 
     def _build_business_case_context(self, db_session: SessionModel) -> Dict:
         """Build context from all previous steps including Step 4 findings."""
-        # Get company info (Step 1)
-        company_infos = self.db.query(CompanyInfo).filter(
-            CompanyInfo.session_id == db_session.id
-        ).all()
+        # Try to get structured company profile first (more token-efficient)
+        company_profile_text = get_profile_as_context(
+            self.db, db_session.session_uuid, self.language
+        )
+        has_structured_profile = company_profile_text and company_profile_text != "No company profile available."
 
+        # Fall back to raw company info if no structured profile
         company_context = []
-        for info in company_infos:
-            if info.content:
-                company_context.append({
-                    "type": info.info_type,
-                    "content": info.content[:2000]
-                })
+        if not has_structured_profile:
+            company_infos = self.db.query(CompanyInfo).filter(
+                CompanyInfo.session_id == db_session.id
+            ).all()
+
+            for info in company_infos:
+                if info.content:
+                    company_context.append({
+                        "type": info.info_type,
+                        "content": info.content[:2000]
+                    })
 
         # Get ideas and prioritization results (Step 2 & 3)
         sheets = self.db.query(IdeaSheet).filter(
@@ -513,6 +521,7 @@ class BusinessCaseService:
         return {
             "company_name": db_session.company_name or "the company",
             "company_info": company_context,
+            "company_profile_text": company_profile_text if has_structured_profile else None,
             "ideas": all_ideas,
             "top_idea": all_ideas[0] if all_ideas else None,
             "crisp_dm": crisp_dm
@@ -523,16 +532,20 @@ class BusinessCaseService:
         # Get CRISP-DM findings from Step 4
         crisp_dm = context.get("crisp_dm", {})
 
-        # Format company info - prefer company_profile from Step 4 if available (includes maturity)
-        company_profile = crisp_dm.get("company_profile", "")
-        if company_profile:
-            company_info_text = f"\n[COMPANY PROFILE FROM CONSULTATION]\n{company_profile}\n"
-        else:
-            company_info_text = ""
+        # Use structured profile if available (most token-efficient)
+        company_info_text = context.get("company_profile_text")
 
-        # Also include raw company info from Step 1 for additional context
-        for info in context.get("company_info", [])[:3]:
-            company_info_text += f"\n[{info['type'].upper()}]\n{info['content']}\n"
+        if not company_info_text:
+            # Fall back to company_profile from Step 4 if available
+            company_profile = crisp_dm.get("company_profile", "")
+            if company_profile:
+                company_info_text = f"\n[COMPANY PROFILE FROM CONSULTATION]\n{company_profile}\n"
+            else:
+                company_info_text = ""
+
+            # Also include raw company info from Step 1 for additional context
+            for info in context.get("company_info", [])[:3]:
+                company_info_text += f"\n[{info['type'].upper()}]\n{info['content']}\n"
 
         if not company_info_text:
             company_info_text = "No company information provided."

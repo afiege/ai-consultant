@@ -18,6 +18,7 @@ from ..models import (
     MaturityAssessment
 )
 from .default_prompts import get_prompt
+from .company_profile_service import get_profile_as_context
 
 # Maturity level guidance for dynamic injection (only relevant levels shown to reduce prompt size)
 MATURITY_GUIDANCE = {
@@ -615,18 +616,25 @@ Respond only with these 4 categories, brief and concise."""
 
     def _build_consultation_context(self, db_session: SessionModel) -> Dict:
         """Build context from all previous steps."""
-        # Get company info
-        company_infos = self.db.query(CompanyInfo).filter(
-            CompanyInfo.session_id == db_session.id
-        ).all()
+        # Try to get structured company profile first (more token-efficient)
+        company_profile_text = get_profile_as_context(
+            self.db, db_session.session_uuid, self.language
+        )
+        has_structured_profile = company_profile_text and company_profile_text != "No company profile available."
 
+        # Fall back to raw company info if no structured profile
         company_context = []
-        for info in company_infos:
-            if info.content:
-                company_context.append({
-                    "type": info.info_type,
-                    "content": info.content[:2000]  # Limit each entry
-                })
+        if not has_structured_profile:
+            company_infos = self.db.query(CompanyInfo).filter(
+                CompanyInfo.session_id == db_session.id
+            ).all()
+
+            for info in company_infos:
+                if info.content:
+                    company_context.append({
+                        "type": info.info_type,
+                        "content": info.content[:2000]  # Limit each entry
+                    })
 
         # Get maturity assessment (Step 1b)
         maturity = self.db.query(MaturityAssessment).filter(
@@ -670,6 +678,7 @@ Respond only with these 4 categories, brief and concise."""
         return {
             "company_name": db_session.company_name or "the company",
             "company_info": company_context,
+            "company_profile_text": company_profile_text if has_structured_profile else None,
             "maturity": maturity_data,
             "ideas": all_ideas,
             "top_idea": all_ideas[0] if all_ideas else None,
@@ -716,10 +725,14 @@ When multiple people contribute:
 
     def _build_context_message(self, context: Dict) -> str:
         """Build the context message with session-specific data."""
-        # Format company info
-        company_info_text = ""
-        for info in context.get("company_info", [])[:3]:
-            company_info_text += f"\n[{info['type'].upper()}]\n{info['content']}\n"
+        # Use structured profile if available (more token-efficient)
+        company_info_text = context.get("company_profile_text")
+
+        # Fall back to raw company info if no structured profile
+        if not company_info_text:
+            company_info_text = ""
+            for info in context.get("company_info", [])[:3]:
+                company_info_text += f"\n[{info['type'].upper()}]\n{info['content']}\n"
 
         if not company_info_text:
             company_info_text = "No company information provided yet."
