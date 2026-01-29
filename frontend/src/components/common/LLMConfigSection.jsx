@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { expertSettingsAPI } from '../../services/api';
 
@@ -15,6 +15,10 @@ const LLMConfigSection = ({
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [availableModels, setAvailableModels] = useState([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [modelsMessage, setModelsMessage] = useState(null);
+  const [modelsFallback, setModelsFallback] = useState(false);
 
   useEffect(() => {
     loadProviders();
@@ -26,9 +30,53 @@ const LLMConfigSection = ({
       const matchedProvider = llmProviders.find(p => p.api_base === config.api_base);
       if (matchedProvider && matchedProvider.name !== selectedProvider) {
         setSelectedProvider(matchedProvider.name);
+        // Set initial models from hardcoded list
+        setAvailableModels(matchedProvider.models || []);
       }
     }
   }, [config.api_base, llmProviders]);
+
+  // Fetch models when provider changes and API key is available
+  const fetchModelsFromProvider = useCallback(async (apiBase, apiKey) => {
+    if (!apiBase || !apiKey) {
+      return;
+    }
+
+    setLoadingModels(true);
+    setModelsMessage(null);
+    setModelsFallback(false);
+
+    try {
+      const response = await expertSettingsAPI.fetchModels(apiBase, apiKey);
+      const data = response.data;
+
+      if (data.models && data.models.length > 0) {
+        setAvailableModels(data.models);
+        setModelsFallback(data.fallback || false);
+        if (data.message) {
+          setModelsMessage(data.message);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch models:', err);
+      // Keep using existing models (fallback)
+      setModelsMessage(t('expertSettings.llmConfig.fetchModelsFailed', 'Could not fetch models from provider'));
+      setModelsFallback(true);
+    } finally {
+      setLoadingModels(false);
+    }
+  }, [t]);
+
+  // Auto-fetch models when API key changes and provider is selected
+  useEffect(() => {
+    if (selectedProvider && config.api_key && config.api_base) {
+      // Debounce the fetch to avoid too many requests while typing
+      const timeoutId = setTimeout(() => {
+        fetchModelsFromProvider(config.api_base, config.api_key);
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [config.api_key, config.api_base, selectedProvider, fetchModelsFromProvider]);
 
   const loadProviders = async () => {
     try {
@@ -43,13 +91,21 @@ const LLMConfigSection = ({
 
   const handleProviderChange = (providerName) => {
     setSelectedProvider(providerName);
+    setModelsMessage(null);
+    setModelsFallback(false);
     const provider = llmProviders.find(p => p.name === providerName);
     if (provider) {
+      // Set hardcoded models initially
+      setAvailableModels(provider.models || []);
       onChange({
         ...config,
         api_base: provider.api_base,
         model: provider.models[0] || '',
       });
+      // If API key is already set, fetch dynamic models
+      if (config.api_key && provider.api_base) {
+        fetchModelsFromProvider(provider.api_base, config.api_key);
+      }
     }
   };
 
@@ -105,10 +161,6 @@ const LLMConfigSection = ({
     }
   };
 
-  const availableModels = selectedProvider
-    ? (llmProviders.find(p => p.name === selectedProvider)?.models || [])
-    : [];
-
   const canTest = config.model && config.api_key;
 
   if (loading) {
@@ -151,22 +203,64 @@ const LLMConfigSection = ({
       {/* Model Selection */}
       {selectedProvider && (
         <div className="mb-3">
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            {t('expertSettings.llmConfig.model')}
-          </label>
-          <select
-            value={config.model}
-            onChange={(e) => handleFieldChange('model', e.target.value)}
-            className={`w-full ${inputSize} border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
-          >
-            <option value="">{t('expertSettings.llmConfig.selectModel')}</option>
-            {availableModels.map((model) => (
-              <option key={model} value={model}>
-                {/* Display model name without provider prefix for cleaner UI */}
-                {model.includes('/') ? model.split('/').slice(1).join('/') : model}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-medium text-gray-600">
+              {t('expertSettings.llmConfig.model')}
+            </label>
+            {config.api_key && config.api_base && (
+              <button
+                type="button"
+                onClick={() => fetchModelsFromProvider(config.api_base, config.api_key)}
+                disabled={loadingModels}
+                className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                title={t('expertSettings.llmConfig.refreshModels', 'Refresh model list from provider')}
+              >
+                {loadingModels ? (
+                  <svg className="animate-spin h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                )}
+                {t('expertSettings.llmConfig.refresh', 'Refresh')}
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <select
+              value={config.model}
+              onChange={(e) => handleFieldChange('model', e.target.value)}
+              disabled={loadingModels}
+              className={`w-full ${inputSize} border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${loadingModels ? 'opacity-50' : ''}`}
+            >
+              <option value="">{loadingModels ? t('expertSettings.llmConfig.loadingModels', 'Loading models...') : t('expertSettings.llmConfig.selectModel')}</option>
+              {availableModels.map((model) => (
+                <option key={model} value={model}>
+                  {/* Display model name without provider prefix for cleaner UI */}
+                  {model.includes('/') ? model.split('/').slice(1).join('/') : model}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Model fetch status message */}
+          {modelsMessage && (
+            <p className={`mt-1 text-xs ${modelsFallback ? 'text-amber-600' : 'text-green-600'}`}>
+              {modelsFallback && (
+                <svg className="inline h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              )}
+              {modelsMessage}
+            </p>
+          )}
+          {!config.api_key && selectedProvider && (
+            <p className="mt-1 text-xs text-gray-500">
+              {t('expertSettings.llmConfig.enterApiKeyForModels', 'Enter API key to fetch available models')}
+            </p>
+          )}
         </div>
       )}
 

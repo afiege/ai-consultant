@@ -63,7 +63,22 @@ class LLMProviderInfo(BaseModel):
 
 # Available LLM provider presets
 # Note: Model names must include LiteLLM provider prefix (e.g., openai/, mistral/, ollama/)
+# Only text-based models are included (no vision/image generation models)
 LLM_PROVIDERS = [
+    LLMProviderInfo(
+        name="ScaDS.AI (TU Dresden)",
+        api_base="https://llm.scads.ai/v1",
+        models=[
+            # Model aliases with automatic fallback (recommended)
+            "openai/alias-ha",           # High availability general-purpose
+            "openai/alias-code",         # Coding support
+            "openai/alias-reasoning",    # Reasoning tasks
+            # Direct models (when available)
+            "openai/meta-llama-3.1-70b-instruct",
+            "openai/mistral-large-latest",
+            "openai/qwen2.5-72b-instruct",
+        ]
+    ),
     LLMProviderInfo(
         name="AcademicCloud (SAIA)",
         api_base="https://chat-ai.academiccloud.de/v1",

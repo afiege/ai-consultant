@@ -709,6 +709,8 @@ export const expertSettingsAPI = {
     api.get('/api/sessions/expert-settings/metadata'),
   getLLMProviders: () =>
     api.get('/api/sessions/expert-settings/llm-providers'),
+  fetchModels: (apiBase, apiKey) =>
+    api.post('/api/sessions/expert-settings/fetch-models', { api_base: apiBase, api_key: apiKey }),
   testLLM: (config) =>
     api.post('/api/sessions/expert-settings/test-llm', config),
   resetPrompt: (sessionUuid, promptKey) =>

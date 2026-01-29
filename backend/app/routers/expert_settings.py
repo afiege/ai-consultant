@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import json
+import httpx
 from typing import Optional, List
 from litellm import completion
 
@@ -35,6 +36,20 @@ class LLMTestResponse(BaseModel):
     success: bool
     message: str
     response_preview: Optional[str] = None
+
+
+class FetchModelsRequest(BaseModel):
+    """Request model for fetching available models from a provider."""
+    api_base: str
+    api_key: str
+
+
+class FetchModelsResponse(BaseModel):
+    """Response model for fetched models."""
+    success: bool
+    models: List[str]
+    fallback: bool = False  # True if using hardcoded fallback list
+    message: Optional[str] = None
 
 router = APIRouter()
 
@@ -96,6 +111,153 @@ def get_prompt_metadata():
 def get_llm_providers():
     """Get available LLM provider presets."""
     return LLM_PROVIDERS
+
+
+# Keywords that indicate non-text models (vision, image generation, embeddings, audio, etc.)
+NON_TEXT_MODEL_KEYWORDS = [
+    "vision", "image", "img", "visual", "picture", "photo",
+    "embed", "embedding",
+    "audio", "speech", "tts", "whisper", "voice",
+    "video", "clip",
+    "dall-e", "dalle", "stable-diffusion", "sdxl", "flux",
+    "moderation",
+]
+
+
+def is_text_model(model_id: str) -> bool:
+    """Check if a model is a text-based model (not vision/image/audio/embedding)."""
+    model_lower = model_id.lower()
+    for keyword in NON_TEXT_MODEL_KEYWORDS:
+        if keyword in model_lower:
+            return False
+    return True
+
+
+@router.post("/expert-settings/fetch-models", response_model=FetchModelsResponse)
+async def fetch_provider_models(request: FetchModelsRequest):
+    """
+    Fetch available models from a provider's /v1/models endpoint.
+
+    Falls back to hardcoded list if the provider is unreachable or doesn't support listing.
+    Only returns text-based models (filters out vision/image/audio models).
+    """
+    if not request.api_base:
+        return FetchModelsResponse(
+            success=False,
+            models=[],
+            message="API base URL is required"
+        )
+
+    if not request.api_key:
+        return FetchModelsResponse(
+            success=False,
+            models=[],
+            message="API key is required to fetch models"
+        )
+
+    # Find fallback models from hardcoded list
+    fallback_models = []
+    for provider in LLM_PROVIDERS:
+        if provider.api_base == request.api_base:
+            fallback_models = provider.models
+            break
+
+    # Normalize the API base URL
+    api_base = request.api_base.rstrip('/')
+    models_url = f"{api_base}/models"
+
+    print(f"[Fetch Models] Querying: {models_url}")
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                models_url,
+                headers={
+                    "Authorization": f"Bearer {request.api_key}",
+                    "Content-Type": "application/json"
+                }
+            )
+
+            print(f"[Fetch Models] Response status: {response.status_code}")
+
+            if response.status_code == 200:
+                data = response.json()
+
+                # OpenAI-compatible format: {"data": [{"id": "model-name", ...}, ...]}
+                if "data" in data and isinstance(data["data"], list):
+                    models = []
+                    filtered_count = 0
+                    for model_info in data["data"]:
+                        model_id = model_info.get("id", "")
+                        if model_id:
+                            # Add openai/ prefix for LiteLLM compatibility with custom endpoints
+                            if not any(model_id.startswith(p) for p in ["openai/", "mistral/", "anthropic/", "ollama/"]):
+                                model_id = f"openai/{model_id}"
+                            # Filter out non-text models (vision, image, audio, etc.)
+                            if is_text_model(model_id):
+                                models.append(model_id)
+                            else:
+                                filtered_count += 1
+
+                    # Sort models alphabetically
+                    models.sort()
+
+                    print(f"[Fetch Models] Found {len(models)} text models (filtered out {filtered_count} non-text models)")
+
+                    return FetchModelsResponse(
+                        success=True,
+                        models=models,
+                        fallback=False,
+                        message=f"Found {len(models)} text models"
+                    )
+                else:
+                    print(f"[Fetch Models] Unexpected response format: {list(data.keys())}")
+                    # Fall through to fallback
+
+            elif response.status_code == 401:
+                return FetchModelsResponse(
+                    success=False,
+                    models=fallback_models,
+                    fallback=True,
+                    message="Authentication failed. Using default model list."
+                )
+
+            else:
+                print(f"[Fetch Models] Error response: {response.text[:200]}")
+                # Fall through to fallback
+
+    except httpx.TimeoutException:
+        print(f"[Fetch Models] Timeout connecting to {models_url}")
+        return FetchModelsResponse(
+            success=False,
+            models=fallback_models,
+            fallback=True,
+            message="Connection timeout. Using default model list."
+        )
+    except Exception as e:
+        print(f"[Fetch Models] Error: {type(e).__name__}: {str(e)}")
+        return FetchModelsResponse(
+            success=False,
+            models=fallback_models,
+            fallback=True,
+            message=f"Could not fetch models: {str(e)[:100]}. Using default model list."
+        )
+
+    # Fallback if we got here without returning
+    if fallback_models:
+        return FetchModelsResponse(
+            success=False,
+            models=fallback_models,
+            fallback=True,
+            message="Could not fetch models from provider. Using default model list."
+        )
+    else:
+        return FetchModelsResponse(
+            success=False,
+            models=[],
+            fallback=False,
+            message="Could not fetch models and no default list available for this provider."
+        )
 
 
 @router.post("/expert-settings/test-llm", response_model=LLMTestResponse)
