@@ -326,9 +326,19 @@ const Step4Page = () => {
     setError(null);
     try {
       await consultationAPI.reset(sessionUuid);
+      // Clear all state immediately
       setMessages([]);
       setConsultationStarted(false);
       setFindings(null);
+      setTopicsCovered({
+        businessObjectives: false,
+        situationAssessment: false,
+        aiGoals: false,
+        projectPlan: false
+      });
+      setSkippedTopics({});
+      // Reload data to ensure UI matches database
+      await loadData();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to reset consultation');
     }

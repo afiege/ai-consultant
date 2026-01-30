@@ -404,12 +404,15 @@ const Step5Page = () => {
     setError(null);
     try {
       await consultationAPI.reset(sessionUuid, 5); // Reset from Step 5 onwards
+      // Clear all state immediately
       setPotentialsMessages([]);
       setPotentialsStarted(false);
       setPotentialsFindings(null);
       setCostsMessages([]);
       setCostsStarted(false);
       setCostsFindings(null);
+      // Reload data to ensure UI matches database
+      await loadData();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to reset');
     }
@@ -423,9 +426,12 @@ const Step5Page = () => {
     setError(null);
     try {
       await consultationAPI.reset(sessionUuid, 6); // Reset Step 6 only
+      // Clear state immediately
       setCostsMessages([]);
       setCostsStarted(false);
       setCostsFindings(null);
+      // Reload data to ensure UI matches database
+      await loadData();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to reset');
     }
