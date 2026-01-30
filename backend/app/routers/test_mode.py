@@ -212,7 +212,8 @@ async def generate_persona_response(
                 {"role": "user", "content": "Please respond to the consultant's message as the client."}
             ],
             "temperature": 0.7,
-            "max_tokens": 500
+            "max_tokens": 500,
+            "timeout": 120  # Increase timeout to 120 seconds
         }
 
         if api_key:
@@ -432,7 +433,8 @@ async def generate_persona_response_stream(
                 ],
                 "temperature": 0.7,
                 "max_tokens": 500,
-                "stream": True
+                "stream": True,
+                "timeout": 120  # Increase timeout to 120 seconds
             }
 
             if api_key:
