@@ -10,7 +10,7 @@ const STEPS = [
   { id: 3, route: 'step3', key: 'prioritization', skippable: true, label: '3' },
   { id: 4, route: 'step4', key: 'consultation', label: '4' },
   { id: 5, route: 'step5', key: 'businessCase', label: '5' },
-  { id: 6, route: 'step6', key: 'export', label: '6' },
+  { id: 6, route: 'step6', key: 'results', label: '6' },
 ];
 
 // Icons
