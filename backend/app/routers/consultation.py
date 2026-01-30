@@ -278,6 +278,9 @@ def request_ai_response_stream(
     Used when user wants AI feedback after answering questions.
     Returns Server-Sent Events (SSE) stream.
     """
+    # Ensure we see the latest committed data (important for test mode flow)
+    db.expire_all()
+
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
     ).first()

@@ -364,6 +364,9 @@ class ConsultationService:
         Request AI response based on current conversation (no new user message).
         Used when user wants AI feedback after answering questions.
         """
+        # Ensure we see the latest committed data (important for test mode flow)
+        self.db.expire_all()
+
         db_session = self._get_session(session_uuid)
 
         # Check for context updates before processing (saves to DB if changes detected)

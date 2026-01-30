@@ -303,6 +303,9 @@ class BusinessCaseService:
         """
         Request AI response based on current conversation (no new user message).
         """
+        # Ensure we see the latest committed data (important for test mode flow)
+        self.db.expire_all()
+
         db_session = self._get_session(session_uuid)
 
         # Get conversation history
