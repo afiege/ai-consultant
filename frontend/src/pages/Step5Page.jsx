@@ -811,7 +811,13 @@ const Step5Page = () => {
                   </div>
                 ) : (
                   <>
-                    {potentialsMessages.filter(msg => msg.role !== 'system').map((msg) => (
+                    {potentialsMessages.filter(msg =>
+                      msg.role !== 'system' &&
+                      !msg.content?.startsWith('[SESSION CONTEXT]') &&
+                      !msg.content?.startsWith('[IMPORTANT UPDATE') &&
+                      !msg.content?.startsWith('[WICHTIGE AKTUALISIERUNG') &&
+                      msg.content !== 'Please start the business case analysis.'
+                    ).map((msg) => (
                       <MessageBubble key={msg.id} msg={msg} />
                     ))}
                     {potentialsSending && potentialsMessages.length > 0 && potentialsMessages[potentialsMessages.length - 1].content === '' && (
@@ -839,7 +845,13 @@ const Step5Page = () => {
                   </div>
                 ) : (
                   <>
-                    {costsMessages.filter(msg => msg.role !== 'system').map((msg) => (
+                    {costsMessages.filter(msg =>
+                      msg.role !== 'system' &&
+                      !msg.content?.startsWith('[SESSION CONTEXT]') &&
+                      !msg.content?.startsWith('[IMPORTANT UPDATE') &&
+                      !msg.content?.startsWith('[WICHTIGE AKTUALISIERUNG') &&
+                      msg.content !== 'Please start the cost estimation analysis.'
+                    ).map((msg) => (
                       <MessageBubble key={msg.id} msg={msg} />
                     ))}
                     {costsSending && costsMessages.length > 0 && costsMessages[costsMessages.length - 1].content === '' && (

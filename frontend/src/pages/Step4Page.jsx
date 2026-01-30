@@ -883,7 +883,12 @@ const Step4Page = () => {
                   </div>
                 ) : (
                   <>
-                    {messages.filter(msg => msg.role !== 'system').map((msg) => (
+                    {messages.filter(msg =>
+                      msg.role !== 'system' &&
+                      !msg.content?.startsWith('[SESSION CONTEXT]') &&
+                      !msg.content?.startsWith('[IMPORTANT UPDATE') &&
+                      !msg.content?.startsWith('[WICHTIGE AKTUALISIERUNG')
+                    ).map((msg) => (
                       <div
                         key={msg.id}
                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
