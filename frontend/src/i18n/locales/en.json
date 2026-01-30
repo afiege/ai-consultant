@@ -462,7 +462,7 @@
       "collaborativeHint": "In collaborative mode: Send messages to contribute, then click 'Request AI Response' when ready for feedback.",
       "resetButton": "Start Over",
       "resetTitle": "Reset consultation and start over",
-      "resetConfirm": "Are you sure you want to start over? All messages will be deleted."
+      "resetConfirm": "Are you sure you want to start over? All consultation messages, business case, and cost estimation data will be deleted."
     },
     "collaborative": {
       "title": "Collaborative Mode",
@@ -617,7 +617,10 @@
       "thinking": "Analyzing...",
       "messagePlaceholder": "Type your answer...",
       "extractFindings": "Extract Business Case",
-      "extracting": "Extracting..."
+      "extracting": "Extracting...",
+      "resetButton": "Start Over",
+      "resetTitle": "Reset business case and cost estimation",
+      "resetConfirm": "Are you sure you want to start over? All business case and cost estimation data will be deleted."
     },
     "costs": {
       "startMessage": "The AI consultant will help you estimate realistic costs for your AI project.",
@@ -625,7 +628,9 @@
       "starting": "Starting...",
       "thinking": "Calculating...",
       "extractFindings": "Extract Cost Estimate",
-      "extracting": "Extracting..."
+      "extracting": "Extracting...",
+      "resetTitle": "Reset cost estimation",
+      "resetConfirm": "Are you sure you want to start over? All cost estimation data will be deleted."
     },
     "findings": {
       "title": "Business Case Indication",

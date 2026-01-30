@@ -7,7 +7,7 @@ from typing import List, Dict, Optional
 import json
 
 from ..database import get_db
-from ..models import Session as SessionModel, Participant, ConsultationMessage
+from ..models import Session as SessionModel, Participant, ConsultationMessage, ConsultationFinding
 from ..schemas.consultation import (
     LLMRequest,
     ConsultationMessageCreate,
@@ -347,14 +347,57 @@ def get_messages(
     ]
 
 
+# Define which message types and findings belong to each step
+STEP_MESSAGE_TYPES = {
+    4: ["consultation", "business_case", "cost_estimation"],  # Reset from Step 4 clears all
+    5: ["business_case", "cost_estimation"],  # Reset from Step 5 keeps Step 4
+    6: ["cost_estimation"],  # Reset from Step 6 keeps Step 4 + 5
+}
+
+STEP_FINDING_TYPES = {
+    4: None,  # None means delete all findings
+    5: [
+        # Step 5 findings
+        "business_case_classification", "business_case_calculation",
+        "business_case_validation", "business_case_pitch",
+        # Step 6 findings
+        "cost_complexity", "cost_initial", "cost_recurring", "cost_maintenance",
+        "cost_tco", "cost_drivers", "cost_optimization", "cost_roi",
+        # Export findings that depend on Step 5/6
+        "swot_analysis", "technical_briefing",
+    ],
+    6: [
+        # Step 6 findings only
+        "cost_complexity", "cost_initial", "cost_recurring", "cost_maintenance",
+        "cost_tco", "cost_drivers", "cost_optimization", "cost_roi",
+        # Export findings that depend on Step 6
+        "technical_briefing",
+    ],
+}
+
+
 @router.delete("/{session_uuid}/consultation/reset")
 def reset_consultation(
     session_uuid: str,
+    from_step: int = 4,
     db: Session = Depends(get_db)
 ):
     """
-    Reset/clear all consultation messages to start over.
+    Reset consultation messages and findings from a specific step onwards.
+
+    Args:
+        from_step: The step to reset from (4, 5, or 6).
+                   Resets this step and all subsequent steps.
+                   - 4: Resets Step 4 + 5 + 6 (full reset)
+                   - 5: Resets Step 5 + 6 (keeps Step 4 conversation)
+                   - 6: Resets Step 6 only (keeps Step 4 + 5)
     """
+    if from_step not in [4, 5, 6]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="from_step must be 4, 5, or 6"
+        )
+
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
     ).first()
@@ -365,17 +408,36 @@ def reset_consultation(
             detail=f"Session {session_uuid} not found"
         )
 
-    # Delete all consultation messages for this session
-    deleted_count = db.query(ConsultationMessage).filter(
-        ConsultationMessage.session_id == db_session.id
-    ).delete()
+    # Delete messages for the specified steps
+    message_types = STEP_MESSAGE_TYPES[from_step]
+    deleted_messages = db.query(ConsultationMessage).filter(
+        ConsultationMessage.session_id == db_session.id,
+        ConsultationMessage.message_type.in_(message_types)
+    ).delete(synchronize_session='fetch')
+
+    # Delete findings for the specified steps
+    finding_types = STEP_FINDING_TYPES[from_step]
+    if finding_types is None:
+        # Delete all findings
+        deleted_findings = db.query(ConsultationFinding).filter(
+            ConsultationFinding.session_id == db_session.id
+        ).delete(synchronize_session='fetch')
+    else:
+        # Delete specific finding types
+        deleted_findings = db.query(ConsultationFinding).filter(
+            ConsultationFinding.session_id == db_session.id,
+            ConsultationFinding.factor_type.in_(finding_types)
+        ).delete(synchronize_session='fetch')
 
     db.commit()
 
+    step_names = {4: "consultation", 5: "business case", 6: "cost estimation"}
     return {
         "status": "success",
-        "messages_deleted": deleted_count,
-        "message": "Consultation has been reset. You can start over."
+        "from_step": from_step,
+        "messages_deleted": deleted_messages,
+        "findings_deleted": deleted_findings,
+        "message": f"Reset from Step {from_step} ({step_names[from_step]}). You can start over."
     }
 
 
