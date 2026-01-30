@@ -677,10 +677,20 @@
     }
   },
   "step6": {
-    "title": "Schritt 6: Export & Technische Übergabe",
-    "subtitle": "Überprüfen Sie Ihre Erkenntnisse und bereiten Sie die Technical Understanding Phase vor",
+    "title": "Schritt 6: Ergebnisse",
+    "subtitle": "Erkenntnisse überprüfen und Beratungsbericht exportieren",
     "backStep5": "Zurück zum Business Case",
     "backHome": "Zurück zur Startseite",
+    "tabs": {
+      "company_info": "Unternehmen",
+      "maturity": "Reifegrad",
+      "crisp_dm": "CRISP-DM",
+      "business_case": "Business Case",
+      "costs": "Kosten",
+      "swot": "SWOT",
+      "briefing": "Briefing",
+      "export": "Export"
+    },
     "explanation": {
       "title": "DMME-Methodik: Vom Business zum Technical Understanding",
       "description": "Sie haben die Business Understanding Phase abgeschlossen. Das Technical Transition Briefing bereitet die Übergabe an die nächste Phase vor: Technical Understanding & Conceptualization, in der technische Experten Datenquellen, Systeme und Implementierungsansätze analysieren.",
@@ -707,6 +717,7 @@
       "businessCase": "Business Case Indikation",
       "costs": "Kostenschätzung"
     },
+    "rawInfo": "Zusätzliche Informationen",
     "unknownCompany": "Unbekanntes Unternehmen",
     "incomplete": {
       "companyInfo": "Keine Unternehmensdaten erfasst. Gehen Sie zu Schritt 1a.",
@@ -723,15 +734,25 @@
     },
     "crispDm": {
       "objectives": "Geschäftsziele",
-      "aiGoals": "KI-Ziele"
+      "situation": "Situationsanalyse",
+      "aiGoals": "KI-/Data-Mining-Ziele",
+      "projectPlan": "Projektplan"
     },
     "businessCase": {
       "classification": "Klassifizierung",
+      "calculation": "Berechnung",
+      "validation": "Validierungsfragen",
       "pitch": "Management-Pitch"
     },
     "costs": {
-      "complexity": "Komplexität",
-      "tco": "3-Jahres-TCO"
+      "complexity": "Komplexitätsbewertung",
+      "initial": "Erstinvestition",
+      "recurring": "Laufende Kosten",
+      "maintenance": "Wartung",
+      "tco": "3-Jahres-TCO",
+      "drivers": "Kostentreiber",
+      "optimization": "Optimierungsoptionen",
+      "roi": "ROI-Analyse"
     },
     "swot": {
       "title": "SWOT-Analyse",
@@ -755,6 +776,8 @@
     },
     "export": {
       "title": "Export-Optionen",
+      "readiness": "Export-Bereitschaft",
+      "sectionsComplete": "Abschnitte vollständig",
       "downloadPDF": "Vollständigen PDF-Bericht herunterladen",
       "generating": "PDF wird erstellt...",
       "pdfNote": "Das PDF enthält alle Erkenntnisse, das Technical Briefing und vollständige Gesprächsprotokolle."

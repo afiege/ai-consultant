@@ -1,19 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   sessionAPI,
-  companyInfoAPI,
-  maturityAPI,
-  consultationAPI,
-  businessCaseAPI,
-  costEstimationAPI,
   exportAPI,
-  apiKeyManager
+  apiKeyManager,
+  findingsAPI
 } from '../services/api';
-import { PageHeader, ExplanationBox } from '../components/common';
+import { PageHeader } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
+import { WikiLinkMarkdown } from '../components/common/WikiLinkMarkdown';
+
+const TABS = [
+  { id: 'company_info', icon: 'building', color: 'blue' },
+  { id: 'maturity', icon: 'chart', color: 'purple' },
+  { id: 'crisp_dm', icon: 'clipboard', color: 'green' },
+  { id: 'business_case', icon: 'calculator', color: 'orange' },
+  { id: 'costs', icon: 'currency', color: 'red' },
+  { id: 'swot', icon: 'grid', color: 'amber' },
+  { id: 'briefing', icon: 'document', color: 'indigo' },
+  { id: 'export', icon: 'download', color: 'emerald' },
+];
 
 const Step6Page = () => {
   const { t } = useTranslation();
@@ -23,41 +32,21 @@ const Step6Page = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [session, setSession] = useState(null);
+  const [allFindings, setAllFindings] = useState(null);
 
-  // Summary data from previous steps
-  const [companyInfo, setCompanyInfo] = useState([]);
-  const [maturity, setMaturity] = useState(null);
-  const [crispDmFindings, setCrispDmFindings] = useState(null);
-  const [businessCaseFindings, setBusinessCaseFindings] = useState(null);
-  const [costFindings, setCostFindings] = useState(null);
+  // Active tab state
+  const [activeTab, setActiveTab] = useState('company_info');
 
-  // SWOT analysis state
-  const [swot, setSwot] = useState(null);
+  // Generation states
   const [swotLoading, setSwotLoading] = useState(false);
   const [swotError, setSwotError] = useState(null);
-
-  // Transition briefing state
-  const [briefing, setBriefing] = useState(null);
   const [briefingLoading, setBriefingLoading] = useState(false);
   const [briefingError, setBriefingError] = useState(null);
-
-  // PDF export state
   const [exporting, setExporting] = useState(false);
 
   // API key prompt
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
-
-  // Collapsed sections state
-  const [expandedSections, setExpandedSections] = useState({
-    company: false,
-    maturity: false,
-    crispDm: true,
-    businessCase: false,
-    costs: false,
-    swot: true,
-    briefing: true,
-  });
 
   useEffect(() => {
     loadAllData();
@@ -70,71 +59,9 @@ const Step6Page = () => {
       const sessionRes = await sessionAPI.get(sessionUuid);
       setSession(sessionRes.data);
 
-      // Load company info
-      try {
-        const companyRes = await companyInfoAPI.getAll(sessionUuid);
-        setCompanyInfo(companyRes.data || []);
-      } catch (e) {
-        console.log('No company info');
-      }
-
-      // Load maturity assessment
-      try {
-        const maturityRes = await maturityAPI.get(sessionUuid);
-        setMaturity(maturityRes.data);
-      } catch (e) {
-        console.log('No maturity assessment');
-      }
-
-      // Load CRISP-DM findings (Step 4)
-      try {
-        const findingsRes = await consultationAPI.getFindings(sessionUuid);
-        if (findingsRes.data.business_objectives || findingsRes.data.ai_goals) {
-          setCrispDmFindings(findingsRes.data);
-        }
-      } catch (e) {
-        console.log('No CRISP-DM findings');
-      }
-
-      // Load business case findings (Step 5a)
-      try {
-        const bcRes = await businessCaseAPI.getFindings(sessionUuid);
-        if (bcRes.data.classification || bcRes.data.calculation) {
-          setBusinessCaseFindings(bcRes.data);
-        }
-      } catch (e) {
-        console.log('No business case findings');
-      }
-
-      // Load cost findings (Step 5b)
-      try {
-        const costRes = await costEstimationAPI.getFindings(sessionUuid);
-        if (costRes.data.complexity || costRes.data.tco) {
-          setCostFindings(costRes.data);
-        }
-      } catch (e) {
-        console.log('No cost findings');
-      }
-
-      // Load existing SWOT analysis
-      try {
-        const swotRes = await exportAPI.getSwotAnalysis(sessionUuid);
-        if (swotRes.data.exists) {
-          setSwot(swotRes.data.swot);
-        }
-      } catch (e) {
-        console.log('No SWOT analysis');
-      }
-
-      // Load existing transition briefing
-      try {
-        const briefingRes = await exportAPI.getTransitionBriefing(sessionUuid);
-        if (briefingRes.data.exists) {
-          setBriefing(briefingRes.data.briefing);
-        }
-      } catch (e) {
-        console.log('No transition briefing');
-      }
+      // Load all findings from the new endpoint
+      const findingsRes = await findingsAPI.getAll(sessionUuid);
+      setAllFindings(findingsRes.data);
 
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load data');
@@ -142,6 +69,19 @@ const Step6Page = () => {
       setLoading(false);
     }
   };
+
+  const handleNavigate = useCallback((tab, subTarget) => {
+    setActiveTab(tab);
+    // If subTarget provided, scroll to that section
+    if (subTarget) {
+      setTimeout(() => {
+        const element = document.getElementById(`finding-${subTarget}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, []);
 
   const handleGenerateBriefing = async () => {
     if (!apiKeyManager.isSet()) {
@@ -154,10 +94,12 @@ const Step6Page = () => {
     setBriefingError(null);
 
     try {
-      const response = await exportAPI.generateTransitionBriefing(sessionUuid, {
+      await exportAPI.generateTransitionBriefing(sessionUuid, {
         language: t('common.languageCode') || 'en',
       });
-      setBriefing(response.data.briefing);
+      // Reload findings to get updated briefing
+      const findingsRes = await findingsAPI.getAll(sessionUuid);
+      setAllFindings(findingsRes.data);
     } catch (err) {
       setBriefingError(err.response?.data?.detail || 'Failed to generate briefing');
     } finally {
@@ -176,10 +118,12 @@ const Step6Page = () => {
     setSwotError(null);
 
     try {
-      const response = await exportAPI.generateSwotAnalysis(sessionUuid, {
+      await exportAPI.generateSwotAnalysis(sessionUuid, {
         language: t('common.languageCode') || 'en',
       });
-      setSwot(response.data.swot);
+      // Reload findings to get updated SWOT
+      const findingsRes = await findingsAPI.getAll(sessionUuid);
+      setAllFindings(findingsRes.data);
     } catch (err) {
       setSwotError(err.response?.data?.detail || 'Failed to generate SWOT analysis');
     } finally {
@@ -219,21 +163,14 @@ const Step6Page = () => {
     setPendingAction(null);
   };
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
   // Check completeness for status indicators
-  const hasCompanyInfo = companyInfo.length > 0;
-  const hasMaturity = !!maturity;
-  const hasCrispDm = !!crispDmFindings;
-  const hasBusinessCase = !!businessCaseFindings;
-  const hasCosts = !!costFindings;
-  const hasSwot = !!swot;
-  const hasBriefing = !!briefing;
+  const hasCompanyInfo = allFindings?.company_info?.profile || allFindings?.company_info?.raw_info?.length > 0;
+  const hasMaturity = !!allFindings?.maturity;
+  const hasCrispDm = allFindings?.crisp_dm?.business_objectives || allFindings?.crisp_dm?.ai_goals;
+  const hasBusinessCase = allFindings?.business_case?.classification || allFindings?.business_case?.calculation;
+  const hasCosts = allFindings?.costs?.complexity || allFindings?.costs?.tco;
+  const hasSwot = !!allFindings?.analysis?.swot_analysis;
+  const hasBriefing = !!allFindings?.analysis?.technical_briefing;
 
   if (loading) {
     return (
@@ -242,6 +179,85 @@ const Step6Page = () => {
       </div>
     );
   }
+
+  const renderTabIcon = (iconName) => {
+    const icons = {
+      building: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />,
+      chart: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />,
+      clipboard: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />,
+      calculator: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />,
+      currency: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+      grid: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />,
+      document: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
+      download: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
+    };
+    return icons[iconName] || icons.document;
+  };
+
+  const getTabStatus = (tabId) => {
+    switch (tabId) {
+      case 'company_info': return hasCompanyInfo;
+      case 'maturity': return hasMaturity;
+      case 'crisp_dm': return hasCrispDm;
+      case 'business_case': return hasBusinessCase;
+      case 'costs': return hasCosts;
+      case 'swot': return hasSwot;
+      case 'briefing': return hasBriefing;
+      case 'export': return true;
+      default: return false;
+    }
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'company_info':
+        return <CompanyInfoTab findings={allFindings} session={session} t={t} onNavigate={handleNavigate} />;
+      case 'maturity':
+        return <MaturityTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+      case 'crisp_dm':
+        return <CrispDmTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+      case 'business_case':
+        return <BusinessCaseTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+      case 'costs':
+        return <CostsTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+      case 'swot':
+        return (
+          <SwotTab
+            findings={allFindings}
+            t={t}
+            onNavigate={handleNavigate}
+            onGenerate={handleGenerateSwot}
+            loading={swotLoading}
+            error={swotError}
+          />
+        );
+      case 'briefing':
+        return (
+          <BriefingTab
+            findings={allFindings}
+            t={t}
+            onNavigate={handleNavigate}
+            onGenerate={handleGenerateBriefing}
+            loading={briefingLoading}
+            error={briefingError}
+          />
+        );
+      case 'export':
+        return (
+          <ExportTab
+            t={t}
+            onExportPDF={handleExportPDF}
+            exporting={exporting}
+            hasAllFindings={{
+              hasCompanyInfo, hasMaturity, hasCrispDm,
+              hasBusinessCase, hasCosts, hasSwot, hasBriefing
+            }}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -253,393 +269,62 @@ const Step6Page = () => {
       />
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
-        {/* Explanation */}
-        <ExplanationBox
-          title={t('step6.explanation.title')}
-          description={t('step6.explanation.description')}
-          bullets={[
-            t('step6.explanation.bullet1'),
-            t('step6.explanation.bullet2'),
-            t('step6.explanation.bullet3'),
-            t('step6.explanation.bullet4'),
-          ]}
-          tip={t('step6.explanation.tip')}
-          variant="indigo"
-          defaultOpen={!hasBriefing}
-        />
-
-        {/* Status Overview */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('step6.status.title')}</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <StatusItem
-              label={t('step6.status.companyInfo')}
-              complete={hasCompanyInfo}
-              t={t}
-            />
-            <StatusItem
-              label={t('step6.status.maturity')}
-              complete={hasMaturity}
-              t={t}
-            />
-            <StatusItem
-              label={t('step6.status.crispDm')}
-              complete={hasCrispDm}
-              t={t}
-            />
-            <StatusItem
-              label={t('step6.status.businessCase')}
-              complete={hasBusinessCase}
-              t={t}
-            />
-            <StatusItem
-              label={t('step6.status.costs')}
-              complete={hasCosts}
-              t={t}
-            />
-            <StatusItem
-              label={t('step6.status.swot')}
-              complete={hasSwot}
-              t={t}
-            />
-            <StatusItem
-              label={t('step6.status.briefing')}
-              complete={hasBriefing}
-              t={t}
-            />
-          </div>
-        </div>
-
-        {/* Summary Sections */}
-        <div className="space-y-4 mb-8">
-          {/* Company Profile Summary */}
-          <CollapsibleSection
-            title={t('step6.sections.companyProfile')}
-            expanded={expandedSections.company}
-            onToggle={() => toggleSection('company')}
-            complete={hasCompanyInfo}
-          >
-            {hasCompanyInfo ? (
-              <div className="text-sm text-gray-700">
-                <p className="font-medium">{session?.company_name || t('step6.unknownCompany')}</p>
-                {companyInfo[0]?.content && (
-                  <p className="mt-2 text-gray-600">{companyInfo[0].content.slice(0, 300)}...</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">{t('step6.incomplete.companyInfo')}</p>
-            )}
-          </CollapsibleSection>
-
-          {/* Maturity Assessment Summary */}
-          <CollapsibleSection
-            title={t('step6.sections.maturity')}
-            expanded={expandedSections.maturity}
-            onToggle={() => toggleSection('maturity')}
-            complete={hasMaturity}
-          >
-            {hasMaturity ? (
-              <div className="text-sm">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className={`px-3 py-1 rounded-full text-white font-bold ${
-                    maturity.overall_score < 2 ? 'bg-red-500' :
-                    maturity.overall_score < 3 ? 'bg-orange-500' :
-                    maturity.overall_score < 4 ? 'bg-yellow-500' :
-                    maturity.overall_score < 5 ? 'bg-blue-500' :
-                    'bg-green-500'
-                  }`}>
-                    {maturity.overall_score?.toFixed(1)}/6
-                  </span>
-                  <span className="font-medium text-gray-700">{maturity.maturity_level}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-gray-600">
-                  <p>{t('step6.maturity.resources')}: {maturity.resources_score?.toFixed(1)}</p>
-                  <p>{t('step6.maturity.infoSystems')}: {maturity.information_systems_score?.toFixed(1)}</p>
-                  <p>{t('step6.maturity.culture')}: {maturity.culture_score?.toFixed(1)}</p>
-                  <p>{t('step6.maturity.orgStructure')}: {maturity.organizational_structure_score?.toFixed(1)}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">{t('step6.incomplete.maturity')}</p>
-            )}
-          </CollapsibleSection>
-
-          {/* CRISP-DM Summary */}
-          <CollapsibleSection
-            title={t('step6.sections.crispDm')}
-            expanded={expandedSections.crispDm}
-            onToggle={() => toggleSection('crispDm')}
-            complete={hasCrispDm}
-          >
-            {hasCrispDm ? (
-              <div className="text-sm text-gray-700 space-y-3">
-                {crispDmFindings.business_objectives && (
-                  <div>
-                    <p className="font-medium">{t('step6.crispDm.objectives')}:</p>
-                    <p className="text-gray-600">{crispDmFindings.business_objectives.slice(0, 200)}...</p>
-                  </div>
-                )}
-                {crispDmFindings.ai_goals && (
-                  <div>
-                    <p className="font-medium">{t('step6.crispDm.aiGoals')}:</p>
-                    <p className="text-gray-600">{crispDmFindings.ai_goals.slice(0, 200)}...</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">{t('step6.incomplete.crispDm')}</p>
-            )}
-          </CollapsibleSection>
-
-          {/* Business Case Summary */}
-          <CollapsibleSection
-            title={t('step6.sections.businessCase')}
-            expanded={expandedSections.businessCase}
-            onToggle={() => toggleSection('businessCase')}
-            complete={hasBusinessCase}
-          >
-            {hasBusinessCase ? (
-              <div className="text-sm text-gray-700 space-y-2">
-                {businessCaseFindings.classification && (
-                  <div>
-                    <p className="font-medium">{t('step6.businessCase.classification')}:</p>
-                    <p className="text-gray-600">{businessCaseFindings.classification.slice(0, 150)}...</p>
-                  </div>
-                )}
-                {businessCaseFindings.management_pitch && (
-                  <div className="bg-green-50 p-3 rounded">
-                    <p className="font-medium text-green-800">{t('step6.businessCase.pitch')}:</p>
-                    <p className="text-green-700">{businessCaseFindings.management_pitch}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">{t('step6.incomplete.businessCase')}</p>
-            )}
-          </CollapsibleSection>
-
-          {/* Cost Estimation Summary */}
-          <CollapsibleSection
-            title={t('step6.sections.costs')}
-            expanded={expandedSections.costs}
-            onToggle={() => toggleSection('costs')}
-            complete={hasCosts}
-          >
-            {hasCosts ? (
-              <div className="text-sm text-gray-700 space-y-2">
-                {costFindings.complexity && (
-                  <div>
-                    <p className="font-medium">{t('step6.costs.complexity')}:</p>
-                    <p className="text-gray-600">{costFindings.complexity.slice(0, 150)}...</p>
-                  </div>
-                )}
-                {costFindings.tco && (
-                  <div className="bg-blue-50 p-3 rounded">
-                    <p className="font-medium text-blue-800">{t('step6.costs.tco')}:</p>
-                    <p className="text-blue-700">{costFindings.tco.slice(0, 200)}...</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">{t('step6.incomplete.costs')}</p>
-            )}
-          </CollapsibleSection>
-        </div>
-
-        {/* SWOT Analysis Section */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-          <div className="bg-amber-600 px-6 py-4">
-            <h2 className="text-lg font-semibold text-white flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              {t('step6.swot.title')}
-            </h2>
-            <p className="text-amber-200 text-sm mt-1">{t('step6.swot.subtitle')}</p>
-          </div>
-
-          <div className="p-6">
-            {swotError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700">{swotError}</p>
-              </div>
-            )}
-
-            {!swot ? (
-              <div className="text-center py-8">
-                <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <p className="text-gray-600 mb-4">{t('step6.swot.notGenerated')}</p>
-                <button
-                  onClick={handleGenerateSwot}
-                  disabled={swotLoading}
-                  className="bg-amber-600 text-white px-6 py-3 rounded-md hover:bg-amber-700 disabled:bg-gray-300 transition-colors font-medium"
-                >
-                  {swotLoading ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      {t('step6.swot.generating')}
-                    </span>
-                  ) : (
-                    t('step6.swot.generateButton')
-                  )}
-                </button>
-                <p className="text-xs text-gray-500 mt-3">{t('step6.swot.generateNote')}</p>
-              </div>
-            ) : (
-              <div>
-                <div className="flex justify-end mb-4">
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-lg shadow-md mb-6">
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <nav className="flex -mb-px min-w-max">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
+                const isComplete = getTabStatus(tab.id);
+                const colorClasses = {
+                  blue: isActive ? 'border-blue-500 text-blue-600' : '',
+                  purple: isActive ? 'border-purple-500 text-purple-600' : '',
+                  green: isActive ? 'border-green-500 text-green-600' : '',
+                  orange: isActive ? 'border-orange-500 text-orange-600' : '',
+                  red: isActive ? 'border-red-500 text-red-600' : '',
+                  amber: isActive ? 'border-amber-500 text-amber-600' : '',
+                  indigo: isActive ? 'border-indigo-500 text-indigo-600' : '',
+                  emerald: isActive ? 'border-emerald-500 text-emerald-600' : '',
+                };
+                return (
                   <button
-                    onClick={handleGenerateSwot}
-                    disabled={swotLoading}
-                    className="text-sm text-amber-600 hover:text-amber-800 disabled:text-gray-400"
+                    key={tab.id}
+                    onClick={() => handleNavigate(tab.id)}
+                    className={`
+                      flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap
+                      ${isActive
+                        ? colorClasses[tab.color]
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
                   >
-                    {swotLoading ? t('step6.swot.regenerating') : t('step6.swot.regenerateButton')}
-                  </button>
-                </div>
-                <div className="prose prose-sm max-w-none border border-gray-200 rounded-lg p-6 bg-gray-50">
-                  <ReactMarkdown
-                    components={{
-                      h1: ({children}) => <h1 className="text-xl font-bold text-gray-900 mt-4 mb-2">{children}</h1>,
-                      h2: ({children}) => <h2 className="text-lg font-semibold text-gray-800 mt-4 mb-2">{children}</h2>,
-                      h3: ({children}) => <h3 className="text-base font-medium text-gray-700 mt-3 mb-1">{children}</h3>,
-                      p: ({children}) => <p className="mb-2 text-gray-600">{children}</p>,
-                      ul: ({children}) => <ul className="list-disc ml-4 mb-2 text-gray-600">{children}</ul>,
-                      ol: ({children}) => <ol className="list-decimal ml-4 mb-2 text-gray-600">{children}</ol>,
-                      li: ({children}) => <li className="mb-1">{children}</li>,
-                      strong: ({children}) => <strong className="font-semibold text-gray-800">{children}</strong>,
-                    }}
-                  >
-                    {swot}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Technical Transition Briefing Section */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-          <div className="bg-indigo-600 px-6 py-4">
-            <h2 className="text-lg font-semibold text-white flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              {t('step6.briefing.title')}
-            </h2>
-            <p className="text-indigo-200 text-sm mt-1">{t('step6.briefing.subtitle')}</p>
-          </div>
-
-          <div className="p-6">
-            {briefingError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700">{briefingError}</p>
-              </div>
-            )}
-
-            {!briefing ? (
-              <div className="text-center py-8">
-                <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p className="text-gray-600 mb-4">{t('step6.briefing.notGenerated')}</p>
-                <button
-                  onClick={handleGenerateBriefing}
-                  disabled={briefingLoading}
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 disabled:bg-gray-300 transition-colors font-medium"
-                >
-                  {briefingLoading ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {renderTabIcon(tab.icon)}
+                    </svg>
+                    <span className="hidden sm:inline">{t(`step6.tabs.${tab.id}`)}</span>
+                    {isComplete && tab.id !== 'export' && (
+                      <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {t('step6.briefing.generating')}
-                    </span>
-                  ) : (
-                    t('step6.briefing.generateButton')
-                  )}
-                </button>
-                <p className="text-xs text-gray-500 mt-3">{t('step6.briefing.generateNote')}</p>
-              </div>
-            ) : (
-              <div>
-                <div className="flex justify-end mb-4">
-                  <button
-                    onClick={handleGenerateBriefing}
-                    disabled={briefingLoading}
-                    className="text-sm text-indigo-600 hover:text-indigo-800 disabled:text-gray-400"
-                  >
-                    {briefingLoading ? t('step6.briefing.regenerating') : t('step6.briefing.regenerateButton')}
+                    )}
                   </button>
-                </div>
-                <div className="prose prose-sm max-w-none border border-gray-200 rounded-lg p-6 bg-gray-50">
-                  <ReactMarkdown
-                    components={{
-                      h1: ({children}) => <h1 className="text-xl font-bold text-gray-900 mt-4 mb-2">{children}</h1>,
-                      h2: ({children}) => <h2 className="text-lg font-semibold text-gray-800 mt-4 mb-2">{children}</h2>,
-                      h3: ({children}) => <h3 className="text-base font-medium text-gray-700 mt-3 mb-1">{children}</h3>,
-                      p: ({children}) => <p className="mb-2 text-gray-600">{children}</p>,
-                      ul: ({children}) => <ul className="list-disc ml-4 mb-2 text-gray-600">{children}</ul>,
-                      ol: ({children}) => <ol className="list-decimal ml-4 mb-2 text-gray-600">{children}</ol>,
-                      li: ({children}) => <li className="mb-1">{children}</li>,
-                      strong: ({children}) => <strong className="font-semibold text-gray-800">{children}</strong>,
-                      blockquote: ({children}) => <blockquote className="border-l-4 border-indigo-300 pl-4 italic text-gray-600 my-2">{children}</blockquote>,
-                    }}
-                  >
-                    {briefing}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            )}
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          <div className="p-6">
+            {renderTabContent()}
           </div>
         </div>
-
-        {/* Export Actions */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('step6.export.title')}</h2>
-
-          <div className="space-y-4">
-            <button
-              onClick={handleExportPDF}
-              disabled={exporting}
-              className="w-full flex items-center justify-center gap-3 bg-green-600 text-white px-6 py-4 rounded-md hover:bg-green-700 disabled:bg-gray-300 transition-colors font-medium"
-            >
-              {exporting ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {t('step6.export.generating')}
-                </>
-              ) : (
-                <>
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  {t('step6.export.downloadPDF')}
-                </>
-              )}
-            </button>
-
-            <p className="text-sm text-gray-500 text-center">
-              {t('step6.export.pdfNote')}
-            </p>
-          </div>
-        </div>
-
       </div>
 
       {/* API Key Prompt Modal */}
@@ -652,55 +337,367 @@ const Step6Page = () => {
   );
 };
 
-// Helper Components
-const StatusItem = ({ label, complete, t }) => (
-  <div className={`flex items-center gap-2 p-3 rounded-lg ${complete ? 'bg-green-50' : 'bg-gray-50'}`}>
-    {complete ? (
-      <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ) : (
-      <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    )}
-    <span className={`text-sm ${complete ? 'text-green-700' : 'text-gray-500'}`}>{label}</span>
+// Tab Content Components
+
+const CompanyInfoTab = ({ findings, session, t, onNavigate }) => {
+  const profile = findings?.company_info?.profile;
+  const rawInfo = findings?.company_info?.raw_info || [];
+
+  if (!profile && rawInfo.length === 0) {
+    return <EmptyState message={t('step6.incomplete.companyInfo')} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-gray-900">{session?.company_name || t('step6.unknownCompany')}</h3>
+
+      {profile?.text && (
+        <div id="finding-company_profile" className="bg-blue-50 rounded-lg p-4">
+          <h4 className="font-medium text-blue-800 mb-2">{t('step6.sections.companyProfile')}</h4>
+          <WikiLinkMarkdown
+            content={profile.text}
+            onNavigate={onNavigate}
+            className="text-blue-700"
+          />
+        </div>
+      )}
+
+      {rawInfo.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-800">{t('step6.rawInfo')}</h4>
+          {rawInfo.map((info, index) => (
+            <div key={index} className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm font-medium text-gray-600 mb-1">{info.info_type}</p>
+              <p className="text-gray-700">{info.content}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MaturityTab = ({ findings, t, onNavigate }) => {
+  const maturity = findings?.maturity;
+
+  if (!maturity) {
+    return <EmptyState message={t('step6.incomplete.maturity')} />;
+  }
+
+  const getScoreColor = (score) => {
+    if (score < 2) return 'bg-red-500';
+    if (score < 3) return 'bg-orange-500';
+    if (score < 4) return 'bg-yellow-500';
+    if (score < 5) return 'bg-blue-500';
+    return 'bg-green-500';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <span className={`px-4 py-2 rounded-full text-white font-bold text-lg ${getScoreColor(maturity.overall_score)}`}>
+          {maturity.overall_score?.toFixed(1)}/6
+        </span>
+        <span className="text-xl font-medium text-gray-700">{maturity.maturity_level}</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DimensionScore
+          label={t('step6.maturity.resources')}
+          score={maturity.resources_score}
+        />
+        <DimensionScore
+          label={t('step6.maturity.infoSystems')}
+          score={maturity.information_systems_score}
+        />
+        <DimensionScore
+          label={t('step6.maturity.culture')}
+          score={maturity.culture_score}
+        />
+        <DimensionScore
+          label={t('step6.maturity.orgStructure')}
+          score={maturity.organizational_structure_score}
+        />
+      </div>
+    </div>
+  );
+};
+
+const DimensionScore = ({ label, score }) => (
+  <div className="bg-gray-50 rounded-lg p-4">
+    <p className="text-sm text-gray-600 mb-1">{label}</p>
+    <div className="flex items-center gap-2">
+      <div className="flex-1 bg-gray-200 rounded-full h-2">
+        <div
+          className="bg-purple-500 h-2 rounded-full"
+          style={{ width: `${(score / 6) * 100}%` }}
+        />
+      </div>
+      <span className="font-medium text-gray-700">{score?.toFixed(1)}</span>
+    </div>
   </div>
 );
 
-const CollapsibleSection = ({ title, expanded, onToggle, complete, children }) => (
-  <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-    <button
-      onClick={onToggle}
-      className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        {complete ? (
-          <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+const CrispDmTab = ({ findings, t, onNavigate }) => {
+  const crisp = findings?.crisp_dm;
+
+  if (!crisp?.business_objectives && !crisp?.ai_goals) {
+    return <EmptyState message={t('step6.incomplete.crispDm')} />;
+  }
+
+  const sections = [
+    { id: 'business_objectives', key: 'objectives', data: crisp?.business_objectives },
+    { id: 'situation_assessment', key: 'situation', data: crisp?.situation_assessment },
+    { id: 'ai_goals', key: 'aiGoals', data: crisp?.ai_goals },
+    { id: 'project_plan', key: 'projectPlan', data: crisp?.project_plan },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {sections.map(section => section.data && (
+        <div key={section.id} id={`finding-${section.id}`} className="bg-green-50 rounded-lg p-4">
+          <h4 className="font-medium text-green-800 mb-2">{t(`step6.crispDm.${section.key}`)}</h4>
+          <WikiLinkMarkdown
+            content={section.data.text}
+            onNavigate={onNavigate}
+            className="text-green-700"
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const BusinessCaseTab = ({ findings, t, onNavigate }) => {
+  const bc = findings?.business_case;
+
+  if (!bc?.classification && !bc?.calculation) {
+    return <EmptyState message={t('step6.incomplete.businessCase')} />;
+  }
+
+  const sections = [
+    { id: 'classification', key: 'classification', data: bc?.classification },
+    { id: 'calculation', key: 'calculation', data: bc?.calculation },
+    { id: 'validation_questions', key: 'validation', data: bc?.validation_questions },
+    { id: 'management_pitch', key: 'pitch', data: bc?.management_pitch },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {sections.map(section => section.data && (
+        <div key={section.id} id={`finding-${section.id}`} className="bg-orange-50 rounded-lg p-4">
+          <h4 className="font-medium text-orange-800 mb-2">{t(`step6.businessCase.${section.key}`)}</h4>
+          <WikiLinkMarkdown
+            content={section.data.text}
+            onNavigate={onNavigate}
+            className="text-orange-700"
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const CostsTab = ({ findings, t, onNavigate }) => {
+  const costs = findings?.costs;
+
+  if (!costs?.complexity && !costs?.tco) {
+    return <EmptyState message={t('step6.incomplete.costs')} />;
+  }
+
+  const sections = [
+    { id: 'complexity', key: 'complexity', data: costs?.complexity },
+    { id: 'initial_investment', key: 'initial', data: costs?.initial_investment },
+    { id: 'recurring_costs', key: 'recurring', data: costs?.recurring_costs },
+    { id: 'maintenance', key: 'maintenance', data: costs?.maintenance },
+    { id: 'tco', key: 'tco', data: costs?.tco },
+    { id: 'cost_drivers', key: 'drivers', data: costs?.cost_drivers },
+    { id: 'optimization', key: 'optimization', data: costs?.optimization },
+    { id: 'roi_analysis', key: 'roi', data: costs?.roi_analysis },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {sections.map(section => section.data && (
+        <div key={section.id} id={`finding-${section.id}`} className="bg-red-50 rounded-lg p-4">
+          <h4 className="font-medium text-red-800 mb-2">{t(`step6.costs.${section.key}`)}</h4>
+          <WikiLinkMarkdown
+            content={section.data.text}
+            onNavigate={onNavigate}
+            className="text-red-700"
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const SwotTab = ({ findings, t, onNavigate, onGenerate, loading, error }) => {
+  const swot = findings?.analysis?.swot_analysis;
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      {!swot ? (
+        <div className="text-center py-8">
+          <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
           </svg>
-        ) : (
-          <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <p className="text-gray-600 mb-4">{t('step6.swot.notGenerated')}</p>
+          <GenerateButton onClick={onGenerate} loading={loading} colorClass="bg-amber-600 hover:bg-amber-700">
+            {loading ? t('step6.swot.generating') : t('step6.swot.generateButton')}
+          </GenerateButton>
+          <p className="text-xs text-gray-500 mt-3">{t('step6.swot.generateNote')}</p>
+        </div>
+      ) : (
+        <div>
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={onGenerate}
+              disabled={loading}
+              className="text-sm text-amber-600 hover:text-amber-800 disabled:text-gray-400"
+            >
+              {loading ? t('step6.swot.regenerating') : t('step6.swot.regenerateButton')}
+            </button>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-6">
+            <WikiLinkMarkdown
+              content={swot.text}
+              onNavigate={onNavigate}
+              className="text-amber-800"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const BriefingTab = ({ findings, t, onNavigate, onGenerate, loading, error }) => {
+  const briefing = findings?.analysis?.technical_briefing;
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      {!briefing ? (
+        <div className="text-center py-8">
+          <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-        )}
-        <span className={`font-medium ${complete ? 'text-gray-900' : 'text-gray-500'}`}>{title}</span>
+          <p className="text-gray-600 mb-4">{t('step6.briefing.notGenerated')}</p>
+          <GenerateButton onClick={onGenerate} loading={loading} colorClass="bg-indigo-600 hover:bg-indigo-700">
+            {loading ? t('step6.briefing.generating') : t('step6.briefing.generateButton')}
+          </GenerateButton>
+          <p className="text-xs text-gray-500 mt-3">{t('step6.briefing.generateNote')}</p>
+        </div>
+      ) : (
+        <div>
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={onGenerate}
+              disabled={loading}
+              className="text-sm text-indigo-600 hover:text-indigo-800 disabled:text-gray-400"
+            >
+              {loading ? t('step6.briefing.regenerating') : t('step6.briefing.regenerateButton')}
+            </button>
+          </div>
+          <div className="bg-indigo-50 rounded-lg p-6">
+            <WikiLinkMarkdown
+              content={briefing.text}
+              onNavigate={onNavigate}
+              className="text-indigo-800"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ExportTab = ({ t, onExportPDF, exporting, hasAllFindings }) => {
+  const completedCount = Object.values(hasAllFindings).filter(Boolean).length;
+  const totalCount = Object.keys(hasAllFindings).length;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-emerald-50 rounded-lg p-4 mb-6">
+        <h4 className="font-medium text-emerald-800 mb-2">{t('step6.export.readiness')}</h4>
+        <p className="text-emerald-700">
+          {completedCount}/{totalCount} {t('step6.export.sectionsComplete')}
+        </p>
+        <div className="mt-2 bg-emerald-200 rounded-full h-2">
+          <div
+            className="bg-emerald-600 h-2 rounded-full transition-all"
+            style={{ width: `${(completedCount / totalCount) * 100}%` }}
+          />
+        </div>
       </div>
-      <svg
-        className={`w-5 h-5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
+
+      <button
+        onClick={onExportPDF}
+        disabled={exporting}
+        className="w-full flex items-center justify-center gap-3 bg-emerald-600 text-white px-6 py-4 rounded-md hover:bg-emerald-700 disabled:bg-gray-300 transition-colors font-medium"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-    {expanded && (
-      <div className="px-4 pb-4 border-t border-gray-100">
-        <div className="pt-3">{children}</div>
-      </div>
-    )}
+        {exporting ? (
+          <>
+            <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {t('step6.export.generating')}
+          </>
+        ) : (
+          <>
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {t('step6.export.downloadPDF')}
+          </>
+        )}
+      </button>
+
+      <p className="text-sm text-gray-500 text-center">
+        {t('step6.export.pdfNote')}
+      </p>
+    </div>
+  );
+};
+
+// Helper Components
+
+const EmptyState = ({ message }) => (
+  <div className="text-center py-8">
+    <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    <p className="text-gray-500 italic">{message}</p>
   </div>
+);
+
+const GenerateButton = ({ onClick, loading, colorClass, children }) => (
+  <button
+    onClick={onClick}
+    disabled={loading}
+    className={`${colorClass} text-white px-6 py-3 rounded-md disabled:bg-gray-300 transition-colors font-medium flex items-center gap-2 mx-auto`}
+  >
+    {loading && (
+      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    )}
+    {children}
+  </button>
 );
 
 export default Step6Page;

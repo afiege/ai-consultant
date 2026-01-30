@@ -1,7 +1,7 @@
 """Export router for generating PDF reports and transition briefings."""
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -17,6 +17,13 @@ from ..services.default_prompts import get_prompt
 from ..config import settings
 
 router = APIRouter()
+
+
+class AutoUpdateRequest(BaseModel):
+    """Request body for auto-update analysis."""
+    api_key: Optional[str] = None
+    api_base: Optional[str] = None
+    language: Optional[str] = "en"
 
 
 def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str]]:
@@ -523,3 +530,157 @@ def get_swot_analysis(
         return {"swot": None, "exists": False}
 
     return {"swot": finding.finding_text, "exists": True}
+
+
+def _trigger_analysis_update_sync(
+    session_id: int,
+    model: str,
+    api_key: Optional[str],
+    api_base: Optional[str],
+    language: str
+):
+    """
+    Background task to regenerate SWOT and Technical Briefing.
+    This runs after findings are extracted from consultation steps.
+    """
+    from ..database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        db_session = db.query(SessionModel).filter(
+            SessionModel.id == session_id
+        ).first()
+
+        if not db_session:
+            logger.warning(f"Session {session_id} not found for analysis update")
+            return
+
+        # Build context
+        context = _build_transition_context(db, db_session)
+
+        # Check if we have enough findings to generate analysis
+        has_crisp_dm = "No executive summary available" not in context["executive_summary"]
+
+        if not has_crisp_dm:
+            logger.info(f"Skipping analysis update - insufficient findings for session {session_id}")
+            return
+
+        # Regenerate SWOT Analysis
+        try:
+            swot_prompt_template = get_prompt("swot_analysis_system", language)
+            swot_filled_prompt = swot_prompt_template.format(
+                company_profile=context["company_profile"],
+                executive_summary=context["executive_summary"],
+                business_case_summary=context["business_case_summary"],
+                cost_estimation_summary=context["cost_estimation_summary"]
+            )
+
+            completion_kwargs = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": swot_filled_prompt},
+                    {"role": "user", "content": "Please generate the SWOT analysis based on the provided context."}
+                ],
+                "temperature": 0.4,
+                "max_tokens": 4096
+            }
+
+            if api_key:
+                completion_kwargs["api_key"] = api_key
+            if api_base:
+                completion_kwargs["api_base"] = api_base
+
+            response = completion(**completion_kwargs)
+            swot_content = response.choices[0].message.content
+
+            _save_finding(db, db_session.id, "swot_analysis", swot_content)
+            logger.info(f"Auto-updated SWOT analysis for session {session_id}")
+        except Exception as e:
+            logger.error(f"Failed to auto-update SWOT analysis: {str(e)}")
+
+        # Regenerate Technical Briefing
+        try:
+            briefing_prompt_template = get_prompt("transition_briefing_system", language)
+            briefing_filled_prompt = briefing_prompt_template.format(
+                company_profile=context["company_profile"],
+                executive_summary=context["executive_summary"],
+                business_case_summary=context["business_case_summary"],
+                cost_estimation_summary=context["cost_estimation_summary"]
+            )
+
+            completion_kwargs = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": briefing_filled_prompt},
+                    {"role": "user", "content": "Please generate the Technical Transition Briefing based on the provided context."}
+                ],
+                "temperature": 0.4,
+                "max_tokens": 4096
+            }
+
+            if api_key:
+                completion_kwargs["api_key"] = api_key
+            if api_base:
+                completion_kwargs["api_base"] = api_base
+
+            response = completion(**completion_kwargs)
+            briefing_content = response.choices[0].message.content
+
+            _save_finding(db, db_session.id, "technical_briefing", briefing_content)
+            logger.info(f"Auto-updated Technical Briefing for session {session_id}")
+        except Exception as e:
+            logger.error(f"Failed to auto-update Technical Briefing: {str(e)}")
+
+        db.commit()
+
+    except Exception as e:
+        logger.error(f"Error in analysis update task: {str(e)}")
+    finally:
+        db.close()
+
+
+@router.post("/{session_uuid}/analysis/auto-update")
+def auto_update_analysis(
+    session_uuid: str,
+    request: AutoUpdateRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(None)
+):
+    """
+    Trigger regeneration of SWOT Analysis and Technical Briefing.
+    Called automatically after findings extraction in consultation steps.
+    Runs in background to not block the user.
+    """
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    # Get LLM settings
+    session_model, session_api_base = get_llm_settings(db_session)
+
+    api_key = x_api_key or request.api_key
+    model = session_model
+    api_base = request.api_base or session_api_base
+    language = request.language or db_session.prompt_language or "en"
+
+    # Schedule background task
+    background_tasks.add_task(
+        _trigger_analysis_update_sync,
+        db_session.id,
+        model,
+        api_key,
+        api_base,
+        language
+    )
+
+    return {
+        "status": "scheduled",
+        "message": "SWOT Analysis and Technical Briefing regeneration scheduled"
+    }

@@ -478,6 +478,99 @@ def get_findings(
     return result
 
 
+@router.get("/{session_uuid}/all-findings")
+def get_all_findings(
+    session_uuid: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all findings organized by category for the Results page.
+    Aggregates findings from all consultation steps.
+    """
+    from ..models import CompanyInfo, MaturityAssessment
+
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    # Get all findings
+    findings = db.query(ConsultationFinding).filter(
+        ConsultationFinding.session_id == db_session.id
+    ).all()
+    findings_dict = {f.factor_type: {"text": f.finding_text, "created_at": f.created_at.isoformat()} for f in findings}
+
+    # Get company info
+    company_infos = db.query(CompanyInfo).filter(
+        CompanyInfo.session_id == db_session.id
+    ).all()
+    company_info_data = [
+        {"info_type": ci.info_type, "content": ci.content}
+        for ci in company_infos
+    ]
+
+    # Get maturity assessment
+    maturity = db.query(MaturityAssessment).filter(
+        MaturityAssessment.session_id == db_session.id
+    ).first()
+    maturity_data = None
+    if maturity:
+        maturity_data = {
+            "overall_score": maturity.overall_score,
+            "maturity_level": maturity.maturity_level,
+            "resources_score": maturity.resources_score,
+            "information_systems_score": maturity.information_systems_score,
+            "culture_score": maturity.culture_score,
+            "organizational_structure_score": maturity.organizational_structure_score
+        }
+
+    # Organize findings by category
+    result = {
+        "session": {
+            "uuid": db_session.session_uuid,
+            "company_name": db_session.company_name
+        },
+        "company_info": {
+            "profile": findings_dict.get("company_profile"),
+            "raw_info": company_info_data
+        },
+        "maturity": maturity_data,
+        "crisp_dm": {
+            "business_objectives": findings_dict.get("business_objectives"),
+            "situation_assessment": findings_dict.get("situation_assessment"),
+            "ai_goals": findings_dict.get("ai_goals"),
+            "project_plan": findings_dict.get("project_plan")
+        },
+        "business_case": {
+            "classification": findings_dict.get("business_case_classification"),
+            "calculation": findings_dict.get("business_case_calculation"),
+            "validation_questions": findings_dict.get("business_case_validation"),
+            "management_pitch": findings_dict.get("business_case_pitch")
+        },
+        "costs": {
+            "complexity": findings_dict.get("cost_complexity"),
+            "initial_investment": findings_dict.get("cost_initial"),
+            "recurring_costs": findings_dict.get("cost_recurring"),
+            "maintenance": findings_dict.get("cost_maintenance"),
+            "tco": findings_dict.get("cost_tco"),
+            "cost_drivers": findings_dict.get("cost_drivers"),
+            "optimization": findings_dict.get("cost_optimization"),
+            "roi_analysis": findings_dict.get("cost_roi")
+        },
+        "analysis": {
+            "swot_analysis": findings_dict.get("swot_analysis"),
+            "technical_briefing": findings_dict.get("technical_briefing")
+        }
+    }
+
+    return result
+
+
 @router.post("/{session_uuid}/consultation/summarize")
 def summarize_consultation(
     session_uuid: str,

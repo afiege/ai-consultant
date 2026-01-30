@@ -668,6 +668,20 @@ export const exportAPI = {
       api_base: options.apiBase,
       language: options.language,  // Backend uses session language if not specified
     }),
+
+  // Auto-update analysis (regenerate SWOT and Briefing)
+  autoUpdateAnalysis: (sessionUuid, options = {}) =>
+    api.post(`/api/sessions/${sessionUuid}/analysis/auto-update`, {
+      api_key: options.apiKey || apiKeyManager.get(),
+      api_base: options.apiBase,
+      language: options.language,
+    }),
+};
+
+// Findings API - aggregate all findings for Results page
+export const findingsAPI = {
+  getAll: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/all-findings`),
 };
 
 // Session backup/restore endpoints

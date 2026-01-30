@@ -677,10 +677,20 @@
     }
   },
   "step6": {
-    "title": "Step 6: Export & Technical Handover",
-    "subtitle": "Review your findings and prepare for the Technical Understanding phase",
+    "title": "Step 6: Results",
+    "subtitle": "Review findings and export your consultation report",
     "backStep5": "Back to Business Case",
     "backHome": "Back to Home",
+    "tabs": {
+      "company_info": "Company Info",
+      "maturity": "Maturity",
+      "crisp_dm": "CRISP-DM",
+      "business_case": "Business Case",
+      "costs": "Costs",
+      "swot": "SWOT",
+      "briefing": "Briefing",
+      "export": "Export"
+    },
     "explanation": {
       "title": "DMME Methodology: From Business to Technical Understanding",
       "description": "You've completed the Business Understanding phase. The Technical Transition Briefing prepares the handover to the next phase: Technical Understanding & Conceptualization, where technical experts analyze data sources, systems, and implementation approaches.",
@@ -707,6 +717,7 @@
       "businessCase": "Business Case Indication",
       "costs": "Cost Estimation"
     },
+    "rawInfo": "Additional Information",
     "unknownCompany": "Unknown Company",
     "incomplete": {
       "companyInfo": "No company information collected. Go to Step 1a.",
@@ -723,15 +734,25 @@
     },
     "crispDm": {
       "objectives": "Business Objectives",
-      "aiGoals": "AI Goals"
+      "situation": "Situation Assessment",
+      "aiGoals": "AI/Data Mining Goals",
+      "projectPlan": "Project Plan"
     },
     "businessCase": {
       "classification": "Classification",
+      "calculation": "Calculation",
+      "validation": "Validation Questions",
       "pitch": "Management Pitch"
     },
     "costs": {
-      "complexity": "Complexity",
-      "tco": "3-Year TCO"
+      "complexity": "Complexity Assessment",
+      "initial": "Initial Investment",
+      "recurring": "Recurring Costs",
+      "maintenance": "Maintenance",
+      "tco": "3-Year TCO",
+      "drivers": "Cost Drivers",
+      "optimization": "Optimization Options",
+      "roi": "ROI Analysis"
     },
     "swot": {
       "title": "SWOT Analysis",
@@ -755,6 +776,8 @@
     },
     "export": {
       "title": "Export Options",
+      "readiness": "Export Readiness",
+      "sectionsComplete": "sections complete",
       "downloadPDF": "Download Complete PDF Report",
       "generating": "Generating PDF...",
       "pdfNote": "The PDF includes all findings, the Technical Briefing, and full conversation transcripts."

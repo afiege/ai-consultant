@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { companyInfoAPI, prioritizationAPI, consultationAPI, businessCaseAPI, costEstimationAPI, apiKeyManager } from '../services/api';
 import { PageHeader, ExplanationBox } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
@@ -466,6 +467,7 @@ const Step5Page = () => {
           msg.role === 'user' ? '' : 'prose prose-sm prose-gray'
         }`}>
           <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
             components={{
               p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
               ul: ({children}) => <ul className={`list-disc ml-4 mb-2 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ul>,
@@ -686,7 +688,7 @@ const Step5Page = () => {
                   </div>
                 ) : (
                   <>
-                    {potentialsMessages.map((msg) => (
+                    {potentialsMessages.filter(msg => msg.role !== 'system').map((msg) => (
                       <MessageBubble key={msg.id} msg={msg} />
                     ))}
                     {potentialsSending && potentialsMessages.length > 0 && potentialsMessages[potentialsMessages.length - 1].content === '' && (
@@ -714,7 +716,7 @@ const Step5Page = () => {
                   </div>
                 ) : (
                   <>
-                    {costsMessages.map((msg) => (
+                    {costsMessages.filter(msg => msg.role !== 'system').map((msg) => (
                       <MessageBubble key={msg.id} msg={msg} />
                     ))}
                     {costsSending && costsMessages.length > 0 && costsMessages[costsMessages.length - 1].content === '' && (
@@ -784,7 +786,7 @@ const Step5Page = () => {
                   </h3>
                   {potentialsFindings?.classification ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{potentialsFindings.classification}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{potentialsFindings.classification}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.findings.classificationPlaceholder')}</p>
@@ -799,7 +801,7 @@ const Step5Page = () => {
                   </h3>
                   {potentialsFindings?.calculation ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{potentialsFindings.calculation}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{potentialsFindings.calculation}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.findings.calculationPlaceholder')}</p>
@@ -814,7 +816,7 @@ const Step5Page = () => {
                   </h3>
                   {potentialsFindings?.validation_questions ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{potentialsFindings.validation_questions}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{potentialsFindings.validation_questions}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.findings.validationPlaceholder')}</p>
@@ -829,7 +831,7 @@ const Step5Page = () => {
                   </h3>
                   {potentialsFindings?.management_pitch ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none font-medium">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{potentialsFindings.management_pitch}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{potentialsFindings.management_pitch}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.findings.managementPitchPlaceholder')}</p>
@@ -864,7 +866,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.complexity ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.complexity}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{costsFindings.complexity}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.complexityPlaceholder')}</p>
@@ -879,7 +881,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.initial_investment ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.initial_investment}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{costsFindings.initial_investment}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.initialPlaceholder')}</p>
@@ -894,7 +896,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.recurring_costs ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.recurring_costs}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{costsFindings.recurring_costs}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.recurringPlaceholder')}</p>
@@ -909,7 +911,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.tco ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none font-medium">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.tco}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{costsFindings.tco}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.tcoPlaceholder')}</p>
@@ -924,7 +926,7 @@ const Step5Page = () => {
                   </h3>
                   {costsFindings?.roi_analysis ? (
                     <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                      <ReactMarkdown components={findingsMarkdownComponents}>{costsFindings.roi_analysis}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={findingsMarkdownComponents}>{costsFindings.roi_analysis}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-400 italic">{t('step5.costsFindings.roiPlaceholder')}</p>
