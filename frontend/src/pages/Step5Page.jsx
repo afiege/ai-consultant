@@ -563,6 +563,20 @@ const Step5Page = () => {
   };
 
   // Message renderer component
+  // Preprocess markdown to ensure proper newlines around headers and lists
+  const preprocessMarkdown = (content) => {
+    if (!content) return '';
+    return content
+      // Ensure newline before headers (##, ###, etc.)
+      .replace(/([^\n])(#{1,6}\s)/g, '$1\n\n$2')
+      // Ensure newline after headers
+      .replace(/(#{1,6}\s[^\n]+)([^\n])/g, '$1\n\n$2')
+      // Ensure newline before bullet points
+      .replace(/([^\n])(\n?[-*]\s)/g, '$1\n$2')
+      // Ensure newline before numbered lists
+      .replace(/([^\n])(\n?\d+\.\s)/g, '$1\n$2');
+  };
+
   const MessageBubble = ({ msg }) => (
     <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -601,7 +615,7 @@ const Step5Page = () => {
               td: ({children}) => <td className={`px-2 py-1 text-xs border-r border-gray-300 last:border-r-0 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</td>,
             }}
           >
-            {msg.content}
+            {preprocessMarkdown(msg.content)}
           </ReactMarkdown>
         </div>
       </div>

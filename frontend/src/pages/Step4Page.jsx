@@ -545,6 +545,20 @@ const Step4Page = () => {
     }
   };
 
+  // Preprocess markdown to ensure proper newlines around headers and lists
+  const preprocessMarkdown = (content) => {
+    if (!content) return '';
+    return content
+      // Ensure newline before headers (##, ###, etc.)
+      .replace(/([^\n])(#{1,6}\s)/g, '$1\n\n$2')
+      // Ensure newline after headers
+      .replace(/(#{1,6}\s[^\n]+)([^\n])/g, '$1\n\n$2')
+      // Ensure newline before bullet points
+      .replace(/([^\n])(\n?[-*]\s)/g, '$1\n$2')
+      // Ensure newline before numbered lists
+      .replace(/([^\n])(\n?\d+\.\s)/g, '$1\n$2');
+  };
+
   // Collaborative mode handlers
   const handleToggleCollaborativeMode = async () => {
     try {
@@ -912,7 +926,7 @@ const Step4Page = () => {
                                 hr: () => <hr className={`my-3 ${msg.role === 'user' ? 'border-blue-400' : 'border-gray-300'}`} />,
                               }}
                             >
-                              {msg.content}
+                              {preprocessMarkdown(msg.content)}
                             </ReactMarkdown>
                           </div>
                         </div>
