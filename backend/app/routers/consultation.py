@@ -339,6 +339,7 @@ def get_messages(
         ConsultationMessage.role != "system"
     ).order_by(ConsultationMessage.created_at).all()
 
+    # Filter out context messages (used internally but not for display)
     return [
         {
             "id": m.id,
@@ -347,6 +348,7 @@ def get_messages(
             "created_at": m.created_at.isoformat()
         }
         for m in messages
+        if not m.content.startswith("[SESSION CONTEXT]")
     ]
 
 
@@ -825,8 +827,8 @@ def get_collaborative_messages(
 
     result = []
     for m in messages:
-        # Skip initial trigger message
-        if m.content == "Please start the consultation.":
+        # Skip initial trigger message and context messages
+        if m.content == "Please start the consultation." or m.content.startswith("[SESSION CONTEXT]"):
             continue
 
         # Get participant name if available
