@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { companyInfoAPI, prioritizationAPI, consultationAPI, businessCaseAPI, costEstimationAPI, apiKeyManager } from '../services/api';
 import { PageHeader, ExplanationBox } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
+import TestModePanel from '../components/common/TestModePanel';
 
 const Step5Page = () => {
   const { t } = useTranslation();
@@ -443,6 +444,114 @@ const Step5Page = () => {
       handleExtractCosts();
     }
     setPendingAction(null);
+  };
+
+  // Test mode handler for potentials (5a)
+  const handleTestModeResponsePotentials = async (generatedResponse) => {
+    if (!generatedResponse.trim() || potentialsSending) return;
+
+    const userMessage = generatedResponse.trim();
+    setPotentialsSending(true);
+
+    const userMsgId = Date.now();
+    setPotentialsMessages(prev => [...prev, {
+      id: userMsgId,
+      role: 'user',
+      content: userMessage,
+      created_at: new Date().toISOString()
+    }]);
+
+    try {
+      await businessCaseAPI.saveMessage(sessionUuid, userMessage);
+
+      const aiMsgId = Date.now() + 1;
+      setPotentialsMessages(prev => [...prev, {
+        id: aiMsgId,
+        role: 'assistant',
+        content: '',
+        created_at: new Date().toISOString()
+      }]);
+
+      await businessCaseAPI.requestAiResponseStream(
+        sessionUuid,
+        (chunk) => {
+          setPotentialsMessages(prev => {
+            const updated = [...prev];
+            const aiIdx = updated.findIndex(m => m.id === aiMsgId);
+            if (aiIdx >= 0) {
+              updated[aiIdx] = {
+                ...updated[aiIdx],
+                content: updated[aiIdx].content + chunk
+              };
+            }
+            return updated;
+          });
+        },
+        () => setPotentialsSending(false),
+        (errorMsg) => {
+          setError(errorMsg || 'Failed to get AI response');
+          setPotentialsSending(false);
+          setPotentialsMessages(prev => prev.filter(m => m.id !== aiMsgId || m.content));
+        }
+      );
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send message');
+      setPotentialsSending(false);
+    }
+  };
+
+  // Test mode handler for costs (5b)
+  const handleTestModeResponseCosts = async (generatedResponse) => {
+    if (!generatedResponse.trim() || costsSending) return;
+
+    const userMessage = generatedResponse.trim();
+    setCostsSending(true);
+
+    const userMsgId = Date.now();
+    setCostsMessages(prev => [...prev, {
+      id: userMsgId,
+      role: 'user',
+      content: userMessage,
+      created_at: new Date().toISOString()
+    }]);
+
+    try {
+      await costEstimationAPI.saveMessage(sessionUuid, userMessage);
+
+      const aiMsgId = Date.now() + 1;
+      setCostsMessages(prev => [...prev, {
+        id: aiMsgId,
+        role: 'assistant',
+        content: '',
+        created_at: new Date().toISOString()
+      }]);
+
+      await costEstimationAPI.requestAiResponseStream(
+        sessionUuid,
+        (chunk) => {
+          setCostsMessages(prev => {
+            const updated = [...prev];
+            const aiIdx = updated.findIndex(m => m.id === aiMsgId);
+            if (aiIdx >= 0) {
+              updated[aiIdx] = {
+                ...updated[aiIdx],
+                content: updated[aiIdx].content + chunk
+              };
+            }
+            return updated;
+          });
+        },
+        () => setCostsSending(false),
+        (errorMsg) => {
+          setError(errorMsg || 'Failed to get AI response');
+          setCostsSending(false);
+          setCostsMessages(prev => prev.filter(m => m.id !== aiMsgId || m.content));
+        }
+      );
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send message');
+      setCostsSending(false);
+    }
   };
 
   // Summarize company info for display
@@ -955,6 +1064,15 @@ const Step5Page = () => {
         isOpen={showApiKeyPrompt}
         onClose={() => setShowApiKeyPrompt(false)}
         onApiKeySet={handleApiKeySet}
+      />
+
+      {/* Test Mode Panel - switches based on active tab */}
+      <TestModePanel
+        sessionUuid={sessionUuid}
+        messageType={activeTab === 'potentials' ? 'business_case' : 'cost_estimation'}
+        onResponseGenerated={activeTab === 'potentials' ? handleTestModeResponsePotentials : handleTestModeResponseCosts}
+        disabled={activeTab === 'potentials' ? potentialsSending : costsSending}
+        consultationStarted={activeTab === 'potentials' ? potentialsStarted : costsStarted}
       />
     </div>
   );

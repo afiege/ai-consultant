@@ -733,4 +733,66 @@ export const expertSettingsAPI = {
     api.post(`/api/sessions/${sessionUuid}/expert-settings/reset-all`),
 };
 
+// Test mode API - automated persona-based responses
+export const testModeAPI = {
+  getPersonas: () =>
+    api.get('/api/test-mode/personas'),
+
+  getPersonaDetails: (personaId) =>
+    api.get(`/api/test-mode/personas/${personaId}`),
+
+  generateResponse: (sessionUuid, personaId, messageType = 'consultation', apiKey) =>
+    api.post(
+      `/api/test-mode/${sessionUuid}/generate-response?persona_id=${personaId}&message_type=${messageType}`,
+      {},
+      { headers: { 'X-API-Key': apiKey || apiKeyManager.get() } }
+    ),
+
+  generateResponseStream: async (sessionUuid, personaId, messageType, onChunk, onDone, onError, apiKey) => {
+    const key = apiKey || apiKeyManager.get();
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/test-mode/${sessionUuid}/generate-response/stream?persona_id=${personaId}&message_type=${messageType}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': key
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              onDone?.();
+            } else if (data.startsWith('[ERROR]')) {
+              onError?.(data.slice(8));
+            } else {
+              onChunk?.(data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error.message);
+    }
+  },
+};
+
 export default api;

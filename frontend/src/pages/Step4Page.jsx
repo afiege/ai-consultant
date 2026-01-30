@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { sixThreeFiveAPI, prioritizationAPI, consultationAPI, apiKeyManager } from '../services/api';
 import { PageHeader, ExplanationBox } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
+import TestModePanel from '../components/common/TestModePanel';
 
 const Step4Page = () => {
   const { t } = useTranslation();
@@ -483,6 +484,65 @@ const Step4Page = () => {
       handleSummarize();
     }
     setPendingAction(null);
+  };
+
+  // Test mode handler - sends a generated persona response
+  const handleTestModeResponse = async (generatedResponse) => {
+    if (!generatedResponse.trim() || sendingMessage) return;
+
+    const userMessage = generatedResponse.trim();
+    setSendingMessage(true);
+
+    // Add user message immediately to UI
+    const userMsgId = Date.now();
+    setMessages(prev => [...prev, {
+      id: userMsgId,
+      role: 'user',
+      content: userMessage,
+      created_at: new Date().toISOString()
+    }]);
+
+    try {
+      // Save the user message
+      await consultationAPI.saveMessage(sessionUuid, userMessage);
+
+      // Automatically request AI response
+      const aiMsgId = Date.now() + 1;
+      setMessages(prev => [...prev, {
+        id: aiMsgId,
+        role: 'assistant',
+        content: '',
+        created_at: new Date().toISOString()
+      }]);
+
+      await consultationAPI.requestAiResponseStream(
+        sessionUuid,
+        (chunk) => {
+          setMessages(prev => {
+            const updated = [...prev];
+            const aiIdx = updated.findIndex(m => m.id === aiMsgId);
+            if (aiIdx >= 0) {
+              updated[aiIdx] = {
+                ...updated[aiIdx],
+                content: updated[aiIdx].content + chunk
+              };
+            }
+            return updated;
+          });
+        },
+        () => {
+          setSendingMessage(false);
+        },
+        (errorMsg) => {
+          setError(errorMsg || 'Failed to get AI response');
+          setSendingMessage(false);
+          setMessages(prev => prev.filter(m => m.id !== aiMsgId || m.content));
+        }
+      );
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send message');
+      setSendingMessage(false);
+    }
   };
 
   // Collaborative mode handlers
@@ -1087,6 +1147,15 @@ const Step4Page = () => {
         isOpen={showApiKeyPrompt}
         onClose={() => setShowApiKeyPrompt(false)}
         onApiKeySet={handleApiKeySet}
+      />
+
+      {/* Test Mode Panel */}
+      <TestModePanel
+        sessionUuid={sessionUuid}
+        messageType="consultation"
+        onResponseGenerated={handleTestModeResponse}
+        disabled={sendingMessage}
+        consultationStarted={consultationStarted}
       />
     </div>
   );
