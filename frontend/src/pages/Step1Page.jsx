@@ -8,6 +8,7 @@ import WebCrawlerForm from '../components/step1/WebCrawlerForm';
 import CompanyInfoDisplay from '../components/step1/CompanyInfoDisplay';
 import CompanyProfileEditor from '../components/step1/CompanyProfileEditor';
 import { PageHeader, ExplanationBox } from '../components/common';
+import TestModeStep1Panel from '../components/common/TestModeStep1Panel';
 
 // Maturity level names for reference
 const MATURITY_LEVELS = [
@@ -387,6 +388,20 @@ const Step1Page = () => {
     }
   };
 
+  // === Test Mode Handlers ===
+  const handleTestModeFillProfile = async (profileText) => {
+    // Submit the profile text as company info
+    await handleTextSubmit(profileText);
+  };
+
+  const handleTestModeFillMaturity = (maturityScores) => {
+    // Set the maturity scores from the persona
+    setScores(maturityScores);
+    setMaturitySaved(false);
+    // Expand all dimensions to show the filled values
+    setExpandedDimensions(DIMENSIONS);
+  };
+
   const currentError = activeTab === 'profile' ? profileError : maturityError;
 
   return (
@@ -575,6 +590,14 @@ const Step1Page = () => {
           </div>
         )}
       </div>
+
+      {/* Test Mode Panel */}
+      <TestModeStep1Panel
+        activeTab={activeTab}
+        onFillCompanyProfile={handleTestModeFillProfile}
+        onFillMaturityScores={handleTestModeFillMaturity}
+        disabled={profileLoading || maturitySaving}
+      />
     </div>
   );
 };

@@ -741,6 +741,14 @@ export const testModeAPI = {
   getPersonaDetails: (personaId) =>
     api.get(`/api/test-mode/personas/${personaId}`),
 
+  // Step 1 test mode - get company profile text
+  getCompanyProfile: (personaId) =>
+    api.get(`/api/test-mode/personas/${personaId}/company-profile`),
+
+  // Step 1 test mode - get maturity assessment scores
+  getMaturityAssessment: (personaId) =>
+    api.get(`/api/test-mode/personas/${personaId}/maturity-assessment`),
+
   generateResponse: (sessionUuid, personaId, messageType = 'consultation', apiKey) =>
     api.post(
       `/api/test-mode/${sessionUuid}/generate-response?persona_id=${personaId}&message_type=${messageType}`,

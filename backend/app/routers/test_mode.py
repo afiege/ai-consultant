@@ -233,6 +233,132 @@ async def generate_persona_response(
         raise HTTPException(status_code=500, detail=f"Failed to generate response: {str(e)}")
 
 
+@router.get("/personas/{persona_id}/company-profile")
+def get_persona_company_profile(persona_id: str):
+    """Get company profile text for Step 1a from a persona."""
+    personas = load_personas()
+
+    persona = None
+    for p in personas:
+        if p["persona_id"] == persona_id:
+            persona = p
+            break
+
+    if not persona:
+        raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
+
+    company = persona["company"]
+
+    # Build company profile text similar to what a user would enter
+    profile_parts = []
+
+    profile_parts.append(f"**Company Name:** {company['name']}")
+    profile_parts.append(f"**Industry:** {company['sub_industry']}")
+    profile_parts.append(f"**Size:** {company['size_employees']} employees, €{company['size_revenue_eur']:,} annual revenue")
+    profile_parts.append("")
+
+    profile_parts.append(f"**Business Model:**\n{company['business_model']}")
+    profile_parts.append("")
+
+    profile_parts.append(f"**Products/Services:**\n{company['products_services']}")
+    profile_parts.append("")
+
+    profile_parts.append(f"**Target Market:**\n{company['target_market']}")
+    profile_parts.append("")
+
+    profile_parts.append(f"**Team Structure:**\n{company['team_structure']}")
+    profile_parts.append("")
+
+    profile_parts.append(f"**Strategic Goals:**\n{company['strategic_goals']}")
+    profile_parts.append("")
+
+    # Add KPIs
+    if "kpis" in company:
+        profile_parts.append("**Key Performance Indicators (KPIs):**")
+        for kpi_name, kpi_data in company["kpis"].items():
+            profile_parts.append(f"- {kpi_name.replace('_', ' ').title()}: {kpi_data['value']}{kpi_data['unit']} (target: {kpi_data['target']}{kpi_data['unit']}) - {kpi_data.get('note', '')}")
+        profile_parts.append("")
+
+    # Add current challenges
+    if "current_challenges" in company:
+        profile_parts.append("**Current Challenges:**")
+        for challenge in company["current_challenges"]:
+            profile_parts.append(f"- {challenge}")
+        profile_parts.append("")
+
+    # Add digitalization details
+    digital = company.get("digitalization_maturity", {})
+    if "details" in digital:
+        profile_parts.append("**Current IT/Digitalization Systems:**")
+        for system_name, system_desc in digital["details"].items():
+            profile_parts.append(f"- {system_name.upper()}: {system_desc}")
+        profile_parts.append("")
+
+    # Add focus idea
+    focus = persona.get("focus_idea", {})
+    if focus:
+        profile_parts.append("**Project Focus/Interest:**")
+        profile_parts.append(f"{focus.get('title', '')}: {focus.get('description', '')}")
+
+    return {
+        "company_name": company["name"],
+        "profile_text": "\n".join(profile_parts)
+    }
+
+
+@router.get("/personas/{persona_id}/maturity-assessment")
+def get_persona_maturity_assessment(persona_id: str):
+    """Get maturity assessment scores for Step 1b from a persona."""
+    personas = load_personas()
+
+    persona = None
+    for p in personas:
+        if p["persona_id"] == persona_id:
+            persona = p
+            break
+
+    if not persona:
+        raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
+
+    digital = persona["company"].get("digitalization_maturity", {})
+    acatech = digital.get("acatech_assessment", {})
+
+    # Convert to Step 1b format
+    scores = {
+        "resources": {
+            "q1": acatech.get("resources", {}).get("q1", 1),
+            "q2": acatech.get("resources", {}).get("q2", 1),
+            "q3": acatech.get("resources", {}).get("q3", 1),
+            "q4": acatech.get("resources", {}).get("q4", 1),
+        },
+        "informationSystems": {
+            "q1": acatech.get("information_systems", {}).get("q1", 1),
+            "q2": acatech.get("information_systems", {}).get("q2", 1),
+            "q3": acatech.get("information_systems", {}).get("q3", 1),
+            "q4": acatech.get("information_systems", {}).get("q4", 1),
+        },
+        "culture": {
+            "q1": acatech.get("culture", {}).get("q1", 1),
+            "q2": acatech.get("culture", {}).get("q2", 1),
+            "q3": acatech.get("culture", {}).get("q3", 1),
+            "q4": acatech.get("culture", {}).get("q4", 1),
+        },
+        "organizationalStructure": {
+            "q1": acatech.get("organizational_structure", {}).get("q1", 1),
+            "q2": acatech.get("organizational_structure", {}).get("q2", 1),
+            "q3": acatech.get("organizational_structure", {}).get("q3", 1),
+            "q4": acatech.get("organizational_structure", {}).get("q4", 1),
+        },
+    }
+
+    return {
+        "company_name": persona["company"]["name"],
+        "maturity_level": digital.get("level", 1),
+        "maturity_level_name": digital.get("level_name", "Unknown"),
+        "scores": scores
+    }
+
+
 @router.post("/{session_uuid}/generate-response/stream")
 async def generate_persona_response_stream(
     session_uuid: str,
