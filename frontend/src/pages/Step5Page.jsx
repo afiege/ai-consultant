@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { companyInfoAPI, prioritizationAPI, consultationAPI, businessCaseAPI, costEstimationAPI, apiKeyManager } from '../services/api';
-import { PageHeader, ExplanationBox } from '../components/common';
+import { companyInfoAPI, companyProfileAPI, prioritizationAPI, consultationAPI, businessCaseAPI, costEstimationAPI, apiKeyManager } from '../services/api';
+import { PageHeader, ExplanationBox, TypingIndicator, LoadingOverlay } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 import TestModePanel from '../components/common/TestModePanel';
+import { useTestMode } from '../hooks/useTestMode';
 
 const Step5Page = () => {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ const Step5Page = () => {
 
   // Context from previous steps
   const [companyInfo, setCompanyInfo] = useState([]);
+  const [companyProfile, setCompanyProfile] = useState(null);
   const [topIdea, setTopIdea] = useState(null);
   const [crispDmFindings, setCrispDmFindings] = useState(null);
   const [contextExpanded, setContextExpanded] = useState(false);
@@ -45,6 +47,9 @@ const Step5Page = () => {
   // API Key prompt state
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+
+  // Test mode state (from localStorage, synced across tabs)
+  const testModeEnabled = useTestMode();
 
   // Reusable markdown components for findings cards (with table support)
   const findingsMarkdownComponents = {
@@ -76,12 +81,22 @@ const Step5Page = () => {
 
   const loadData = async () => {
     try {
-      // Load company info (Step 1)
+      // Load company info (Step 1) - raw data as fallback
       try {
         const companyResponse = await companyInfoAPI.getAll(sessionUuid);
         setCompanyInfo(companyResponse.data || []);
       } catch (e) {
         console.log('No company info');
+      }
+
+      // Load structured company profile (preferred)
+      try {
+        const profileResponse = await companyProfileAPI.get(sessionUuid);
+        if (profileResponse.data) {
+          setCompanyProfile(profileResponse.data);
+        }
+      } catch (e) {
+        console.log('No structured company profile');
       }
 
       // Load top idea (Step 3)
@@ -560,27 +575,44 @@ const Step5Page = () => {
     }
   };
 
-  // Summarize company info for display
-  const getCompanySummary = () => {
+  // Get company profile for display - prefer structured profile over raw data
+  const getCompanyDisplay = () => {
+    // Prefer structured profile (API returns {profile: {...}, extraction_quality: ...})
+    const profile = companyProfile?.profile || companyProfile;
+    if (profile && profile.name) {
+      const parts = [];
+
+      // Basic info
+      parts.push(`${profile.name}`);
+      if (profile.industry) parts.push(`Industry: ${profile.industry}${profile.sub_industry ? ` (${profile.sub_industry})` : ''}`);
+      if (profile.employee_count) parts.push(`Employees: ${profile.employee_count}`);
+      if (profile.annual_revenue) parts.push(`Revenue: ${profile.annual_revenue}`);
+      if (profile.headquarters) parts.push(`Location: ${profile.headquarters}`);
+      if (profile.ownership) parts.push(`Ownership: ${profile.ownership}`);
+
+      // Business
+      if (profile.core_business) parts.push(`\nCore Business: ${profile.core_business}`);
+      if (profile.products_services?.length) parts.push(`Products/Services: ${profile.products_services.join(', ')}`);
+      if (profile.customer_segments?.length) parts.push(`Customers: ${profile.customer_segments.join(', ')}`);
+      if (profile.markets_served?.length) parts.push(`Markets: ${profile.markets_served.join(', ')}`);
+
+      // Operations
+      if (profile.key_processes?.length) parts.push(`\nKey Processes: ${profile.key_processes.join(', ')}`);
+      if (profile.current_systems?.length) parts.push(`Current Systems: ${profile.current_systems.join(', ')}`);
+      if (profile.data_sources?.length) parts.push(`Data Sources: ${profile.data_sources.join(', ')}`);
+      if (profile.automation_level) parts.push(`Automation Level: ${profile.automation_level}`);
+
+      // Challenges & Goals
+      if (profile.pain_points?.length) parts.push(`\nChallenges: ${profile.pain_points.join(', ')}`);
+      if (profile.digitalization_goals?.length) parts.push(`Digitalization Goals: ${profile.digitalization_goals.join(', ')}`);
+
+      return parts.join('\n');
+    }
+    // Fallback to raw company info
     if (!companyInfo.length) return null;
     const first = companyInfo[0];
     if (!first.content) return null;
-    return first.content.substring(0, 200) + (first.content.length > 200 ? '...' : '');
-  };
-
-  // Message renderer component
-  // Preprocess markdown to ensure proper newlines around headers and lists
-  const preprocessMarkdown = (content) => {
-    if (!content) return '';
-    return content
-      // Ensure newline before headers (##, ###, etc.)
-      .replace(/([^\n])(#{1,6}\s)/g, '$1\n\n$2')
-      // Ensure newline after headers
-      .replace(/(#{1,6}\s[^\n]+)([^\n])/g, '$1\n\n$2')
-      // Ensure newline before bullet points
-      .replace(/([^\n])(\n?[-*]\s)/g, '$1\n$2')
-      // Ensure newline before numbered lists
-      .replace(/([^\n])(\n?\d+\.\s)/g, '$1\n$2');
+    return first.content; // No truncation
   };
 
   const MessageBubble = ({ msg }) => (
@@ -592,36 +624,34 @@ const Step5Page = () => {
             : 'bg-gray-100 text-gray-900'
         }`}
       >
-        <div className={`text-sm max-w-none ${
-          msg.role === 'user' ? '' : 'prose prose-sm prose-gray'
-        }`}>
+        <div className="text-sm">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
-              ul: ({children}) => <ul className={`list-disc ml-4 mb-2 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ul>,
-              ol: ({children}) => <ol className={`list-decimal ml-4 mb-2 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ol>,
+              p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
+              ul: ({children}) => <ul className={`list-disc ml-4 mb-3 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ul>,
+              ol: ({children}) => <ol className={`list-decimal ml-4 mb-3 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ol>,
               li: ({children}) => <li className="mb-1">{children}</li>,
               strong: ({children}) => <strong className="font-semibold">{children}</strong>,
               em: ({children}) => <em className="italic">{children}</em>,
-              h1: ({children}) => <h1 className={`text-lg font-bold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h1>,
-              h2: ({children}) => <h2 className={`text-base font-bold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h2>,
-              h3: ({children}) => <h3 className={`text-sm font-bold mb-1 mt-2 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h3>,
-              h4: ({children}) => <h4 className={`text-sm font-semibold mb-1 mt-2 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h4>,
+              h1: ({children}) => <h1 className={`text-lg font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h1>,
+              h2: ({children}) => <h2 className={`text-base font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h2>,
+              h3: ({children}) => <h3 className={`text-sm font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h3>,
+              h4: ({children}) => <h4 className={`text-sm font-semibold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h4>,
               code: ({inline, children}) => inline
                 ? <code className={`px-1 py-0.5 rounded text-xs font-mono ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{children}</code>
                 : <code className={`block p-2 rounded text-xs font-mono my-2 overflow-x-auto ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{children}</code>,
               blockquote: ({children}) => <blockquote className={`border-l-4 pl-3 my-2 italic ${msg.role === 'user' ? 'border-blue-300 text-blue-100' : 'border-gray-300 text-gray-600'}`}>{children}</blockquote>,
               hr: () => <hr className={`my-3 ${msg.role === 'user' ? 'border-blue-400' : 'border-gray-300'}`} />,
-              table: ({children}) => <div className="overflow-x-auto my-2"><table className="min-w-full border border-gray-300">{children}</table></div>,
-              thead: ({children}) => <thead className={`${msg.role === 'user' ? 'bg-blue-500' : 'bg-gray-200'}`}>{children}</thead>,
+              table: ({children}) => <div className="overflow-x-auto my-2"><table className="min-w-full border border-gray-300 text-xs">{children}</table></div>,
+              thead: ({children}) => <thead className="bg-gray-100">{children}</thead>,
               tbody: ({children}) => <tbody>{children}</tbody>,
-              tr: ({children}) => <tr className="border-b border-gray-300">{children}</tr>,
-              th: ({children}) => <th className={`px-2 py-1 text-left text-xs font-semibold border-r border-gray-300 last:border-r-0 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</th>,
-              td: ({children}) => <td className={`px-2 py-1 text-xs border-r border-gray-300 last:border-r-0 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</td>,
+              tr: ({children}) => <tr className="border-b border-gray-200">{children}</tr>,
+              th: ({children}) => <th className="px-2 py-1 text-left font-semibold border-r border-gray-200 last:border-r-0">{children}</th>,
+              td: ({children}) => <td className="px-2 py-1 border-r border-gray-200 last:border-r-0">{children}</td>,
             }}
           >
-            {preprocessMarkdown(msg.content)}
+            {msg.content}
           </ReactMarkdown>
         </div>
       </div>
@@ -630,13 +660,17 @@ const Step5Page = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">{t('common.loading')}</p>
+      <div className="min-h-screen bg-gray-50">
+        <LoadingOverlay
+          isVisible={true}
+          title={t('step5.loading.title', 'Loading analysis...')}
+          description={t('step5.loading.description', 'Please wait while we load your business case data.')}
+        />
       </div>
     );
   }
 
-  const hasContext = companyInfo.length > 0 || topIdea || crispDmFindings;
+  const hasContext = companyProfile || companyInfo.length > 0 || topIdea || crispDmFindings;
   const currentMessages = activeTab === 'potentials' ? potentialsMessages : costsMessages;
   const currentSending = activeTab === 'potentials' ? potentialsSending : costsSending;
 
@@ -747,10 +781,10 @@ const Step5Page = () => {
             </button>
             {contextExpanded && (
               <div className="px-4 pb-4 space-y-3">
-                {companyInfo.length > 0 && (
+                {(companyProfile || companyInfo.length > 0) && (
                   <div className="bg-white rounded p-3">
                     <h4 className="text-sm font-semibold text-gray-700 mb-1">{t('step5.chat.companyProfile')}</h4>
-                    <p className="text-xs text-gray-600">{getCompanySummary()}</p>
+                    <div className="text-xs text-gray-600 whitespace-pre-wrap">{getCompanyDisplay()}</div>
                   </div>
                 )}
                 {topIdea && (
@@ -762,12 +796,18 @@ const Step5Page = () => {
                 {crispDmFindings && (
                   <div className="bg-white rounded p-3">
                     <h4 className="text-sm font-semibold text-gray-700 mb-1">{t('step5.chat.crispDmSummary')}</h4>
-                    <div className="text-xs text-gray-600 space-y-1">
+                    <div className="text-xs text-gray-600 space-y-2">
                       {crispDmFindings.business_objectives && (
-                        <p><strong>{t('step4.findings.businessObjectives')}:</strong> {crispDmFindings.business_objectives.substring(0, 100)}...</p>
+                        <div><strong>{t('step4.findings.businessObjectives')}:</strong> {crispDmFindings.business_objectives}</div>
+                      )}
+                      {crispDmFindings.situation_assessment && (
+                        <div><strong>{t('step4.findings.situationAssessment')}:</strong> {crispDmFindings.situation_assessment}</div>
                       )}
                       {crispDmFindings.ai_goals && (
-                        <p><strong>{t('step4.findings.aiGoals')}:</strong> {crispDmFindings.ai_goals.substring(0, 100)}...</p>
+                        <div><strong>{t('step4.findings.aiGoals')}:</strong> {crispDmFindings.ai_goals}</div>
+                      )}
+                      {crispDmFindings.project_plan && (
+                        <div><strong>{t('step4.findings.projectPlan')}:</strong> {crispDmFindings.project_plan}</div>
                       )}
                     </div>
                   </div>
@@ -827,10 +867,8 @@ const Step5Page = () => {
                       <MessageBubble key={msg.id} msg={msg} />
                     ))}
                     {potentialsSending && potentialsMessages.length > 0 && potentialsMessages[potentialsMessages.length - 1].content === '' && (
-                      <div className="flex justify-start">
-                        <div className="bg-gray-100 rounded-lg px-4 py-3">
-                          <p className="text-gray-500 text-sm animate-pulse">{t('step5.chat.thinking')}</p>
-                        </div>
+                      <div className="flex justify-start" role="status" aria-label={t('step5.chat.thinking')}>
+                        <TypingIndicator />
                       </div>
                     )}
                   </>
@@ -861,10 +899,8 @@ const Step5Page = () => {
                       <MessageBubble key={msg.id} msg={msg} />
                     ))}
                     {costsSending && costsMessages.length > 0 && costsMessages[costsMessages.length - 1].content === '' && (
-                      <div className="flex justify-start">
-                        <div className="bg-gray-100 rounded-lg px-4 py-3">
-                          <p className="text-gray-500 text-sm animate-pulse">{t('step5.costs.thinking')}</p>
-                        </div>
+                      <div className="flex justify-start" role="status" aria-label={t('step5.costs.thinking')}>
+                        <TypingIndicator />
                       </div>
                     )}
                   </>
@@ -1098,14 +1134,16 @@ const Step5Page = () => {
         onApiKeySet={handleApiKeySet}
       />
 
-      {/* Test Mode Panel - switches based on active tab */}
-      <TestModePanel
-        sessionUuid={sessionUuid}
-        messageType={activeTab === 'potentials' ? 'business_case' : 'cost_estimation'}
-        onResponseGenerated={activeTab === 'potentials' ? handleTestModeResponsePotentials : handleTestModeResponseCosts}
-        disabled={activeTab === 'potentials' ? potentialsSending : costsSending}
-        consultationStarted={activeTab === 'potentials' ? potentialsStarted : costsStarted}
-      />
+      {/* Test Mode Panel - only shown when enabled in expert settings */}
+      {testModeEnabled && (
+        <TestModePanel
+          sessionUuid={sessionUuid}
+          messageType={activeTab === 'potentials' ? 'business_case' : 'cost_estimation'}
+          onResponseGenerated={activeTab === 'potentials' ? handleTestModeResponsePotentials : handleTestModeResponseCosts}
+          disabled={activeTab === 'potentials' ? potentialsSending : costsSending}
+          consultationStarted={activeTab === 'potentials' ? potentialsStarted : costsStarted}
+        />
+      )}
     </div>
   );
 };

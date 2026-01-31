@@ -9,6 +9,86 @@ const api = axios.create({
   },
 });
 
+// Helper for parsing SSE streams with proper message handling
+const parseSSEStream = async (response, onChunk, onDone, onError) => {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE messages are separated by double newlines
+      // Process complete messages
+      let messageEnd;
+      while ((messageEnd = buffer.indexOf('\n\n')) !== -1) {
+        const message = buffer.slice(0, messageEnd);
+        buffer = buffer.slice(messageEnd + 2);
+
+        // Parse the SSE message - collect all data: lines and join with newlines
+        const dataLines = [];
+        for (const line of message.split('\n')) {
+          if (line.startsWith('data: ')) {
+            dataLines.push(line.slice(6));
+          } else if (line.startsWith('data:')) {
+            // Handle "data:" with no space (empty or just newline)
+            dataLines.push(line.slice(5));
+          }
+        }
+
+        if (dataLines.length > 0) {
+          // Join multiple data lines with newlines (SSE spec)
+          const data = dataLines.join('\n');
+
+          if (data === '[DONE]') {
+            onDone?.();
+          } else if (data.startsWith('[ERROR]')) {
+            onError?.(data.slice(8));
+          } else if (data.startsWith('{')) {
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.status === 'already_started') {
+                onError?.('Already started');
+              } else if (parsed.error) {
+                onError?.(parsed.error);
+              }
+            } catch (e) {
+              // Not JSON, treat as text chunk
+              onChunk?.(data);
+            }
+          } else {
+            onChunk?.(data);
+          }
+        }
+      }
+    }
+
+    // Process any remaining buffer (incomplete message at end)
+    if (buffer.trim()) {
+      const dataLines = [];
+      for (const line of buffer.split('\n')) {
+        if (line.startsWith('data: ')) {
+          dataLines.push(line.slice(6));
+        } else if (line.startsWith('data:')) {
+          dataLines.push(line.slice(5));
+        }
+      }
+      if (dataLines.length > 0) {
+        const data = dataLines.join('\n');
+        if (data && data !== '[DONE]' && !data.startsWith('[ERROR]')) {
+          onChunk?.(data);
+        }
+      }
+    }
+  } catch (error) {
+    onError?.(error.message);
+  }
+};
+
 // API Key management (stored in sessionStorage - cleared when tab closes)
 const API_KEY_STORAGE_KEY = 'ai_consultant_api_key';
 
@@ -179,38 +259,7 @@ export const consultationAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else if (data.startsWith('{')) {
-              // JSON status message
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.status === 'already_started') {
-                  onError?.('Consultation already started');
-                }
-              } catch (e) {
-                // Not JSON, treat as content
-                onChunk?.(data);
-              }
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -232,27 +281,7 @@ export const consultationAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -275,37 +304,7 @@ export const consultationAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else if (data.startsWith('{')) {
-              // JSON status/error message
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.error) {
-                  onError?.(parsed.error);
-                }
-              } catch (e) {
-                onChunk?.(data);
-              }
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -344,36 +343,7 @@ export const businessCaseAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else if (data.startsWith('{')) {
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.status === 'already_started') {
-                  onError?.('Business case already started');
-                }
-              } catch (e) {
-                onChunk?.(data);
-              }
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -395,27 +365,7 @@ export const businessCaseAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -437,36 +387,7 @@ export const businessCaseAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else if (data.startsWith('{')) {
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.error) {
-                  onError?.(parsed.error);
-                }
-              } catch (e) {
-                onChunk?.(data);
-              }
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -505,36 +426,7 @@ export const costEstimationAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else if (data.startsWith('{')) {
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.status === 'already_started') {
-                  onError?.('Cost estimation already started');
-                }
-              } catch (e) {
-                onChunk?.(data);
-              }
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -556,27 +448,7 @@ export const costEstimationAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -598,36 +470,7 @@ export const costEstimationAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else if (data.startsWith('{')) {
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.error) {
-                  onError?.(parsed.error);
-                }
-              } catch (e) {
-                onChunk?.(data);
-              }
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }
@@ -774,29 +617,7 @@ export const testModeAPI = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value, { stream: true });
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              onDone?.();
-            } else if (data.startsWith('[ERROR]')) {
-              onError?.(data.slice(8));
-            } else {
-              onChunk?.(data);
-            }
-          }
-        }
-      }
+      await parseSSEStream(response, onChunk, onDone, onError);
     } catch (error) {
       onError?.(error.message);
     }

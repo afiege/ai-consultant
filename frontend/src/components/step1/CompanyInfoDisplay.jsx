@@ -6,9 +6,22 @@ const CompanyInfoDisplay = ({ companyInfoList, onDelete }) => {
   const { t } = useTranslation();
   if (!companyInfoList || companyInfoList.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        <p>{t('step1.companyInfo.empty')}</p>
-        <p className="text-sm mt-2">{t('step1.companyInfo.addInfo')}</p>
+      <div className="text-center py-12" role="status" aria-live="polite">
+        {/* Empty state icon */}
+        <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <h4 className="text-lg font-medium text-gray-900 mb-2">
+          {t('step1.companyInfo.empty')}
+        </h4>
+        <p className="text-sm text-gray-500 max-w-sm mx-auto">
+          {t('step1.companyInfo.addInfo')}
+        </p>
+        <p className="text-xs text-gray-400 mt-4">
+          {t('step1.companyInfo.emptyHint', 'Use the forms above to add company information via text, file upload, or web crawling.')}
+        </p>
       </div>
     );
   }
@@ -98,10 +111,10 @@ const CompanyInfoDisplay = ({ companyInfoList, onDelete }) => {
                 {onDelete && (
                   <button
                     onClick={() => onDelete(info.id)}
-                    className="text-red-600 hover:text-red-800 p-1"
-                    title="Delete"
+                    className="text-red-600 hover:text-red-800 p-1 rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                    aria-label={t('step1.companyInfo.deleteItem', 'Delete this company information')}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>

@@ -10,6 +10,7 @@ from litellm import completion
 
 from ..database import get_db
 from ..models import Session as SessionModel, ConsultationMessage
+from ..utils.sse import format_sse_data
 
 router = APIRouter(prefix="/api/test-mode", tags=["test-mode"])
 
@@ -446,7 +447,7 @@ async def generate_persona_response_stream(
 
             for chunk in stream:
                 if chunk.choices[0].delta.content:
-                    yield f"data: {chunk.choices[0].delta.content}\n\n"
+                    yield format_sse_data(chunk.choices[0].delta.content)
 
             yield "data: [DONE]\n\n"
 

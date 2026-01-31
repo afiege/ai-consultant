@@ -1,9 +1,11 @@
 """Service for AI-powered cost estimation in Step 5b using LiteLLM (multi-provider)."""
 
 from typing import List, Optional, Dict, Generator
-from litellm import completion
 from sqlalchemy.orm import Session
 import logging
+
+from ..utils.llm import LLMCaller
+from ..utils.security import validate_and_sanitize_message
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,7 @@ from ..models import (
 )
 from .default_prompts import get_prompt
 from .company_profile_service import get_profile_as_context
+from ..utils.sse import format_sse_data, format_sse_error
 
 
 class CostEstimationService:
@@ -40,37 +43,21 @@ class CostEstimationService:
         self.language = language
         self.api_key = api_key
         self.api_base = api_base
+        # LLM caller with automatic retry logic for transient failures
+        self._llm = LLMCaller(
+            model=model,
+            api_key=api_key,
+            api_base=api_base,
+            max_retries=3
+        )
 
     def _call_llm(self, messages: List[Dict], temperature: float = 0.7, max_tokens: int = 1500):
-        """Call LLM via LiteLLM with optional API key and base URL."""
-        completion_kwargs = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
-        if self.api_key:
-            completion_kwargs["api_key"] = self.api_key
-        if self.api_base:
-            completion_kwargs["api_base"] = self.api_base
-
-        return completion(**completion_kwargs)
+        """Call LLM with automatic retry on transient failures."""
+        return self._llm.call(messages, temperature, max_tokens, timeout=120)
 
     def _call_llm_stream(self, messages: List[Dict], temperature: float = 0.7, max_tokens: int = 1500) -> Generator:
-        """Call LLM via LiteLLM with streaming enabled."""
-        completion_kwargs = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": True
-        }
-        if self.api_key:
-            completion_kwargs["api_key"] = self.api_key
-        if self.api_base:
-            completion_kwargs["api_base"] = self.api_base
-
-        return completion(**completion_kwargs)
+        """Call LLM with streaming and automatic retry on transient failures."""
+        return self._llm.call_stream(messages, temperature, max_tokens, timeout=120)
 
     def start_cost_estimation(self, session_uuid: str) -> Dict:
         """
@@ -179,15 +166,35 @@ class CostEstimationService:
             {"role": "user", "content": "Please start the cost estimation analysis."}
         ]
 
-        # Stream the response
+        # Stream the response with error handling
         full_response = ""
-        stream = self._call_llm_stream(messages, temperature=0.7, max_tokens=1500)
+        try:
+            stream = self._call_llm_stream(messages, temperature=0.7, max_tokens=1500)
 
-        for chunk in stream:
-            if chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-                full_response += content
-                yield f"data: {content}\n\n"
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    yield format_sse_data(content)
+
+        except (ConnectionError, TimeoutError) as e:
+            logger.warning(f"Stream connection error (recoverable): {e}")
+            yield format_sse_error(f"Connection interrupted: {str(e)}", "connection_error")
+            if full_response:
+                ai_msg = ConsultationMessage(
+                    session_id=db_session.id,
+                    role="assistant",
+                    content=full_response + "\n\n[Response interrupted due to connection error]",
+                    message_type=self.MESSAGE_TYPE
+                )
+                self.db.add(ai_msg)
+                self.db.commit()
+            return
+
+        except Exception as e:
+            logger.error(f"Stream error: {e}")
+            yield format_sse_error(f"Stream error: {str(e)}", "error")
+            return
 
         # Save the complete response
         ai_msg = ConsultationMessage(
@@ -207,10 +214,16 @@ class CostEstimationService:
         """
         db_session = self._get_session(session_uuid)
 
+        # SECURITY: Validate and sanitize user input
+        sanitized_message, is_safe, warning = validate_and_sanitize_message(user_message)
+        if not is_safe:
+            logger.warning(f"Blocked potentially unsafe message: {warning}")
+            raise ValueError(f"Invalid message content: {warning}. Please rephrase your message.")
+
         user_msg = ConsultationMessage(
             session_id=db_session.id,
             role="user",
-            content=user_message,
+            content=sanitized_message,
             message_type=self.MESSAGE_TYPE
         )
         self.db.add(user_msg)
@@ -218,7 +231,7 @@ class CostEstimationService:
 
         return {
             "message_id": user_msg.id,
-            "content": user_message,
+            "content": sanitized_message,
             "role": "user"
         }
 
@@ -228,11 +241,17 @@ class CostEstimationService:
         """
         db_session = self._get_session(session_uuid)
 
+        # SECURITY: Validate and sanitize user input
+        sanitized_message, is_safe, warning = validate_and_sanitize_message(user_message)
+        if not is_safe:
+            logger.warning(f"Blocked potentially unsafe message: {warning}")
+            raise ValueError(f"Invalid message content: {warning}. Please rephrase your message.")
+
         # Save user message
         user_msg = ConsultationMessage(
             session_id=db_session.id,
             role="user",
-            content=user_message,
+            content=sanitized_message,
             message_type=self.MESSAGE_TYPE
         )
         self.db.add(user_msg)
@@ -267,11 +286,18 @@ class CostEstimationService:
         """
         db_session = self._get_session(session_uuid)
 
+        # SECURITY: Validate and sanitize user input
+        sanitized_message, is_safe, warning = validate_and_sanitize_message(user_message)
+        if not is_safe:
+            logger.warning(f"Blocked potentially unsafe message: {warning}")
+            yield format_sse_error(f"Invalid message content: {warning}", "validation_error")
+            return
+
         # Save user message
         user_msg = ConsultationMessage(
             session_id=db_session.id,
             role="user",
-            content=user_message,
+            content=sanitized_message,
             message_type=self.MESSAGE_TYPE
         )
         self.db.add(user_msg)
@@ -280,15 +306,35 @@ class CostEstimationService:
         # Get conversation history
         messages = self._get_conversation_history(db_session.id)
 
-        # Stream the response
+        # Stream the response with error handling
         full_response = ""
-        stream = self._call_llm_stream(messages, temperature=0.7, max_tokens=1500)
+        try:
+            stream = self._call_llm_stream(messages, temperature=0.7, max_tokens=1500)
 
-        for chunk in stream:
-            if chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-                full_response += content
-                yield f"data: {content}\n\n"
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    yield format_sse_data(content)
+
+        except (ConnectionError, TimeoutError) as e:
+            logger.warning(f"Stream connection error (recoverable): {e}")
+            yield format_sse_error(f"Connection interrupted: {str(e)}", "connection_error")
+            if full_response:
+                ai_msg = ConsultationMessage(
+                    session_id=db_session.id,
+                    role="assistant",
+                    content=full_response + "\n\n[Response interrupted due to connection error]",
+                    message_type=self.MESSAGE_TYPE
+                )
+                self.db.add(ai_msg)
+                self.db.commit()
+            return
+
+        except Exception as e:
+            logger.error(f"Stream error: {e}")
+            yield format_sse_error(f"Stream error: {str(e)}", "error")
+            return
 
         # Save the complete response
         ai_msg = ConsultationMessage(
@@ -318,15 +364,35 @@ class CostEstimationService:
             yield "data: {\"error\": \"No conversation history\"}\n\n"
             return
 
-        # Stream the response
+        # Stream the response with error handling
         full_response = ""
-        stream = self._call_llm_stream(messages, temperature=0.7, max_tokens=1500)
+        try:
+            stream = self._call_llm_stream(messages, temperature=0.7, max_tokens=1500)
 
-        for chunk in stream:
-            if chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-                full_response += content
-                yield f"data: {content}\n\n"
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    yield format_sse_data(content)
+
+        except (ConnectionError, TimeoutError) as e:
+            logger.warning(f"Stream connection error (recoverable): {e}")
+            yield format_sse_error(f"Connection interrupted: {str(e)}", "connection_error")
+            if full_response:
+                ai_msg = ConsultationMessage(
+                    session_id=db_session.id,
+                    role="assistant",
+                    content=full_response + "\n\n[Response interrupted due to connection error]",
+                    message_type=self.MESSAGE_TYPE
+                )
+                self.db.add(ai_msg)
+                self.db.commit()
+            return
+
+        except Exception as e:
+            logger.error(f"Stream error: {e}")
+            yield format_sse_error(f"Stream error: {str(e)}", "error")
+            return
 
         # Save the complete response
         ai_msg = ConsultationMessage(

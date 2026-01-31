@@ -1,3 +1,10 @@
 export { default as PageHeader } from './PageHeader';
 export { default as ExplanationBox } from './ExplanationBox';
 export { default as StepProgress } from './StepProgress';
+export { default as ErrorBoundary } from './ErrorBoundary';
+export { default as TypingIndicator } from './TypingIndicator';
+export { default as LoadingOverlay } from './LoadingOverlay';
+export { default as ApiKeyPrompt } from './ApiKeyPrompt';
+export { default as LLMConfigSection } from './LLMConfigSection';
+export { default as TestModePanel } from './TestModePanel';
+export { default as WikiLinkMarkdown } from './WikiLinkMarkdown';

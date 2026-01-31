@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { SessionProvider } from './context/SessionContext';
+import { ErrorBoundary } from './components/common';
 import HomePage from './pages/HomePage';
 import Step1Page from './pages/Step1Page';
 import Step2Page from './pages/Step2Page';
@@ -11,8 +12,9 @@ import Step6Page from './pages/Step6Page';
 
 function App() {
   return (
-    <SessionProvider>
-      <Router>
+    <ErrorBoundary>
+      <SessionProvider>
+        <Router>
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -30,8 +32,9 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
-      </Router>
-    </SessionProvider>
+        </Router>
+      </SessionProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -17,14 +17,30 @@ engine = create_engine(
 )
 
 
-# Configure SQLite for better concurrency
+# Configure SQLite for better concurrency and performance
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_conn, connection_record):
-    """Enable WAL mode and set busy timeout for better concurrency."""
+    """Configure SQLite pragmas for better concurrency and performance.
+
+    WAL mode allows concurrent reads during writes.
+    busy_timeout prevents immediate failure on lock contention.
+    synchronous=NORMAL is safe with WAL mode and improves write performance.
+    cache_size improves read performance with larger page cache.
+    wal_autocheckpoint controls when WAL file is checkpointed.
+    """
     cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging
-    cursor.execute("PRAGMA busy_timeout=30000")  # 30 second timeout
+    # Core concurrency settings
+    cursor.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging for concurrent reads
+    cursor.execute("PRAGMA busy_timeout=30000")  # 30 second timeout on lock contention
     cursor.execute("PRAGMA foreign_keys=ON")  # Enable foreign key constraints
+
+    # Performance optimizations (safe with WAL mode)
+    cursor.execute("PRAGMA synchronous=NORMAL")  # Safe with WAL, faster than FULL
+    cursor.execute("PRAGMA cache_size=-64000")  # 64MB page cache (negative = KB)
+    cursor.execute("PRAGMA wal_autocheckpoint=1000")  # Checkpoint every 1000 pages
+
+    # Temp storage in memory for faster queries
+    cursor.execute("PRAGMA temp_store=MEMORY")
     cursor.close()
 
 

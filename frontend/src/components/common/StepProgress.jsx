@@ -183,19 +183,38 @@ const StepProgress = ({
   return (
     <div className="bg-white border-b border-gray-100 sticky top-0 z-20 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <nav aria-label="Progress">
-          <ol className="flex items-center justify-between">
+        <nav aria-label={t('stepProgress.progressLabel', 'Consultation progress')}>
+          <ol className="flex items-center justify-between" role="list">
             {STEPS.map((step, index) => {
               const state = getStepState(step.id);
               const styles = getStepStyles(state);
               const isLast = index === STEPS.length - 1;
 
+              // Build aria-label for better screen reader support
+              const getAriaLabel = () => {
+                const stepName = t(`stepProgress.steps.${step.key}`);
+                switch (state) {
+                  case 'current':
+                    return t('stepProgress.currentStep', { step: stepName }) || `${stepName} - current step`;
+                  case 'completed':
+                    return t('stepProgress.completedStep', { step: stepName }) || `${stepName} - completed`;
+                  case 'skipped':
+                    return t('stepProgress.skippedStep', { step: stepName }) || `${stepName} - skipped`;
+                  case 'next':
+                    return t('stepProgress.nextStep', { step: stepName }) || `${stepName} - available`;
+                  default:
+                    return t('stepProgress.upcomingStep', { step: stepName }) || `${stepName} - upcoming`;
+                }
+              };
+
               return (
-                <li key={step.id} className="flex items-center flex-1 last:flex-none">
+                <li key={step.id} className="flex items-center flex-1 last:flex-none" role="listitem">
                   <button
                     onClick={() => handleStepClick(step)}
                     disabled={!styles.clickable}
-                    className={`group flex items-center ${styles.clickable ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                    aria-label={getAriaLabel()}
+                    aria-current={state === 'current' ? 'step' : undefined}
+                    className={`group flex items-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg ${styles.clickable ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                   >
                     {/* Step circle */}
                     <span
@@ -205,6 +224,7 @@ const StepProgress = ({
                         ${styles.circle}
                         ${styles.clickable && state !== 'current' ? 'group-hover:ring-2 group-hover:ring-offset-2 group-hover:ring-gray-200' : ''}
                       `}
+                      aria-hidden="true"
                     >
                       {state === 'completed' && <CheckIcon />}
                       {state === 'skipped' && <SkipIcon />}
@@ -212,7 +232,7 @@ const StepProgress = ({
                     </span>
 
                     {/* Step label - hidden on mobile */}
-                    <span className={`ml-2 text-sm hidden sm:block ${styles.text}`}>
+                    <span className={`ml-2 text-sm hidden sm:block ${styles.text}`} aria-hidden="true">
                       {t(`stepProgress.steps.${step.key}`)}
                       {state === 'skipped' && (
                         <span className="ml-1 text-xs text-gray-400">
@@ -224,7 +244,7 @@ const StepProgress = ({
 
                   {/* Arrow connector */}
                   {!isLast && (
-                    <div className="flex-1 flex items-center justify-center px-2 sm:px-4">
+                    <div className="flex-1 flex items-center justify-center px-2 sm:px-4" aria-hidden="true">
                       <div className={`h-0.5 w-full ${
                         getStepState(step.id + 1) === 'upcoming'
                           ? 'bg-gray-200'

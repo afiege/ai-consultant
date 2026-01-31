@@ -522,6 +522,11 @@
       "testMissingFields": "Please select a model and enter an API key first.",
       "testFailed": "Connection test failed. Please check your settings."
     },
+    "testMode": {
+      "title": "Test Mode",
+      "description": "Enable automated testing with predefined personas for demonstration and evaluation",
+      "enabledNote": "Test mode panel will appear on consultation pages (Steps 1, 4, and 5)"
+    },
     "language": {
       "title": "Language",
       "note": "Changing language will load the default prompts for that language. Your custom prompts are preserved separately.",
@@ -682,8 +687,7 @@
     "backStep5": "Back to Business Case",
     "backHome": "Back to Home",
     "tabs": {
-      "company_info": "Company Info",
-      "maturity": "Maturity",
+      "company_profile": "Company Profile",
       "crisp_dm": "CRISP-DM",
       "business_case": "Business Case",
       "costs": "Costs",
@@ -720,8 +724,7 @@
     "rawInfo": "Additional Information",
     "unknownCompany": "Unknown Company",
     "incomplete": {
-      "companyInfo": "No company information collected. Go to Step 1a.",
-      "maturity": "No maturity assessment completed. Go to Step 1b.",
+      "companyProfile": "No company profile or maturity assessment. Complete Step 1.",
       "crispDm": "No CRISP-DM findings. Complete the consultation in Step 4.",
       "businessCase": "No business case generated. Complete Step 5a.",
       "costs": "No cost estimation. Complete Step 5b."

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiKeyManager, expertSettingsAPI } from '../../services/api';
 
 /**
  * A modal component that prompts for API key when needed.
  * Shows provider selection and allows testing the connection.
+ * Includes focus management for accessibility.
  */
 const ApiKeyPrompt = ({ isOpen, onClose, onApiKeySet }) => {
   const { t } = useTranslation();
@@ -17,16 +18,78 @@ const ApiKeyPrompt = ({ isOpen, onClose, onApiKeySet }) => {
   const [testResult, setTestResult] = useState(null);
   const [error, setError] = useState('');
 
+  // Refs for focus management
+  const modalRef = useRef(null);
+  const firstFocusableRef = useRef(null);
+  const lastFocusableRef = useRef(null);
+  const previousActiveElement = useRef(null);
+
+  // Store the element that triggered the modal
   useEffect(() => {
     if (isOpen) {
+      previousActiveElement.current = document.activeElement;
       loadProviders();
       // Pre-fill if API key already exists
       const existingKey = apiKeyManager.get();
       if (existingKey) {
         setApiKey(existingKey);
       }
+    } else {
+      // Restore focus when modal closes
+      if (previousActiveElement.current) {
+        previousActiveElement.current.focus();
+      }
     }
   }, [isOpen]);
+
+  // Focus the first focusable element when loading completes
+  useEffect(() => {
+    if (isOpen && !loading && firstFocusableRef.current) {
+      firstFocusableRef.current.focus();
+    }
+  }, [isOpen, loading]);
+
+  // Handle keyboard navigation (Escape to close, Tab trapping)
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+
+    // Trap focus within modal
+    if (e.key === 'Tab') {
+      const focusableElements = modalRef.current?.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (focusableElements && focusableElements.length > 0) {
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, handleKeyDown]);
 
   const loadProviders = async () => {
     try {
@@ -109,9 +172,19 @@ const ApiKeyPrompt = ({ isOpen, onClose, onApiKeySet }) => {
   const availableModels = currentProvider?.models || [];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="api-key-modal-title"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        ref={modalRef}
+        className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="api-key-modal-title" className="text-xl font-semibold text-gray-900 mb-2">
           {t('apiKeyPrompt.title')}
         </h2>
         <p className="text-sm text-gray-600 mb-4">
@@ -126,10 +199,12 @@ const ApiKeyPrompt = ({ isOpen, onClose, onApiKeySet }) => {
           <>
             {/* Provider Selection */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="provider-select" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('apiKeyPrompt.provider')}
               </label>
               <select
+                id="provider-select"
+                ref={firstFocusableRef}
                 value={selectedProvider}
                 onChange={(e) => handleProviderChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -145,10 +220,11 @@ const ApiKeyPrompt = ({ isOpen, onClose, onApiKeySet }) => {
             {/* Model Selection */}
             {availableModels.length > 0 && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="model-select" className="block text-sm font-medium text-gray-700 mb-1">
                   {t('apiKeyPrompt.model')}
                 </label>
                 <select
+                  id="model-select"
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -164,10 +240,11 @@ const ApiKeyPrompt = ({ isOpen, onClose, onApiKeySet }) => {
 
             {/* API Key Input */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="api-key-input" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('apiKeyPrompt.apiKey')}
               </label>
               <input
+                id="api-key-input"
                 type="password"
                 value={apiKey}
                 onChange={(e) => {
@@ -177,8 +254,9 @@ const ApiKeyPrompt = ({ isOpen, onClose, onApiKeySet }) => {
                 }}
                 placeholder={t('apiKeyPrompt.apiKeyPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-describedby="api-key-security-note"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p id="api-key-security-note" className="mt-1 text-xs text-gray-500">
                 {t('apiKeyPrompt.securityNote')}
               </p>
             </div>

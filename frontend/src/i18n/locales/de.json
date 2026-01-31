@@ -522,6 +522,11 @@
       "testMissingFields": "Bitte wählen Sie zuerst ein Modell und geben Sie einen API-Schlüssel ein.",
       "testFailed": "Verbindungstest fehlgeschlagen. Bitte überprüfen Sie Ihre Einstellungen."
     },
+    "testMode": {
+      "title": "Testmodus",
+      "description": "Aktivieren Sie automatisiertes Testen mit vordefinierten Personas für Demonstration und Evaluation",
+      "enabledNote": "Das Testmodus-Panel erscheint auf den Beratungsseiten (Schritte 1, 4 und 5)"
+    },
     "language": {
       "title": "Sprache",
       "note": "Bei Sprachwechsel werden die Standard-Prompts für diese Sprache geladen. Ihre benutzerdefinierten Prompts bleiben separat erhalten.",
@@ -682,8 +687,7 @@
     "backStep5": "Zurück zum Business Case",
     "backHome": "Zurück zur Startseite",
     "tabs": {
-      "company_info": "Unternehmen",
-      "maturity": "Reifegrad",
+      "company_profile": "Unternehmensprofil",
       "crisp_dm": "CRISP-DM",
       "business_case": "Business Case",
       "costs": "Kosten",
@@ -720,8 +724,7 @@
     "rawInfo": "Zusätzliche Informationen",
     "unknownCompany": "Unbekanntes Unternehmen",
     "incomplete": {
-      "companyInfo": "Keine Unternehmensdaten erfasst. Gehen Sie zu Schritt 1a.",
-      "maturity": "Keine Reifegradanalyse durchgeführt. Gehen Sie zu Schritt 1b.",
+      "companyProfile": "Kein Unternehmensprofil oder Reifegradanalyse. Schließen Sie Schritt 1 ab.",
       "crispDm": "Keine CRISP-DM Erkenntnisse. Schließen Sie die Beratung in Schritt 4 ab.",
       "businessCase": "Kein Business Case erstellt. Schließen Sie Schritt 5a ab.",
       "costs": "Keine Kostenschätzung. Schließen Sie Schritt 5b ab."

@@ -27,6 +27,7 @@ python-dotenv>=1.0.0
 pydantic>=2.6.0
 pydantic-settings>=2.1.0
 aiofiles>=23.2.1
+tenacity>=8.2.0
 
 # Development & Testing
 pytest>=7.4.4

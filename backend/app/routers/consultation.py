@@ -519,6 +519,14 @@ def get_all_findings(
         for ci in company_infos
     ]
 
+    # Get structured company profile
+    structured_profile = None
+    if db_session.company_profile:
+        try:
+            structured_profile = json.loads(db_session.company_profile)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse company_profile JSON for session {db_session.id}: {e}")
+
     # Get maturity assessment
     maturity = db.query(MaturityAssessment).filter(
         MaturityAssessment.session_id == db_session.id
@@ -542,6 +550,7 @@ def get_all_findings(
         },
         "company_info": {
             "profile": findings_dict.get("company_profile"),
+            "structured_profile": structured_profile,
             "raw_info": company_info_data
         },
         "maturity": maturity_data,

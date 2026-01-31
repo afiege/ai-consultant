@@ -14,8 +14,7 @@ import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 import { WikiLinkMarkdown } from '../components/common/WikiLinkMarkdown';
 
 const TABS = [
-  { id: 'company_info', icon: 'building', color: 'blue' },
-  { id: 'maturity', icon: 'chart', color: 'purple' },
+  { id: 'company_profile', icon: 'building', color: 'blue' },
   { id: 'crisp_dm', icon: 'clipboard', color: 'green' },
   { id: 'business_case', icon: 'calculator', color: 'orange' },
   { id: 'costs', icon: 'currency', color: 'red' },
@@ -35,7 +34,7 @@ const Step6Page = () => {
   const [allFindings, setAllFindings] = useState(null);
 
   // Active tab state
-  const [activeTab, setActiveTab] = useState('company_info');
+  const [activeTab, setActiveTab] = useState('company_profile');
 
   // Generation states
   const [swotLoading, setSwotLoading] = useState(false);
@@ -164,13 +163,12 @@ const Step6Page = () => {
   };
 
   // Check completeness for status indicators
-  const hasCompanyInfo = allFindings?.company_info?.profile || allFindings?.company_info?.raw_info?.length > 0;
-  const hasMaturity = !!allFindings?.maturity;
-  const hasCrispDm = allFindings?.crisp_dm?.business_objectives || allFindings?.crisp_dm?.ai_goals;
-  const hasBusinessCase = allFindings?.business_case?.classification || allFindings?.business_case?.calculation;
-  const hasCosts = allFindings?.costs?.complexity || allFindings?.costs?.tco;
-  const hasSwot = !!allFindings?.analysis?.swot_analysis;
-  const hasBriefing = !!allFindings?.analysis?.technical_briefing;
+  const hasCompanyProfile = allFindings?.company_info?.structured_profile || allFindings?.company_info?.raw_info?.length > 0 || !!allFindings?.maturity;
+  const hasCrispDm = allFindings?.crisp_dm?.business_objectives?.text || allFindings?.crisp_dm?.situation_assessment?.text || allFindings?.crisp_dm?.ai_goals?.text || allFindings?.crisp_dm?.project_plan?.text;
+  const hasBusinessCase = allFindings?.business_case?.classification?.text || allFindings?.business_case?.calculation?.text || allFindings?.business_case?.validation_questions?.text || allFindings?.business_case?.management_pitch?.text;
+  const hasCosts = allFindings?.costs?.complexity?.text || allFindings?.costs?.tco?.text || allFindings?.costs?.initial_investment?.text;
+  const hasSwot = !!allFindings?.analysis?.swot_analysis?.text;
+  const hasBriefing = !!allFindings?.analysis?.technical_briefing?.text;
 
   if (loading) {
     return (
@@ -196,8 +194,7 @@ const Step6Page = () => {
 
   const getTabStatus = (tabId) => {
     switch (tabId) {
-      case 'company_info': return hasCompanyInfo;
-      case 'maturity': return hasMaturity;
+      case 'company_profile': return hasCompanyProfile;
       case 'crisp_dm': return hasCrispDm;
       case 'business_case': return hasBusinessCase;
       case 'costs': return hasCosts;
@@ -210,10 +207,8 @@ const Step6Page = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'company_info':
-        return <CompanyInfoTab findings={allFindings} session={session} t={t} onNavigate={handleNavigate} />;
-      case 'maturity':
-        return <MaturityTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+      case 'company_profile':
+        return <CompanyProfileTab findings={allFindings} session={session} t={t} onNavigate={handleNavigate} />;
       case 'crisp_dm':
         return <CrispDmTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
       case 'business_case':
@@ -249,7 +244,7 @@ const Step6Page = () => {
             onExportPDF={handleExportPDF}
             exporting={exporting}
             hasAllFindings={{
-              hasCompanyInfo, hasMaturity, hasCrispDm,
+              hasCompanyProfile, hasCrispDm,
               hasBusinessCase, hasCosts, hasSwot, hasBriefing
             }}
           />
@@ -339,49 +334,13 @@ const Step6Page = () => {
 
 // Tab Content Components
 
-const CompanyInfoTab = ({ findings, session, t, onNavigate }) => {
-  const profile = findings?.company_info?.profile;
+const CompanyProfileTab = ({ findings, session, t, onNavigate }) => {
+  const structuredProfile = findings?.company_info?.structured_profile;
   const rawInfo = findings?.company_info?.raw_info || [];
-
-  if (!profile && rawInfo.length === 0) {
-    return <EmptyState message={t('step6.incomplete.companyInfo')} />;
-  }
-
-  return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">{session?.company_name || t('step6.unknownCompany')}</h3>
-
-      {profile?.text && (
-        <div id="finding-company_profile" className="bg-blue-50 rounded-lg p-4">
-          <h4 className="font-medium text-blue-800 mb-2">{t('step6.sections.companyProfile')}</h4>
-          <WikiLinkMarkdown
-            content={profile.text}
-            onNavigate={onNavigate}
-            className="text-blue-700"
-          />
-        </div>
-      )}
-
-      {rawInfo.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="font-medium text-gray-800">{t('step6.rawInfo')}</h4>
-          {rawInfo.map((info, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-gray-600 mb-1">{info.info_type}</p>
-              <p className="text-gray-700">{info.content}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const MaturityTab = ({ findings, t, onNavigate }) => {
   const maturity = findings?.maturity;
 
-  if (!maturity) {
-    return <EmptyState message={t('step6.incomplete.maturity')} />;
+  if (!structuredProfile && rawInfo.length === 0 && !maturity) {
+    return <EmptyState message={t('step6.incomplete.companyProfile')} />;
   }
 
   const getScoreColor = (score) => {
@@ -392,39 +351,148 @@ const MaturityTab = ({ findings, t, onNavigate }) => {
     return 'bg-green-500';
   };
 
+  // Helper to render a profile field
+  const ProfileField = ({ label, value }) => {
+    if (!value) return null;
+    const displayValue = Array.isArray(value) ? value.join(', ') : value;
+    return (
+      <div className="py-2 border-b border-gray-100 last:border-0">
+        <dt className="text-sm font-medium text-gray-500">{label}</dt>
+        <dd className="mt-1 text-sm text-gray-900">{displayValue}</dd>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <span className={`px-4 py-2 rounded-full text-white font-bold text-lg ${getScoreColor(maturity.overall_score)}`}>
-          {maturity.overall_score?.toFixed(1)}/6
-        </span>
-        <span className="text-xl font-medium text-gray-700">{maturity.maturity_level}</span>
-      </div>
+      {/* Company Name Header */}
+      <h3 className="text-lg font-semibold text-gray-900">
+        {structuredProfile?.name || session?.company_name || t('step6.unknownCompany')}
+      </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <DimensionScore
-          label={t('step6.maturity.resources')}
-          score={maturity.resources_score}
-        />
-        <DimensionScore
-          label={t('step6.maturity.infoSystems')}
-          score={maturity.information_systems_score}
-        />
-        <DimensionScore
-          label={t('step6.maturity.culture')}
-          score={maturity.culture_score}
-        />
-        <DimensionScore
-          label={t('step6.maturity.orgStructure')}
-          score={maturity.organizational_structure_score}
-        />
-      </div>
+      {/* Structured Profile Display */}
+      {structuredProfile && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Basic Information */}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.basic')}</h4>
+            <dl>
+              <ProfileField label={t('companyProfile.fields.industry')} value={structuredProfile.industry} />
+              <ProfileField label={t('companyProfile.fields.subIndustry')} value={structuredProfile.sub_industry} />
+              <ProfileField label={t('companyProfile.fields.employeeCount')} value={structuredProfile.employee_count} />
+              <ProfileField label={t('companyProfile.fields.foundingYear')} value={structuredProfile.founding_year} />
+              <ProfileField label={t('companyProfile.fields.ownership')} value={structuredProfile.ownership} />
+            </dl>
+          </div>
+
+          {/* Location & Markets */}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.location')}</h4>
+            <dl>
+              <ProfileField label={t('companyProfile.fields.headquarters')} value={structuredProfile.headquarters} />
+              <ProfileField label={t('companyProfile.fields.otherLocations')} value={structuredProfile.other_locations} />
+              <ProfileField label={t('companyProfile.fields.marketsServed')} value={structuredProfile.markets_served} />
+            </dl>
+          </div>
+
+          {/* Financial KPIs */}
+          {(structuredProfile.annual_revenue || structuredProfile.profit_margin || structuredProfile.growth_rate) && (
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.financial')}</h4>
+              <dl>
+                <ProfileField label={t('companyProfile.fields.annualRevenue')} value={structuredProfile.annual_revenue} />
+                <ProfileField label={t('companyProfile.fields.profitMargin')} value={structuredProfile.profit_margin} />
+                <ProfileField label={t('companyProfile.fields.growthRate')} value={structuredProfile.growth_rate} />
+                <ProfileField label={t('companyProfile.fields.cashFlowStatus')} value={structuredProfile.cash_flow_status} />
+              </dl>
+            </div>
+          )}
+
+          {/* Operational KPIs */}
+          {(structuredProfile.production_volume || structuredProfile.capacity_utilization) && (
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.operational')}</h4>
+              <dl>
+                <ProfileField label={t('companyProfile.fields.productionVolume')} value={structuredProfile.production_volume} />
+                <ProfileField label={t('companyProfile.fields.capacityUtilization')} value={structuredProfile.capacity_utilization} />
+              </dl>
+            </div>
+          )}
+
+          {/* Business Model */}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.business')}</h4>
+            <dl>
+              <ProfileField label={t('companyProfile.fields.coreBusiness')} value={structuredProfile.core_business} />
+              <ProfileField label={t('companyProfile.fields.productsServices')} value={structuredProfile.products_services} />
+              <ProfileField label={t('companyProfile.fields.customerSegments')} value={structuredProfile.customer_segments} />
+              <ProfileField label={t('companyProfile.fields.keyProcesses')} value={structuredProfile.key_processes} />
+            </dl>
+          </div>
+
+          {/* Technology & Systems */}
+          {(structuredProfile.current_systems || structuredProfile.data_sources || structuredProfile.automation_level) && (
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.technology')}</h4>
+              <dl>
+                <ProfileField label={t('companyProfile.fields.currentSystems')} value={structuredProfile.current_systems} />
+                <ProfileField label={t('companyProfile.fields.dataSources')} value={structuredProfile.data_sources} />
+                <ProfileField label={t('companyProfile.fields.automationLevel')} value={structuredProfile.automation_level} />
+              </dl>
+            </div>
+          )}
+
+          {/* Challenges & Goals */}
+          {(structuredProfile.pain_points || structuredProfile.digitalization_goals || structuredProfile.competitive_pressures) && (
+            <div className="bg-blue-50 rounded-lg p-4 lg:col-span-2">
+              <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.challenges')}</h4>
+              <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+                <ProfileField label={t('companyProfile.fields.painPoints')} value={structuredProfile.pain_points} />
+                <ProfileField label={t('companyProfile.fields.digitalizationGoals')} value={structuredProfile.digitalization_goals} />
+                <ProfileField label={t('companyProfile.fields.competitivePressures')} value={structuredProfile.competitive_pressures} />
+              </dl>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Maturity Assessment Section */}
+      {maturity && (
+        <div className="bg-purple-50 rounded-lg p-4">
+          <h4 className="font-medium text-purple-800 mb-4">{t('step6.sections.maturity')}</h4>
+          <div className="flex items-center gap-4 mb-4">
+            <span className={`px-4 py-2 rounded-full text-white font-bold text-lg ${getScoreColor(maturity.overall_score)}`}>
+              {maturity.overall_score?.toFixed(1)}/6
+            </span>
+            <span className="text-xl font-medium text-gray-700">{maturity.maturity_level}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DimensionScore label={t('step6.maturity.resources')} score={maturity.resources_score} />
+            <DimensionScore label={t('step6.maturity.infoSystems')} score={maturity.information_systems_score} />
+            <DimensionScore label={t('step6.maturity.culture')} score={maturity.culture_score} />
+            <DimensionScore label={t('step6.maturity.orgStructure')} score={maturity.organizational_structure_score} />
+          </div>
+        </div>
+      )}
+
+      {/* Raw Info Fallback (if no structured profile but has raw info) */}
+      {!structuredProfile && rawInfo.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-800">{t('step6.rawInfo')}</h4>
+          {rawInfo.map((info, index) => (
+            <div key={index} className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm font-medium text-gray-600 mb-1">{info.info_type}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">{info.content}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 const DimensionScore = ({ label, score }) => (
-  <div className="bg-gray-50 rounded-lg p-4">
+  <div className="bg-white/50 rounded-lg p-3">
     <p className="text-sm text-gray-600 mb-1">{label}</p>
     <div className="flex items-center gap-2">
       <div className="flex-1 bg-gray-200 rounded-full h-2">
@@ -441,10 +509,6 @@ const DimensionScore = ({ label, score }) => (
 const CrispDmTab = ({ findings, t, onNavigate }) => {
   const crisp = findings?.crisp_dm;
 
-  if (!crisp?.business_objectives && !crisp?.ai_goals) {
-    return <EmptyState message={t('step6.incomplete.crispDm')} />;
-  }
-
   const sections = [
     { id: 'business_objectives', key: 'objectives', data: crisp?.business_objectives },
     { id: 'situation_assessment', key: 'situation', data: crisp?.situation_assessment },
@@ -452,9 +516,16 @@ const CrispDmTab = ({ findings, t, onNavigate }) => {
     { id: 'project_plan', key: 'projectPlan', data: crisp?.project_plan },
   ];
 
+  // Check if any section has data with text content
+  const hasAnyData = sections.some(section => section.data?.text);
+
+  if (!hasAnyData) {
+    return <EmptyState message={t('step6.incomplete.crispDm')} />;
+  }
+
   return (
     <div className="space-y-6">
-      {sections.map(section => section.data && (
+      {sections.map(section => section.data?.text && (
         <div key={section.id} id={`finding-${section.id}`} className="bg-green-50 rounded-lg p-4">
           <h4 className="font-medium text-green-800 mb-2">{t(`step6.crispDm.${section.key}`)}</h4>
           <WikiLinkMarkdown
@@ -471,10 +542,6 @@ const CrispDmTab = ({ findings, t, onNavigate }) => {
 const BusinessCaseTab = ({ findings, t, onNavigate }) => {
   const bc = findings?.business_case;
 
-  if (!bc?.classification && !bc?.calculation) {
-    return <EmptyState message={t('step6.incomplete.businessCase')} />;
-  }
-
   const sections = [
     { id: 'classification', key: 'classification', data: bc?.classification },
     { id: 'calculation', key: 'calculation', data: bc?.calculation },
@@ -482,9 +549,15 @@ const BusinessCaseTab = ({ findings, t, onNavigate }) => {
     { id: 'management_pitch', key: 'pitch', data: bc?.management_pitch },
   ];
 
+  const hasAnyData = sections.some(section => section.data?.text);
+
+  if (!hasAnyData) {
+    return <EmptyState message={t('step6.incomplete.businessCase')} />;
+  }
+
   return (
     <div className="space-y-6">
-      {sections.map(section => section.data && (
+      {sections.map(section => section.data?.text && (
         <div key={section.id} id={`finding-${section.id}`} className="bg-orange-50 rounded-lg p-4">
           <h4 className="font-medium text-orange-800 mb-2">{t(`step6.businessCase.${section.key}`)}</h4>
           <WikiLinkMarkdown
@@ -501,10 +574,6 @@ const BusinessCaseTab = ({ findings, t, onNavigate }) => {
 const CostsTab = ({ findings, t, onNavigate }) => {
   const costs = findings?.costs;
 
-  if (!costs?.complexity && !costs?.tco) {
-    return <EmptyState message={t('step6.incomplete.costs')} />;
-  }
-
   const sections = [
     { id: 'complexity', key: 'complexity', data: costs?.complexity },
     { id: 'initial_investment', key: 'initial', data: costs?.initial_investment },
@@ -516,9 +585,15 @@ const CostsTab = ({ findings, t, onNavigate }) => {
     { id: 'roi_analysis', key: 'roi', data: costs?.roi_analysis },
   ];
 
+  const hasAnyData = sections.some(section => section.data?.text);
+
+  if (!hasAnyData) {
+    return <EmptyState message={t('step6.incomplete.costs')} />;
+  }
+
   return (
     <div className="space-y-6">
-      {sections.map(section => section.data && (
+      {sections.map(section => section.data?.text && (
         <div key={section.id} id={`finding-${section.id}`} className="bg-red-50 rounded-lg p-4">
           <h4 className="font-medium text-red-800 mb-2">{t(`step6.costs.${section.key}`)}</h4>
           <WikiLinkMarkdown

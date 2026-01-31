@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { expertSettingsAPI, apiKeyManager } from '../../services/api';
 import LanguageSelector from './LanguageSelector';
@@ -7,6 +7,11 @@ import LLMConfigSection from '../common/LLMConfigSection';
 
 const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
   const { t, i18n } = useTranslation();
+
+  // Refs for focus management
+  const modalRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const previousActiveElement = useRef(null);
 
   const PROMPT_TABS = [
     // Brainstorming prompts
@@ -120,12 +125,71 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
   // LLM Configuration state
   const [llmConfig, setLlmConfig] = useState({ model: '', api_key: '', api_base: '' });
 
+  // Test Mode state (stored in localStorage, not per-session)
+  const [testModeEnabled, setTestModeEnabled] = useState(() => {
+    return localStorage.getItem('test_mode_enabled') === 'true';
+  });
+
   // Load settings when modal opens
   useEffect(() => {
     if (isOpen && sessionUuid) {
       loadSettings();
+      // Store the element that triggered the modal
+      previousActiveElement.current = document.activeElement;
+    } else if (!isOpen && previousActiveElement.current) {
+      // Restore focus when modal closes
+      previousActiveElement.current.focus();
     }
   }, [isOpen, sessionUuid]);
+
+  // Focus the close button when loading completes
+  useEffect(() => {
+    if (isOpen && !loading && closeButtonRef.current) {
+      closeButtonRef.current.focus();
+    }
+  }, [isOpen, loading]);
+
+  // Handle keyboard navigation (Escape to close, Tab trapping)
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+
+    // Trap focus within modal
+    if (e.key === 'Tab') {
+      const focusableElements = modalRef.current?.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (focusableElements && focusableElements.length > 0) {
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, handleKeyDown]);
 
   const loadSettings = async () => {
     setLoading(true);
@@ -173,6 +237,13 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
     setLanguage(newLang);
     // Also change i18n language for the whole app
     i18n.changeLanguage(newLang);
+  };
+
+  const handleTestModeChange = (enabled) => {
+    setTestModeEnabled(enabled);
+    localStorage.setItem('test_mode_enabled', enabled ? 'true' : 'false');
+    // Dispatch custom event for same-tab listeners
+    window.dispatchEvent(new CustomEvent('testModeChanged', { detail: { enabled } }));
   };
 
   const handleSave = async () => {
@@ -240,24 +311,35 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
   const activePromptInfo = PROMPT_TABS.find((tab) => tab.key === activeTab);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="expert-settings-title"
+    >
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
         <div
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
           onClick={onClose}
+          aria-hidden="true"
         />
 
         {/* Modal panel */}
-        <div className="inline-block w-full max-w-4xl px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:p-6">
+        <div
+          ref={modalRef}
+          className="inline-block w-full max-w-4xl px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:p-6"
+        >
           {/* Header */}
           <div className="flex justify-between items-center mb-4 pb-4 border-b">
-            <h3 className="text-lg font-medium text-gray-900">{t('expertSettings.title')}</h3>
+            <h3 id="expert-settings-title" className="text-lg font-medium text-gray-900">{t('expertSettings.title')}</h3>
             <button
+              ref={closeButtonRef}
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-500"
+              className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
+              aria-label={t('common.close', 'Close')}
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -310,6 +392,38 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
                       showTitle={true}
                       compact={false}
                     />
+                  </div>
+
+                  {/* Test Mode Toggle */}
+                  <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">
+                          {t('expertSettings.testMode.title')}
+                        </label>
+                        <p className="text-xs text-gray-500">
+                          {t('expertSettings.testMode.description')}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleTestModeChange(!testModeEnabled)}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                          testModeEnabled ? 'bg-purple-600' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            testModeEnabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {testModeEnabled && (
+                      <p className="mt-2 text-xs text-purple-700 bg-purple-100 rounded px-2 py-1">
+                        {t('expertSettings.testMode.enabledNote')}
+                      </p>
+                    )}
                   </div>
 
                   {/* Language Selector */}

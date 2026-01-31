@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { QRCodeSVG } from 'qrcode.react';
 import { sixThreeFiveAPI, prioritizationAPI, consultationAPI, apiKeyManager } from '../services/api';
-import { PageHeader, ExplanationBox } from '../components/common';
+import { PageHeader, ExplanationBox, TypingIndicator, LoadingOverlay } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 import TestModePanel from '../components/common/TestModePanel';
+import { useTestMode } from '../hooks/useTestMode';
 
 const Step4Page = () => {
   const { t } = useTranslation();
@@ -40,14 +42,8 @@ const Step4Page = () => {
   const [showSharePanel, setShowSharePanel] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // Topic tracking state
-  const [topicsCovered, setTopicsCovered] = useState({
-    businessObjectives: false,
-    situationAssessment: false,
-    aiGoals: false,
-    projectPlan: false
-  });
-  const [skippedTopics, setSkippedTopics] = useState({});
+  // Test mode state (from localStorage, synced across tabs)
+  const testModeEnabled = useTestMode();
 
   // Load participant UUID from localStorage (reuse from 6-3-5)
   useEffect(() => {
@@ -97,41 +93,6 @@ const Step4Page = () => {
     }
   }, [collaborativeMode, consultationStarted, sessionUuid, lastMessageId]);
 
-  // Analyze messages to detect which topics have been covered
-  // Only analyzes USER messages to avoid false positives from AI responses
-  useEffect(() => {
-    // Need at least 4 messages (2 exchanges) before checking
-    if (messages.length < 4) return;
-
-    // Only analyze user messages - AI responses naturally contain topic keywords
-    const userMessages = messages.filter(m => m.role === 'user');
-    if (userMessages.length < 2) return;
-
-    const userText = userMessages.map(m => m.content.toLowerCase()).join(' ');
-
-    // Keywords for each topic - more specific terms to reduce false positives
-    const topicKeywords = {
-      businessObjectives: ['goal', 'objective', 'problem', 'opportunity', 'success', 'kpi', 'metric', 'achieve', 'target', 'ziel', 'erfolg', 'kennzahl', 'chance'],
-      situationAssessment: ['budget', 'team', 'resource', 'constraint', 'employee', 'staff', 'regulation', 'infrastructure', 'mitarbeiter', 'ressource', 'einschränkung'],
-      aiGoals: ['accuracy', 'input', 'output', 'model', 'algorithm', 'prediction', 'automat', 'genauigkeit', 'modell', 'vorhersage', 'training'],
-      projectPlan: ['milestone', 'phase', 'implement', 'pilot', 'rollout', 'deploy', 'timeline', 'meilenstein', 'umsetzung', 'zeitplan']
-    };
-
-    const newCovered = { ...topicsCovered };
-    Object.entries(topicKeywords).forEach(([topic, keywords]) => {
-      if (!skippedTopics[topic]) {
-        const matches = keywords.filter(kw => userText.includes(kw)).length;
-        // Require at least 3 keyword matches from user messages
-        if (matches >= 3) {
-          newCovered[topic] = true;
-        }
-      }
-    });
-
-    if (JSON.stringify(newCovered) !== JSON.stringify(topicsCovered)) {
-      setTopicsCovered(newCovered);
-    }
-  }, [messages, skippedTopics]);
 
   // Trigger incremental findings extraction after certain message counts
   const lastExtractionCount = useRef(0);
@@ -150,12 +111,6 @@ const Step4Page = () => {
         .catch(err => console.error('Incremental extraction failed:', err));
     }
   }, [messages, sessionUuid]);
-
-  // Handle skipping a topic
-  const handleSkipTopic = (topicKey) => {
-    setSkippedTopics(prev => ({ ...prev, [topicKey]: true }));
-    setTopicsCovered(prev => ({ ...prev, [topicKey]: true }));
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -330,13 +285,6 @@ const Step4Page = () => {
       setMessages([]);
       setConsultationStarted(false);
       setFindings(null);
-      setTopicsCovered({
-        businessObjectives: false,
-        situationAssessment: false,
-        aiGoals: false,
-        projectPlan: false
-      });
-      setSkippedTopics({});
       // Reload data to ensure UI matches database
       await loadData();
     } catch (err) {
@@ -555,20 +503,6 @@ const Step4Page = () => {
     }
   };
 
-  // Preprocess markdown to ensure proper newlines around headers and lists
-  const preprocessMarkdown = (content) => {
-    if (!content) return '';
-    return content
-      // Ensure newline before headers (##, ###, etc.)
-      .replace(/([^\n])(#{1,6}\s)/g, '$1\n\n$2')
-      // Ensure newline after headers
-      .replace(/(#{1,6}\s[^\n]+)([^\n])/g, '$1\n\n$2')
-      // Ensure newline before bullet points
-      .replace(/([^\n])(\n?[-*]\s)/g, '$1\n$2')
-      // Ensure newline before numbered lists
-      .replace(/([^\n])(\n?\d+\.\s)/g, '$1\n$2');
-  };
-
   // Collaborative mode handlers
   const handleToggleCollaborativeMode = async () => {
     try {
@@ -683,8 +617,12 @@ const Step4Page = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">{t('common.loading')}</p>
+      <div className="min-h-screen bg-gray-50">
+        <LoadingOverlay
+          isVisible={true}
+          title={t('step4.loading.title', 'Loading consultation...')}
+          description={t('step4.loading.description', 'Please wait while we load your consultation data.')}
+        />
       </div>
     );
   }
@@ -916,24 +854,20 @@ const Step4Page = () => {
                               {msg.participant_name}
                             </p>
                           )}
-                          <div className={`text-sm max-w-none ${
-                            msg.role === 'user'
-                              ? ''
-                              : 'prose prose-sm prose-gray'
-                          }`}>
+                          <div className="text-sm">
                             <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
                               components={{
-                                // Style overrides for chat context
-                                p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
-                                ul: ({children}) => <ul className={`list-disc ml-4 mb-2 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ul>,
-                                ol: ({children}) => <ol className={`list-decimal ml-4 mb-2 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ol>,
+                                p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
+                                ul: ({children}) => <ul className={`list-disc ml-4 mb-3 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ul>,
+                                ol: ({children}) => <ol className={`list-decimal ml-4 mb-3 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ol>,
                                 li: ({children}) => <li className="mb-1">{children}</li>,
                                 strong: ({children}) => <strong className="font-semibold">{children}</strong>,
                                 em: ({children}) => <em className="italic">{children}</em>,
-                                h1: ({children}) => <h1 className={`text-lg font-bold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h1>,
-                                h2: ({children}) => <h2 className={`text-base font-bold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h2>,
-                                h3: ({children}) => <h3 className={`text-sm font-bold mb-1 mt-2 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h3>,
-                                h4: ({children}) => <h4 className={`text-sm font-semibold mb-1 mt-2 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h4>,
+                                h1: ({children}) => <h1 className={`text-lg font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h1>,
+                                h2: ({children}) => <h2 className={`text-base font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h2>,
+                                h3: ({children}) => <h3 className={`text-sm font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h3>,
+                                h4: ({children}) => <h4 className={`text-sm font-semibold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h4>,
                                 code: ({inline, children}) => inline
                                   ? <code className={`px-1 py-0.5 rounded text-xs font-mono ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{children}</code>
                                   : <code className={`block p-2 rounded text-xs font-mono my-2 overflow-x-auto ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{children}</code>,
@@ -941,17 +875,15 @@ const Step4Page = () => {
                                 hr: () => <hr className={`my-3 ${msg.role === 'user' ? 'border-blue-400' : 'border-gray-300'}`} />,
                               }}
                             >
-                              {preprocessMarkdown(msg.content)}
+                              {msg.content}
                             </ReactMarkdown>
                           </div>
                         </div>
                       </div>
                     ))}
                     {sendingMessage && messages.length > 0 && messages[messages.length - 1].content === '' && (
-                      <div className="flex justify-start">
-                        <div className="bg-gray-100 rounded-lg px-4 py-3">
-                          <p className="text-gray-500 text-sm animate-pulse">{t('step4.chat.thinking')}</p>
-                        </div>
+                      <div className="flex justify-start" role="status" aria-label={t('step4.chat.thinking')}>
+                        <TypingIndicator />
                       </div>
                     )}
                     <div ref={messagesEndRef} />
@@ -1011,72 +943,6 @@ const Step4Page = () => {
 
             {/* Findings sidebar - 1/3 width (CRISP-DM Business Understanding) */}
             <div className="space-y-4">
-              {/* Topic Progress Tracker */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold text-gray-900 mb-3 text-sm">{t('step4.topics.title')}</h3>
-                <div className="space-y-2">
-                  {[
-                    { key: 'businessObjectives', label: t('step4.topics.businessObjectives') },
-                    { key: 'situationAssessment', label: t('step4.topics.situationAssessment') },
-                    { key: 'aiGoals', label: t('step4.topics.aiGoals') },
-                    { key: 'projectPlan', label: t('step4.topics.projectPlan') }
-                  ].map(topic => (
-                    <div key={topic.key} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                          topicsCovered[topic.key]
-                            ? skippedTopics[topic.key]
-                              ? 'bg-gray-300'
-                              : 'bg-green-500'
-                            : 'bg-gray-200'
-                        }`}>
-                          {topicsCovered[topic.key] && !skippedTopics[topic.key] && (
-                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          {topicsCovered[topic.key] && skippedTopics[topic.key] && (
-                            <span className="text-white text-xs">–</span>
-                          )}
-                        </div>
-                        <span className={`text-sm ${
-                          topicsCovered[topic.key]
-                            ? skippedTopics[topic.key]
-                              ? 'text-gray-400 line-through'
-                              : 'text-green-700'
-                            : 'text-gray-600'
-                        }`}>
-                          {topic.label}
-                        </span>
-                      </div>
-                      {!topicsCovered[topic.key] && consultationStarted && (
-                        <button
-                          onClick={() => handleSkipTopic(topic.key)}
-                          className="text-xs text-gray-400 hover:text-gray-600"
-                          title={t('step4.topics.skip')}
-                        >
-                          {t('step4.topics.skipBtn')}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 pt-3 border-t">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500">{t('step4.topics.progress')}</span>
-                    <span className="font-medium text-blue-600">
-                      {Object.values(topicsCovered).filter(Boolean).length}/4
-                    </span>
-                  </div>
-                  <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                      style={{ width: `${(Object.values(topicsCovered).filter(Boolean).length / 4) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* CRISP-DM Header */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <h3 className="font-semibold text-blue-800 text-sm">{t('step4.findings.crispDmTitle')}</h3>
@@ -1178,14 +1044,16 @@ const Step4Page = () => {
         onApiKeySet={handleApiKeySet}
       />
 
-      {/* Test Mode Panel */}
-      <TestModePanel
-        sessionUuid={sessionUuid}
-        messageType="consultation"
-        onResponseGenerated={handleTestModeResponse}
-        disabled={sendingMessage}
-        consultationStarted={consultationStarted}
-      />
+      {/* Test Mode Panel - only shown when enabled in expert settings */}
+      {testModeEnabled && (
+        <TestModePanel
+          sessionUuid={sessionUuid}
+          messageType="consultation"
+          onResponseGenerated={handleTestModeResponse}
+          disabled={sendingMessage}
+          consultationStarted={consultationStarted}
+        />
+      )}
     </div>
   );
 };
