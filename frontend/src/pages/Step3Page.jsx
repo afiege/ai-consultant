@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import { sixThreeFiveAPI, prioritizationAPI, apiKeyManager } from '../services/api';
 import { PageHeader, ExplanationBox } from '../components/common';
+import Step3TestModePanel from '../components/common/Step3TestModePanel';
+import { useTestMode } from '../hooks/useTestMode';
 
 // Reusable markdown components for idea content
 const IdeaMarkdown = ({ content, className = '' }) => (
@@ -55,6 +57,9 @@ const Step3Page = () => {
 
   // Get participant UUID from localStorage
   const participantUuid = localStorage.getItem(`participant_${sessionUuid}`);
+
+  // Test mode
+  const testModeEnabled = useTestMode();
 
   // Calculate remaining points for each phase
   const totalPoints = 3;
@@ -257,6 +262,15 @@ const Step3Page = () => {
       setError(err.response?.data?.detail || t('step3.errors.voteFailed'));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Handle test mode generated votes
+  const handleTestModeVotes = (votes) => {
+    if (activeTab === 'clusters') {
+      setClusterVotes(votes);
+    } else {
+      setIdeaVotes(votes);
     }
   };
 
@@ -720,6 +734,17 @@ const Step3Page = () => {
           </div>
         )}
       </div>
+
+      {/* Test Mode Panel */}
+      {testModeEnabled && clusters.length > 0 && (
+        <Step3TestModePanel
+          sessionUuid={sessionUuid}
+          activeTab={activeTab}
+          onVotesGenerated={handleTestModeVotes}
+          hasVoted={activeTab === 'clusters' ? hasVotedClusters : hasVotedIdeas}
+          disabled={submitting}
+        />
+      )}
     </div>
   );
 };

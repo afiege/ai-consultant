@@ -1,25 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { QRCodeSVG } from 'qrcode.react';
 import { sixThreeFiveAPI, prioritizationAPI, consultationAPI, apiKeyManager } from '../services/api';
 import { PageHeader, ExplanationBox, TypingIndicator, LoadingOverlay } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 import TestModePanel from '../components/common/TestModePanel';
+import {
+  ChatMessage,
+  ChatInput,
+  CollaborativeModePanel,
+  CrispDmFindingsSidebar,
+  ManualIdeasEntry,
+} from '../components/consultation';
 import { useTestMode } from '../hooks/useTestMode';
 
 const Step4Page = () => {
   const { t } = useTranslation();
   const { sessionUuid } = useParams();
-  const navigate = useNavigate();
   const messagesEndRef = useRef(null);
 
   const [ideas, setIdeas] = useState([]);
   const [topIdea, setTopIdea] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [manualIdeas, setManualIdeas] = useState(['', '', '']);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -31,7 +33,7 @@ const Step4Page = () => {
   const [findings, setFindings] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null); // 'start' or 'summarize'
+  const [pendingAction, setPendingAction] = useState(null);
 
   // Collaborative mode state
   const [collaborativeMode, setCollaborativeMode] = useState(false);
@@ -39,13 +41,11 @@ const Step4Page = () => {
   const [participantUuid, setParticipantUuid] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
   const [lastMessageId, setLastMessageId] = useState(null);
-  const [showSharePanel, setShowSharePanel] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
 
-  // Test mode state (from localStorage, synced across tabs)
+  // Test mode state
   const testModeEnabled = useTestMode();
 
-  // Load participant UUID from localStorage (reuse from 6-3-5)
+  // Load participant UUID from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(`participant_${sessionUuid}`);
     if (stored) {
@@ -61,16 +61,14 @@ const Step4Page = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Poll for collaborative status and new messages
+  // Poll for collaborative updates
   useEffect(() => {
     if (collaborativeMode && consultationStarted) {
       const pollInterval = setInterval(async () => {
         try {
-          // Poll for new messages
           const msgResponse = await consultationAPI.getCollaborativeMessages(sessionUuid, lastMessageId);
           if (msgResponse.data.length > 0) {
             setMessages(prev => {
-              // Filter out messages we already have
               const existingIds = new Set(prev.map(m => m.id));
               const newMsgs = msgResponse.data.filter(m => !existingIds.has(m.id));
               if (newMsgs.length > 0) {
@@ -81,27 +79,23 @@ const Step4Page = () => {
             });
           }
 
-          // Also poll for collaborative status (participants list)
           const statusResponse = await consultationAPI.getCollaborativeStatus(sessionUuid);
           setParticipants(statusResponse.data.participants || []);
         } catch (err) {
           console.error('Error polling collaborative updates:', err);
         }
-      }, 3000); // Poll every 3 seconds
+      }, 3000);
 
       return () => clearInterval(pollInterval);
     }
   }, [collaborativeMode, consultationStarted, sessionUuid, lastMessageId]);
 
-
-  // Trigger incremental findings extraction after certain message counts
+  // Incremental findings extraction
   const lastExtractionCount = useRef(0);
   useEffect(() => {
     const messageCount = messages.filter(m => m.role !== 'system').length;
-    // Extract after every 4 messages (2 exchanges), but only if we have API key
     if (messageCount >= 4 && messageCount - lastExtractionCount.current >= 4 && apiKeyManager.isSet()) {
       lastExtractionCount.current = messageCount;
-      // Run extraction in background without blocking UI
       consultationAPI.extractIncremental(sessionUuid)
         .then(response => {
           if (response.data.updated && response.data.findings) {
@@ -118,37 +112,28 @@ const Step4Page = () => {
 
   const loadData = async () => {
     try {
-      // Load all ideas
       const ideasResponse = await sixThreeFiveAPI.getIdeas(sessionUuid);
       setIdeas(ideasResponse.data);
 
-      // Try to get prioritization results
       try {
         const resultsResponse = await prioritizationAPI.getResults(sessionUuid);
         if (resultsResponse.data.top_ideas?.length > 0) {
           setTopIdea(resultsResponse.data.top_ideas[0]);
         }
-      } catch (e) {
-        // No prioritization results
-      }
+      } catch (e) {}
 
-      // Load collaborative status
       try {
         const collabResponse = await consultationAPI.getCollaborativeStatus(sessionUuid);
         setCollaborativeMode(collabResponse.data.collaborative_mode);
         setParticipants(collabResponse.data.participants || []);
         setConsultationStarted(collabResponse.data.consultation_started);
 
-        // Check if current user is the owner
         const storedUuid = localStorage.getItem(`participant_${sessionUuid}`);
         if (storedUuid && collabResponse.data.owner_participant_uuid === storedUuid) {
           setIsOwner(true);
         }
-      } catch (e) {
-        // Collaborative mode not available
-      }
+      } catch (e) {}
 
-      // Try to load existing consultation messages
       try {
         const messagesResponse = collaborativeMode
           ? await consultationAPI.getCollaborativeMessages(sessionUuid)
@@ -156,26 +141,19 @@ const Step4Page = () => {
         if (messagesResponse.data.length > 0) {
           setMessages(messagesResponse.data);
           setConsultationStarted(true);
-          // Track last message ID for polling
           setLastMessageId(messagesResponse.data[messagesResponse.data.length - 1].id);
         }
-      } catch (e) {
-        // No existing messages
-      }
+      } catch (e) {}
 
-      // Try to load findings
       try {
         const findingsResponse = await consultationAPI.getFindings(sessionUuid);
-        // Check for CRISP-DM fields or legacy fields
         if (findingsResponse.data.business_objectives || findingsResponse.data.situation_assessment ||
             findingsResponse.data.ai_goals || findingsResponse.data.project_plan ||
             findingsResponse.data.project || findingsResponse.data.risks ||
             findingsResponse.data.end_user || findingsResponse.data.business_case) {
           setFindings(findingsResponse.data);
         }
-      } catch (e) {
-        // No findings yet
-      }
+      } catch (e) {}
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
@@ -183,20 +161,7 @@ const Step4Page = () => {
     }
   };
 
-  const handleManualIdeaChange = (index, value) => {
-    const newIdeas = [...manualIdeas];
-    newIdeas[index] = value;
-    setManualIdeas(newIdeas);
-  };
-
-  const handleSubmitManualIdeas = async () => {
-    const filledIdeas = manualIdeas.filter(idea => idea.trim() !== '');
-
-    if (filledIdeas.length === 0) {
-      setError('Please enter at least one idea');
-      return;
-    }
-
+  const handleSubmitManualIdeas = async (filledIdeas) => {
     setSubmitting(true);
     setError(null);
 
@@ -212,16 +177,16 @@ const Step4Page = () => {
           total_points: 0
         });
       }
-      setManualIdeas(['', '', '']);
+      return true;
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to submit ideas');
+      return false;
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleStartConsultation = async () => {
-    // Check if API key is set
     if (!apiKeyManager.isSet()) {
       setPendingAction('start');
       setShowApiKeyPrompt(true);
@@ -231,7 +196,6 @@ const Step4Page = () => {
     setSendingMessage(true);
     setConsultationStarted(true);
 
-    // Add placeholder message for streaming
     const placeholderId = Date.now();
     setMessages([{
       id: placeholderId,
@@ -243,7 +207,6 @@ const Step4Page = () => {
     try {
       await consultationAPI.startStream(
         sessionUuid,
-        // onChunk - update the message content as chunks arrive
         (chunk) => {
           setMessages(prev => {
             const updated = [...prev];
@@ -257,11 +220,7 @@ const Step4Page = () => {
             return updated;
           });
         },
-        // onDone
-        () => {
-          setSendingMessage(false);
-        },
-        // onError
+        () => setSendingMessage(false),
         (errorMsg) => {
           setError(errorMsg || 'Failed to start consultation');
           setSendingMessage(false);
@@ -281,11 +240,9 @@ const Step4Page = () => {
     setError(null);
     try {
       await consultationAPI.reset(sessionUuid);
-      // Clear all state immediately
       setMessages([]);
       setConsultationStarted(false);
       setFindings(null);
-      // Reload data to ensure UI matches database
       await loadData();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to reset consultation');
@@ -300,7 +257,6 @@ const Step4Page = () => {
     setInputMessage('');
     setSendingMessage(true);
 
-    // Add user message immediately to UI
     const userMsgId = Date.now();
     setMessages(prev => [...prev, {
       id: userMsgId,
@@ -310,10 +266,8 @@ const Step4Page = () => {
     }]);
 
     try {
-      // Save the user message
       await consultationAPI.saveMessage(sessionUuid, userMessage);
 
-      // Automatically request AI response
       const aiMsgId = Date.now() + 1;
       setMessages(prev => [...prev, {
         id: aiMsgId,
@@ -324,7 +278,6 @@ const Step4Page = () => {
 
       await consultationAPI.requestAiResponseStream(
         sessionUuid,
-        // onChunk - update the AI message content as chunks arrive
         (chunk) => {
           setMessages(prev => {
             const updated = [...prev];
@@ -338,18 +291,43 @@ const Step4Page = () => {
             return updated;
           });
         },
-        // onDone
-        () => {
-          setSendingMessage(false);
-        },
-        // onError
+        () => setSendingMessage(false),
         (errorMsg) => {
           setError(errorMsg || 'Failed to get AI response');
           setSendingMessage(false);
-          // Remove empty placeholder on error
           setMessages(prev => prev.filter(m => m.id !== aiMsgId || m.content));
         }
       );
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send message');
+      setSendingMessage(false);
+    }
+  };
+
+  const handleSendCollaborativeMessage = async (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim() || sendingMessage) return;
+
+    const userMessage = inputMessage.trim();
+    setInputMessage('');
+    setSendingMessage(true);
+
+    try {
+      const response = await consultationAPI.saveCollaborativeMessage(
+        sessionUuid,
+        userMessage,
+        participantUuid
+      );
+
+      setMessages(prev => [...prev, {
+        id: response.data.message_id,
+        role: 'user',
+        content: response.data.content,
+        created_at: new Date().toISOString(),
+        participant_name: response.data.participant_name
+      }]);
+      setLastMessageId(response.data.message_id);
+      setSendingMessage(false);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to send message');
       setSendingMessage(false);
@@ -360,7 +338,6 @@ const Step4Page = () => {
     if (sendingMessage) return;
     setSendingMessage(true);
 
-    // Add placeholder for AI response
     const aiMsgId = Date.now();
     setMessages(prev => [...prev, {
       id: aiMsgId,
@@ -372,7 +349,6 @@ const Step4Page = () => {
     try {
       await consultationAPI.requestAiResponseStream(
         sessionUuid,
-        // onChunk - update the AI message content as chunks arrive
         (chunk) => {
           setMessages(prev => {
             const updated = [...prev];
@@ -386,15 +362,13 @@ const Step4Page = () => {
             return updated;
           });
         },
-        // onDone
         () => {
           setSendingMessage(false);
+          if (collaborativeMode) loadData();
         },
-        // onError
         (errorMsg) => {
           setError(errorMsg || 'Failed to get AI response');
           setSendingMessage(false);
-          // Remove empty placeholder on error
           setMessages(prev => prev.filter(m => m.id !== aiMsgId || m.content));
         }
       );
@@ -405,7 +379,6 @@ const Step4Page = () => {
   };
 
   const handleSummarize = async () => {
-    // Check if API key is set
     if (!apiKeyManager.isSet()) {
       setPendingAction('summarize');
       setShowApiKeyPrompt(true);
@@ -417,7 +390,6 @@ const Step4Page = () => {
       const response = await consultationAPI.summarize(sessionUuid);
       setFindings(response.data.findings);
 
-      // Add summary to chat
       if (response.data.summary) {
         setMessages(prev => [...prev, {
           id: Date.now(),
@@ -435,7 +407,6 @@ const Step4Page = () => {
 
   const handleApiKeySet = () => {
     setShowApiKeyPrompt(false);
-    // Execute the pending action now that we have the API key
     if (pendingAction === 'start') {
       handleStartConsultation();
     } else if (pendingAction === 'summarize') {
@@ -444,14 +415,12 @@ const Step4Page = () => {
     setPendingAction(null);
   };
 
-  // Test mode handler - sends a generated persona response
   const handleTestModeResponse = async (generatedResponse) => {
     if (!generatedResponse.trim() || sendingMessage) return;
 
     const userMessage = generatedResponse.trim();
     setSendingMessage(true);
 
-    // Add user message immediately to UI
     const userMsgId = Date.now();
     setMessages(prev => [...prev, {
       id: userMsgId,
@@ -461,10 +430,8 @@ const Step4Page = () => {
     }]);
 
     try {
-      // Save the user message
       await consultationAPI.saveMessage(sessionUuid, userMessage);
 
-      // Automatically request AI response
       const aiMsgId = Date.now() + 1;
       setMessages(prev => [...prev, {
         id: aiMsgId,
@@ -488,9 +455,7 @@ const Step4Page = () => {
             return updated;
           });
         },
-        () => {
-          setSendingMessage(false);
-        },
+        () => setSendingMessage(false),
         (errorMsg) => {
           setError(errorMsg || 'Failed to get AI response');
           setSendingMessage(false);
@@ -503,117 +468,23 @@ const Step4Page = () => {
     }
   };
 
-  // Collaborative mode handlers
   const handleToggleCollaborativeMode = async () => {
     try {
       const newMode = !collaborativeMode;
       await consultationAPI.setCollaborativeMode(sessionUuid, newMode);
       setCollaborativeMode(newMode);
-      if (newMode) {
-        setShowSharePanel(true);
-      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to toggle collaborative mode');
     }
   };
 
-  const handleCopyLink = async () => {
-    const shareUrl = `${window.location.origin}/session/${sessionUuid}/step4`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch (err) {
-      // Fallback
-      const textArea = document.createElement('textarea');
-      textArea.value = shareUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    }
-  };
-
-  const handleSendCollaborativeMessage = async (e) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || sendingMessage) return;
-
-    const userMessage = inputMessage.trim();
-    setInputMessage('');
-    setSendingMessage(true);
-
-    try {
-      // Save message with participant info
-      const response = await consultationAPI.saveCollaborativeMessage(
-        sessionUuid,
-        userMessage,
-        participantUuid
-      );
-
-      // Add to local messages
-      setMessages(prev => [...prev, {
-        id: response.data.message_id,
-        role: 'user',
-        content: response.data.content,
-        created_at: new Date().toISOString(),
-        participant_name: response.data.participant_name
-      }]);
-      setLastMessageId(response.data.message_id);
-
-      setSendingMessage(false);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send message');
-      setSendingMessage(false);
-    }
-  };
-
-  const handleRequestAiResponseCollaborative = async () => {
-    if (sendingMessage) return;
-    setSendingMessage(true);
-
-    // Add placeholder for AI response
-    const aiMsgId = Date.now();
-    setMessages(prev => [...prev, {
-      id: aiMsgId,
-      role: 'assistant',
-      content: '',
-      created_at: new Date().toISOString()
-    }]);
-
-    try {
-      await consultationAPI.requestAiResponseStream(
-        sessionUuid,
-        (chunk) => {
-          setMessages(prev => {
-            const updated = [...prev];
-            const aiIdx = updated.findIndex(m => m.id === aiMsgId);
-            if (aiIdx >= 0) {
-              updated[aiIdx] = {
-                ...updated[aiIdx],
-                content: updated[aiIdx].content + chunk
-              };
-            }
-            return updated;
-          });
-        },
-        () => {
-          setSendingMessage(false);
-          // Reload messages to get proper ID from backend
-          loadData();
-        },
-        (errorMsg) => {
-          setError(errorMsg || 'Failed to get AI response');
-          setSendingMessage(false);
-          setMessages(prev => prev.filter(m => m.id !== aiMsgId || m.content));
-        }
-      );
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to get AI response');
-      setSendingMessage(false);
-    }
-  };
+  // Filter messages for display
+  const displayMessages = messages.filter(msg =>
+    msg.role !== 'system' &&
+    !msg.content?.startsWith('[SESSION CONTEXT]') &&
+    !msg.content?.startsWith('[IMPORTANT UPDATE') &&
+    !msg.content?.startsWith('[WICHTIGE AKTUALISIERUNG')
+  );
 
   if (loading) {
     return (
@@ -629,7 +500,6 @@ const Step4Page = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <PageHeader
         title={t('step4.title')}
         subtitle={t('step4.subtitle')}
@@ -643,7 +513,6 @@ const Step4Page = () => {
           </div>
         )}
 
-        {/* Explanation - show when consultation hasn't started */}
         {!consultationStarted && (
           <ExplanationBox
             title={t('step4.explanation.title')}
@@ -659,142 +528,25 @@ const Step4Page = () => {
           />
         )}
 
-        {/* Collaborative Mode Panel - show for session owner */}
         {(isOwner || collaborativeMode) && ideas.length > 0 && (
-          <div className="mb-6 bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <h3 className="font-semibold text-gray-900">{t('step4.collaborative.title')}</h3>
-                {isOwner && (
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={collaborativeMode}
-                      onChange={handleToggleCollaborativeMode}
-                      className="sr-only peer"
-                      disabled={consultationStarted}
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                )}
-                {!isOwner && collaborativeMode && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                    {t('step4.collaborative.active')}
-                  </span>
-                )}
-              </div>
-              {collaborativeMode && (
-                <button
-                  onClick={() => setShowSharePanel(!showSharePanel)}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                  {showSharePanel ? t('step4.collaborative.hideShare') : t('step4.collaborative.showShare')}
-                </button>
-              )}
-            </div>
-
-            {collaborativeMode && (
-              <p className="text-sm text-gray-600 mt-2">
-                {t('step4.collaborative.description')}
-              </p>
-            )}
-
-            {/* Participants List */}
-            {collaborativeMode && participants.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {participants.map((p) => (
-                  <span
-                    key={p.uuid}
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      p.is_owner
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}
-                  >
-                    {p.name} {p.is_owner && '(Owner)'}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Share Panel with QR Code */}
-            {collaborativeMode && showSharePanel && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex flex-col md:flex-row items-center gap-4">
-                  <div className="bg-white p-3 rounded-lg border border-gray-200">
-                    <QRCodeSVG
-                      value={`${window.location.origin}/session/${sessionUuid}/step4`}
-                      size={120}
-                      level="M"
-                      includeMargin={true}
-                    />
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <p className="text-sm text-gray-600">{t('step4.collaborative.shareInstructions')}</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        readOnly
-                        value={`${window.location.origin}/session/${sessionUuid}/step4`}
-                        className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm text-gray-600 truncate"
-                      />
-                      <button
-                        onClick={handleCopyLink}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          linkCopied
-                            ? 'bg-green-600 text-white'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        {linkCopied ? t('common.copied') : t('common.copy')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <CollaborativeModePanel
+            sessionUuid={sessionUuid}
+            collaborativeMode={collaborativeMode}
+            isOwner={isOwner}
+            participants={participants}
+            consultationStarted={consultationStarted}
+            onToggleMode={handleToggleCollaborativeMode}
+          />
         )}
 
-        {/* Manual idea entry when no ideas exist */}
         {ideas.length === 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold text-blue-800 mb-3">{t('step4.manualEntry.title')}</h2>
-            <p className="text-blue-700 mb-4">
-              {t('step4.manualEntry.message')}
-            </p>
-            <div className="space-y-3">
-              {manualIdeas.map((idea, index) => (
-                <div key={index}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('step4.manualEntry.ideaLabel', { number: index + 1 })} {index === 0 && <span className="text-red-500">*</span>}
-                  </label>
-                  <textarea
-                    value={idea}
-                    onChange={(e) => handleManualIdeaChange(index, e.target.value)}
-                    placeholder={t('step4.manualEntry.ideaPlaceholder')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows="2"
-                  />
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={handleSubmitManualIdeas}
-              disabled={submitting}
-              className="mt-4 w-full bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors font-medium"
-            >
-              {submitting ? t('common.submitting') : t('step4.manualEntry.submitIdeas')}
-            </button>
-          </div>
+          <ManualIdeasEntry onSubmit={handleSubmitManualIdeas} submitting={submitting} />
         )}
 
-        {/* Main consultation area */}
         {ideas.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Chat area - 2/3 width */}
+            {/* Chat area */}
             <div className="lg:col-span-2 flex flex-col bg-white rounded-lg shadow h-[600px]">
-              {/* Top idea banner with reset button */}
               {topIdea && (
                 <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3 flex justify-between items-center">
                   <p className="text-sm font-medium text-yellow-800">
@@ -817,9 +569,7 @@ const Step4Page = () => {
                 {!consultationStarted ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <p className="text-gray-600 mb-4">
-                        {t('step4.chat.startMessage')}
-                      </p>
+                      <p className="text-gray-600 mb-4">{t('step4.chat.startMessage')}</p>
                       <button
                         onClick={handleStartConsultation}
                         disabled={sendingMessage}
@@ -831,55 +581,12 @@ const Step4Page = () => {
                   </div>
                 ) : (
                   <>
-                    {messages.filter(msg =>
-                      msg.role !== 'system' &&
-                      !msg.content?.startsWith('[SESSION CONTEXT]') &&
-                      !msg.content?.startsWith('[IMPORTANT UPDATE') &&
-                      !msg.content?.startsWith('[WICHTIGE AKTUALISIERUNG')
-                    ).map((msg) => (
-                      <div
+                    {displayMessages.map((msg) => (
+                      <ChatMessage
                         key={msg.id}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-lg px-4 py-3 ${
-                            msg.role === 'user'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-900'
-                          }`}
-                        >
-                          {/* Show participant name in collaborative mode */}
-                          {collaborativeMode && msg.participant_name && msg.role === 'user' && (
-                            <p className="text-xs font-semibold mb-1 opacity-80">
-                              {msg.participant_name}
-                            </p>
-                          )}
-                          <div className="text-sm">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
-                                ul: ({children}) => <ul className={`list-disc ml-4 mb-3 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ul>,
-                                ol: ({children}) => <ol className={`list-decimal ml-4 mb-3 ${msg.role === 'user' ? 'text-white' : ''}`}>{children}</ol>,
-                                li: ({children}) => <li className="mb-1">{children}</li>,
-                                strong: ({children}) => <strong className="font-semibold">{children}</strong>,
-                                em: ({children}) => <em className="italic">{children}</em>,
-                                h1: ({children}) => <h1 className={`text-lg font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h1>,
-                                h2: ({children}) => <h2 className={`text-base font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h2>,
-                                h3: ({children}) => <h3 className={`text-sm font-bold mb-2 mt-4 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h3>,
-                                h4: ({children}) => <h4 className={`text-sm font-semibold mb-2 mt-3 first:mt-0 ${msg.role === 'user' ? 'text-white' : 'text-gray-900'}`}>{children}</h4>,
-                                code: ({inline, children}) => inline
-                                  ? <code className={`px-1 py-0.5 rounded text-xs font-mono ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{children}</code>
-                                  : <code className={`block p-2 rounded text-xs font-mono my-2 overflow-x-auto ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>{children}</code>,
-                                blockquote: ({children}) => <blockquote className={`border-l-4 pl-3 my-2 italic ${msg.role === 'user' ? 'border-blue-300 text-blue-100' : 'border-gray-300 text-gray-600'}`}>{children}</blockquote>,
-                                hr: () => <hr className={`my-3 ${msg.role === 'user' ? 'border-blue-400' : 'border-gray-300'}`} />,
-                              }}
-                            >
-                              {msg.content}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      </div>
+                        message={msg}
+                        collaborativeMode={collaborativeMode}
+                      />
                     ))}
                     {sendingMessage && messages.length > 0 && messages[messages.length - 1].content === '' && (
                       <div className="flex justify-start" role="status" aria-label={t('step4.chat.thinking')}>
@@ -891,160 +598,33 @@ const Step4Page = () => {
                 )}
               </div>
 
-              {/* Input area */}
               {consultationStarted && (
-                <div className="border-t p-4">
-                  <form onSubmit={collaborativeMode ? handleSendCollaborativeMessage : handleSendMessage} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      placeholder={collaborativeMode ? t('step4.chat.collaborativePlaceholder') : t('step4.chat.messagePlaceholder')}
-                      disabled={sendingMessage}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="submit"
-                      disabled={sendingMessage || !inputMessage.trim()}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
-                    >
-                      {t('common.send')}
-                    </button>
-                  </form>
-                  <div className="mt-2 flex justify-between items-center">
-                    {/* Request AI Response button for collaborative mode */}
-                    {collaborativeMode && (
-                      <button
-                        onClick={handleRequestAiResponseCollaborative}
-                        disabled={sendingMessage || messages.length < 2}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 transition-colors text-sm font-medium"
-                      >
-                        {sendingMessage ? t('step4.chat.thinking') : t('step4.chat.requestAiResponse')}
-                      </button>
-                    )}
-                    <div className={collaborativeMode ? '' : 'ml-auto'}>
-                      <button
-                        onClick={handleSummarize}
-                        disabled={summarizing || messages.length < 4}
-                        className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
-                      >
-                        {summarizing ? t('step4.chat.generatingSummary') : t('step4.chat.generateSummary')}
-                      </button>
-                    </div>
-                  </div>
-                  {collaborativeMode && (
-                    <p className="mt-2 text-xs text-gray-500">
-                      {t('step4.chat.collaborativeHint')}
-                    </p>
-                  )}
-                </div>
+                <ChatInput
+                  value={inputMessage}
+                  onChange={setInputMessage}
+                  onSubmit={collaborativeMode ? handleSendCollaborativeMessage : handleSendMessage}
+                  onSummarize={handleSummarize}
+                  onRequestAiResponse={collaborativeMode ? handleRequestAiResponse : undefined}
+                  disabled={sendingMessage}
+                  summarizing={summarizing}
+                  collaborativeMode={collaborativeMode}
+                  messageCount={messages.length}
+                />
               )}
             </div>
 
-            {/* Findings sidebar - 1/3 width (CRISP-DM Business Understanding) */}
-            <div className="space-y-4">
-              {/* CRISP-DM Header */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <h3 className="font-semibold text-blue-800 text-sm">{t('step4.findings.crispDmTitle')}</h3>
-                <p className="text-xs text-blue-600 mt-1">{t('step4.findings.crispDmSubtitle')}</p>
-              </div>
-
-              {/* 1. Business Objectives */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">1</span>
-                  {t('step4.findings.businessObjectives')}
-                </h3>
-                {findings?.business_objectives ? (
-                  <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                    <ReactMarkdown>{findings.business_objectives}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">
-                    {t('step4.findings.businessObjectivesPlaceholder')}
-                  </p>
-                )}
-              </div>
-
-              {/* 2. Situation Assessment */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">2</span>
-                  {t('step4.findings.situationAssessment')}
-                </h3>
-                {findings?.situation_assessment ? (
-                  <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                    <ReactMarkdown>{findings.situation_assessment}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">
-                    {t('step4.findings.situationPlaceholder')}
-                  </p>
-                )}
-              </div>
-
-              {/* 3. AI/Data Mining Goals */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">3</span>
-                  {t('step4.findings.aiGoals')}
-                </h3>
-                {findings?.ai_goals ? (
-                  <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                    <ReactMarkdown>{findings.ai_goals}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">
-                    {t('step4.findings.aiGoalsPlaceholder')}
-                  </p>
-                )}
-              </div>
-
-              {/* 4. Project Plan */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">4</span>
-                  {t('step4.findings.projectPlan')}
-                </h3>
-                {findings?.project_plan ? (
-                  <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                    <ReactMarkdown>{findings.project_plan}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">
-                    {t('step4.findings.projectPlanPlaceholder')}
-                  </p>
-                )}
-              </div>
-
-              {/* Ideas summary */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">{t('step4.findings.ideas')} ({ideas.length})</h3>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {ideas.slice(0, 5).map((idea) => (
-                    <p key={idea.id} className="text-xs text-gray-600 truncate">
-                      - {idea.content}
-                    </p>
-                  ))}
-                  {ideas.length > 5 && (
-                    <p className="text-xs text-gray-400">{t('step4.findings.moreIdeas', { count: ideas.length - 5 })}</p>
-                  )}
-                </div>
-              </div>
-            </div>
+            {/* Findings sidebar */}
+            <CrispDmFindingsSidebar findings={findings} ideas={ideas} />
           </div>
         )}
-
       </div>
 
-      {/* API Key Prompt Modal */}
       <ApiKeyPrompt
         isOpen={showApiKeyPrompt}
         onClose={() => setShowApiKeyPrompt(false)}
         onApiKeySet={handleApiKeySet}
       />
 
-      {/* Test Mode Panel - only shown when enabled in expert settings */}
       {testModeEnabled && (
         <TestModePanel
           sessionUuid={sessionUuid}

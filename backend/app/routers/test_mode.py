@@ -361,6 +361,392 @@ def get_persona_maturity_assessment(persona_id: str):
     }
 
 
+@router.post("/{session_uuid}/generate-ideas")
+async def generate_persona_ideas(
+    session_uuid: str,
+    persona_id: str,
+    round_number: int = 1,
+    previous_ideas: List[str] = None,
+    x_api_key: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Generate ideas for 6-3-5 brainwriting based on persona."""
+    from ..models import SixThreeFiveParticipant, SixThreeFiveIdea
+
+    # Get session
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Get persona
+    personas = load_personas()
+    persona = None
+    for p in personas:
+        if p["persona_id"] == persona_id:
+            persona = p
+            break
+
+    if not persona:
+        raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
+
+    company = persona["company"]
+    focus_idea = persona["focus_idea"]
+
+    # Build context from previous ideas if provided
+    previous_context = ""
+    if previous_ideas and len(previous_ideas) > 0:
+        previous_context = f"""
+## Previous Ideas on this Sheet (build upon these):
+{chr(10).join([f"- {idea}" for idea in previous_ideas])}
+
+Your task is to ADD NEW ideas that build upon or complement these existing ideas.
+"""
+
+    prompt = f"""You are participating in a 6-3-5 brainwriting session for digitalization ideas.
+
+## Company Context
+**Company:** {company['name']}
+**Industry:** {company['sub_industry']}
+**Size:** {company['size_employees']} employees
+
+**Current Challenges:**
+{chr(10).join([f"- {c}" for c in company.get("current_challenges", [])])}
+
+**Project Focus:** {focus_idea['title']}
+{focus_idea['description']}
+
+## Your Task
+Generate exactly 3 creative, practical digitalization ideas for this company.
+{previous_context}
+
+## Guidelines
+1. Each idea should be 1-2 sentences, concise but specific
+2. Focus on practical, implementable solutions
+3. Consider the company's size, industry, and challenges
+4. Ideas should relate to the project focus: {focus_idea['title']}
+5. Be creative but realistic for an SME
+
+Respond with exactly 3 ideas, one per line, without numbering or bullet points."""
+
+    # Determine model and API settings
+    model = db_session.llm_model or "mistral/mistral-small-latest"
+    api_base = db_session.llm_api_base
+    api_key = x_api_key
+
+    try:
+        completion_kwargs = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": "Generate 3 ideas now."}
+            ],
+            "temperature": 0.8,
+            "max_tokens": 500,
+            "timeout": 120
+        }
+
+        if api_key:
+            completion_kwargs["api_key"] = api_key
+        if api_base:
+            completion_kwargs["api_base"] = api_base
+
+        response = completion(**completion_kwargs)
+        generated_text = response.choices[0].message.content
+
+        # Parse ideas (split by newlines, clean up)
+        ideas = [line.strip() for line in generated_text.strip().split('\n') if line.strip()]
+        # Remove any numbering or bullets
+        ideas = [idea.lstrip('0123456789.-) ').strip() for idea in ideas]
+        # Take only first 3
+        ideas = ideas[:3]
+
+        return {
+            "ideas": ideas,
+            "persona_id": persona_id,
+            "company_name": company["name"],
+            "round_number": round_number
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate ideas: {str(e)}")
+
+
+@router.post("/{session_uuid}/auto-vote-clusters")
+async def auto_vote_clusters(
+    session_uuid: str,
+    persona_id: str,
+    x_api_key: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Auto-generate cluster votes based on persona's priorities."""
+    from ..models import Cluster
+
+    # Get session
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Get persona
+    personas = load_personas()
+    persona = None
+    for p in personas:
+        if p["persona_id"] == persona_id:
+            persona = p
+            break
+
+    if not persona:
+        raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
+
+    # Get clusters
+    clusters = db.query(Cluster).filter(
+        Cluster.session_id == db_session.id
+    ).all()
+
+    if not clusters:
+        raise HTTPException(status_code=400, detail="No clusters to vote on")
+
+    company = persona["company"]
+    focus_idea = persona["focus_idea"]
+
+    # Build cluster descriptions
+    cluster_text = "\n".join([
+        f"Cluster {c.id}: {c.name} - {c.description}"
+        for c in clusters
+    ])
+
+    prompt = f"""You are deciding how to allocate 3 voting points across idea clusters for a digitalization project.
+
+## Company Context
+**Company:** {company['name']}
+**Industry:** {company['sub_industry']}
+**Focus Area:** {focus_idea['title']} - {focus_idea['description']}
+
+**Strategic Goals:**
+{company['strategic_goals']}
+
+## Available Clusters
+{cluster_text}
+
+## Task
+Allocate exactly 3 points across these clusters based on which ones best align with the company's focus and strategic goals.
+You can put all 3 points on one cluster, or distribute them (e.g., 2+1 or 1+1+1).
+
+Respond in this exact format (one line per cluster that gets points):
+CLUSTER_ID:POINTS
+
+Example:
+5:2
+3:1
+
+Only include clusters that receive at least 1 point."""
+
+    model = db_session.llm_model or "mistral/mistral-small-latest"
+    api_base = db_session.llm_api_base
+    api_key = x_api_key
+
+    try:
+        completion_kwargs = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": "Allocate your 3 points now."}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 100,
+            "timeout": 60
+        }
+
+        if api_key:
+            completion_kwargs["api_key"] = api_key
+        if api_base:
+            completion_kwargs["api_base"] = api_base
+
+        response = completion(**completion_kwargs)
+        generated_text = response.choices[0].message.content
+
+        # Parse votes
+        votes = {}
+        for line in generated_text.strip().split('\n'):
+            line = line.strip()
+            if ':' in line:
+                parts = line.split(':')
+                try:
+                    cluster_id = int(parts[0].strip())
+                    points = int(parts[1].strip())
+                    if any(c.id == cluster_id for c in clusters):
+                        votes[cluster_id] = points
+                except (ValueError, IndexError):
+                    continue
+
+        # Validate total is 3
+        total = sum(votes.values())
+        if total != 3 and len(votes) > 0:
+            # Normalize to 3 points
+            factor = 3 / total
+            votes = {k: max(1, round(v * factor)) for k, v in votes.items()}
+            # Adjust if still not 3
+            diff = 3 - sum(votes.values())
+            if diff != 0:
+                first_key = list(votes.keys())[0]
+                votes[first_key] = max(1, votes[first_key] + diff)
+
+        return {
+            "votes": votes,
+            "persona_id": persona_id,
+            "company_name": company["name"]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate votes: {str(e)}")
+
+
+@router.post("/{session_uuid}/auto-vote-ideas")
+async def auto_vote_ideas(
+    session_uuid: str,
+    persona_id: str,
+    x_api_key: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Auto-generate idea votes based on persona's priorities."""
+    from ..models import Cluster, SixThreeFiveIdea
+
+    # Get session
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Get persona
+    personas = load_personas()
+    persona = None
+    for p in personas:
+        if p["persona_id"] == persona_id:
+            persona = p
+            break
+
+    if not persona:
+        raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
+
+    # Get selected cluster
+    selected_cluster = db.query(Cluster).filter(
+        Cluster.session_id == db_session.id,
+        Cluster.is_selected == True
+    ).first()
+
+    if not selected_cluster:
+        raise HTTPException(status_code=400, detail="No cluster selected")
+
+    # Get ideas in the cluster
+    idea_ids = selected_cluster.idea_ids or []
+    ideas = db.query(SixThreeFiveIdea).filter(
+        SixThreeFiveIdea.id.in_(idea_ids)
+    ).all()
+
+    if not ideas:
+        raise HTTPException(status_code=400, detail="No ideas to vote on")
+
+    company = persona["company"]
+    focus_idea = persona["focus_idea"]
+
+    # Build idea descriptions
+    idea_text = "\n".join([
+        f"Idea {i.id}: {i.content}"
+        for i in ideas
+    ])
+
+    prompt = f"""You are deciding how to allocate 3 voting points across specific ideas for a digitalization project.
+
+## Company Context
+**Company:** {company['name']}
+**Industry:** {company['sub_industry']}
+**Focus Area:** {focus_idea['title']} - {focus_idea['description']}
+
+**Strategic Goals:**
+{company['strategic_goals']}
+
+## Available Ideas
+{idea_text}
+
+## Task
+Allocate exactly 3 points across these ideas based on which ones would be most valuable and feasible for the company.
+Consider alignment with strategic goals, feasibility, and potential impact.
+
+Respond in this exact format (one line per idea that gets points):
+IDEA_ID:POINTS
+
+Example:
+12:2
+8:1
+
+Only include ideas that receive at least 1 point."""
+
+    model = db_session.llm_model or "mistral/mistral-small-latest"
+    api_base = db_session.llm_api_base
+    api_key = x_api_key
+
+    try:
+        completion_kwargs = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": "Allocate your 3 points now."}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 100,
+            "timeout": 60
+        }
+
+        if api_key:
+            completion_kwargs["api_key"] = api_key
+        if api_base:
+            completion_kwargs["api_base"] = api_base
+
+        response = completion(**completion_kwargs)
+        generated_text = response.choices[0].message.content
+
+        # Parse votes
+        votes = {}
+        idea_id_set = {i.id for i in ideas}
+        for line in generated_text.strip().split('\n'):
+            line = line.strip()
+            if ':' in line:
+                parts = line.split(':')
+                try:
+                    idea_id = int(parts[0].strip())
+                    points = int(parts[1].strip())
+                    if idea_id in idea_id_set:
+                        votes[idea_id] = points
+                except (ValueError, IndexError):
+                    continue
+
+        # Validate total is 3
+        total = sum(votes.values())
+        if total != 3 and len(votes) > 0:
+            factor = 3 / total
+            votes = {k: max(1, round(v * factor)) for k, v in votes.items()}
+            diff = 3 - sum(votes.values())
+            if diff != 0:
+                first_key = list(votes.keys())[0]
+                votes[first_key] = max(1, votes[first_key] + diff)
+
+        return {
+            "votes": votes,
+            "persona_id": persona_id,
+            "company_name": company["name"]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate votes: {str(e)}")
+
+
 @router.post("/{session_uuid}/generate-response/stream")
 async def generate_persona_response_stream(
     session_uuid: str,

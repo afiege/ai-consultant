@@ -1,10 +1,12 @@
 """Consultation router for Step 4 - AI-guided interview using LiteLLM."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import json
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..database import get_db
 from ..models import Session as SessionModel, Participant, ConsultationMessage, ConsultationFinding
@@ -17,6 +19,7 @@ from ..schemas.consultation import (
     CollaborativeConsultationStatus
 )
 from ..services.consultation_service import ConsultationService
+from ..services.session_settings import get_llm_settings
 from ..config import settings
 import logging
 
@@ -24,22 +27,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
-def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str]]:
-    """
-    Get LLM settings from session, falling back to global settings.
-    Note: API key is NOT stored - it must be passed per-request.
-
-    Returns:
-        Tuple of (model, api_base)
-    """
-    # Get model (session override or global default)
-    model = db_session.llm_model or settings.llm_model
-
-    # Get API base (session override or global default)
-    api_base = db_session.llm_api_base or settings.llm_api_base or None
-
-    return model, api_base
+# Rate limiter for LLM endpoints to prevent abuse
+limiter = Limiter(key_func=get_remote_address)
 
 
 def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, str]], str]:
@@ -101,14 +90,18 @@ def start_consultation(
 
 
 @router.post("/{session_uuid}/consultation/start/stream")
+@limiter.limit("30/minute")
 def start_consultation_stream(
+    request: Request,
     session_uuid: str,
-    request: ConsultationStartRequest,
+    body: ConsultationStartRequest,
     db: Session = Depends(get_db)
 ):
     """
     Start the AI consultation session with streaming response.
     Returns Server-Sent Events (SSE) stream.
+
+    Rate limited to 30 requests per minute per IP.
     """
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
@@ -127,7 +120,7 @@ def start_consultation_stream(
         model=model,
         custom_prompts=custom_prompts,
         language=language,
-        api_key=request.api_key,
+        api_key=body.api_key,
         api_base=api_base
     )
 
@@ -226,7 +219,9 @@ def send_message(
 
 
 @router.post("/{session_uuid}/consultation/message/stream")
+@limiter.limit("60/minute")
 def send_message_stream(
+    request: Request,
     session_uuid: str,
     message: ConsultationMessageWithKey,
     db: Session = Depends(get_db)
@@ -234,6 +229,8 @@ def send_message_stream(
     """
     Send a user message and stream AI response.
     Returns Server-Sent Events (SSE) stream.
+
+    Rate limited to 60 requests per minute per IP.
     """
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
@@ -268,9 +265,11 @@ def send_message_stream(
 
 
 @router.post("/{session_uuid}/consultation/request-response/stream")
+@limiter.limit("30/minute")
 def request_ai_response_stream(
+    request: Request,
     session_uuid: str,
-    request: LLMRequest,
+    body: LLMRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -298,7 +297,7 @@ def request_ai_response_stream(
         model=model,
         custom_prompts=custom_prompts,
         language=language,
-        api_key=request.api_key,
+        api_key=body.api_key,
         api_base=api_base
     )
 

@@ -1,10 +1,11 @@
 """Cost Estimation router for Step 5b - AI-guided cost estimation using LiteLLM."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Dict, Optional
-import json
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..database import get_db
 from ..models import Session as SessionModel, ConsultationMessage, ConsultationFinding
@@ -14,26 +15,13 @@ from ..schemas.consultation import (
     ConsultationMessageWithKey
 )
 from ..services.cost_estimation_service import CostEstimationService
+from ..services.session_settings import get_llm_settings, get_custom_prompts, get_prompt_language
 from ..config import settings
 
 router = APIRouter()
 
-
-def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str]]:
-    """
-    Get LLM settings from session, falling back to global settings.
-    Note: API key is NOT stored - it must be passed per-request.
-
-    Returns:
-        Tuple of (model, api_base)
-    """
-    # Get model (session override or global default)
-    model = db_session.llm_model or settings.llm_model
-
-    # Get API base (session override or global default)
-    api_base = db_session.llm_api_base or settings.llm_api_base or None
-
-    return model, api_base
+# Rate limiter for LLM endpoints to prevent abuse
+limiter = Limiter(key_func=get_remote_address)
 
 
 def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, str]], str]:
@@ -43,15 +31,7 @@ def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, s
     Returns:
         Tuple of (custom_prompts dict or None, language code)
     """
-    custom_prompts = None
-    if db_session.custom_prompts:
-        try:
-            custom_prompts = json.loads(db_session.custom_prompts)
-        except json.JSONDecodeError:
-            pass
-
-    language = db_session.prompt_language or "en"
-    return custom_prompts, language
+    return get_custom_prompts(db_session), get_prompt_language(db_session)
 
 
 @router.post("/{session_uuid}/cost-estimation/start")
@@ -95,9 +75,11 @@ def start_cost_estimation(
 
 
 @router.post("/{session_uuid}/cost-estimation/start/stream")
+@limiter.limit("30/minute")
 def start_cost_estimation_stream(
+    request: Request,
     session_uuid: str,
-    request: LLMRequest,
+    body: LLMRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -121,7 +103,7 @@ def start_cost_estimation_stream(
         model=model,
         custom_prompts=custom_prompts,
         language=language,
-        api_key=request.api_key,
+        api_key=body.api_key,
         api_base=api_base
     )
 
@@ -216,7 +198,9 @@ def send_message(
 
 
 @router.post("/{session_uuid}/cost-estimation/message/stream")
+@limiter.limit("60/minute")
 def send_message_stream(
+    request: Request,
     session_uuid: str,
     message: ConsultationMessageWithKey,
     db: Session = Depends(get_db)
@@ -258,9 +242,11 @@ def send_message_stream(
 
 
 @router.post("/{session_uuid}/cost-estimation/request-response/stream")
+@limiter.limit("30/minute")
 def request_ai_response_stream(
+    request: Request,
     session_uuid: str,
-    request: LLMRequest,
+    body: LLMRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -287,7 +273,7 @@ def request_ai_response_stream(
         model=model,
         custom_prompts=custom_prompts,
         language=language,
-        api_key=request.api_key,
+        api_key=body.api_key,
         api_base=api_base
     )
 

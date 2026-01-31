@@ -25,6 +25,7 @@ from ..schemas import (
 )
 from ..services.six_three_five_manager import SixThreeFiveSession
 from ..services.ai_participant import AIParticipant, get_company_context_summary
+from ..services.session_settings import get_llm_settings, get_custom_prompts, get_prompt_language
 from ..schemas import LLMRequest
 from ..config import settings
 
@@ -36,32 +37,7 @@ def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, s
     Returns:
         Tuple of (custom_prompts dict or None, language code)
     """
-    custom_prompts = None
-    if db_session.custom_prompts:
-        try:
-            custom_prompts = json.loads(db_session.custom_prompts)
-        except json.JSONDecodeError:
-            pass
-
-    language = db_session.prompt_language or "en"
-    return custom_prompts, language
-
-
-def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str]]:
-    """
-    Get LLM settings from session, falling back to global settings.
-    Note: API key is NOT stored - it must be passed per-request.
-
-    Returns:
-        Tuple of (model, api_base)
-    """
-    # Get model (session override or global default)
-    model = db_session.llm_model or settings.llm_model
-
-    # Get API base (session override or global default)
-    api_base = db_session.llm_api_base or settings.llm_api_base or None
-
-    return model, api_base
+    return get_custom_prompts(db_session), get_prompt_language(db_session)
 
 
 router = APIRouter()

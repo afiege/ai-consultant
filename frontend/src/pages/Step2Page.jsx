@@ -7,6 +7,8 @@ import IdeaSheet from '../components/step2/IdeaSheet';
 import ShareSession from '../components/step2/ShareSession';
 import { PageHeader, ExplanationBox } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
+import Step2TestModePanel from '../components/common/Step2TestModePanel';
+import { useTestMode } from '../hooks/useTestMode';
 
 const Step2Page = () => {
   const { t } = useTranslation();
@@ -22,6 +24,9 @@ const Step2Page = () => {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'start' or 'advance'
+
+  // Test mode
+  const testModeEnabled = useTestMode();
 
   // Load participant UUID from localStorage
   useEffect(() => {
@@ -176,6 +181,26 @@ const Step2Page = () => {
       handleAdvanceRound();
     }
     setPendingAction(null);
+  };
+
+  // Handle test mode generated ideas
+  const handleTestModeIdeas = async (ideas) => {
+    if (!mySheet || ideas.length === 0) return;
+
+    setSubmitting(true);
+    try {
+      await sixThreeFiveAPI.submitIdeas(sessionUuid, participantUuid, {
+        sheet_id: mySheet.sheet_id,
+        round_number: mySheet.current_round,
+        ideas
+      });
+      await loadMySheet();
+      setTimeLeft(300);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to submit ideas');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatTime = (seconds) => {
@@ -424,6 +449,18 @@ const Step2Page = () => {
         onClose={() => setShowApiKeyPrompt(false)}
         onApiKeySet={handleApiKeySet}
       />
+
+      {/* Test Mode Panel */}
+      {testModeEnabled && (
+        <Step2TestModePanel
+          sessionUuid={sessionUuid}
+          onIdeasGenerated={handleTestModeIdeas}
+          previousIdeas={mySheet?.previous_ideas || []}
+          roundNumber={mySheet?.current_round || 1}
+          disabled={submitting || mySheet?.has_submitted_current_round}
+          sessionStarted={sessionStatus?.status === 'in_progress'}
+        />
+      )}
     </div>
   );
 };

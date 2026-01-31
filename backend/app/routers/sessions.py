@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 import uuid
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..database import get_db
 from ..models import Session as SessionModel
@@ -9,13 +11,21 @@ from ..schemas import SessionCreate, SessionUpdate, SessionResponse
 
 router = APIRouter()
 
+# Create a limiter instance for this router
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post("/", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 def create_session(
+    request: Request,
     session_data: SessionCreate,
     db: Session = Depends(get_db)
 ):
-    """Create a new consultation session."""
+    """Create a new consultation session.
+
+    Rate limited to 10 sessions per minute per IP to prevent abuse.
+    """
     # Generate unique session UUID
     session_uuid = str(uuid.uuid4())
 

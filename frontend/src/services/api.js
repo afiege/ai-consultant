@@ -10,6 +10,7 @@ const api = axios.create({
 });
 
 // Helper for parsing SSE streams with proper message handling
+// Supports AbortController for cleanup on component unmount
 const parseSSEStream = async (response, onChunk, onDone, onError) => {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -85,6 +86,34 @@ const parseSSEStream = async (response, onChunk, onDone, onError) => {
       }
     }
   } catch (error) {
+    // Handle AbortError silently - user navigated away
+    if (error.name === 'AbortError') {
+      return;
+    }
+    onError?.(error.message);
+  }
+};
+
+// Helper to create SSE streaming request with AbortController support
+const createStreamRequest = async (url, body, onChunk, onDone, onError, signal) => {
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal, // AbortController signal for cleanup
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    await parseSSEStream(response, onChunk, onDone, onError);
+  } catch (error) {
+    // Handle AbortError silently - user navigated away
+    if (error.name === 'AbortError') {
+      return;
+    }
     onError?.(error.message);
   }
 };
@@ -242,72 +271,34 @@ export const consultationAPI = {
       params: sinceId ? { since_id: sinceId } : {}
     }),
 
-  // Streaming endpoints using fetch (SSE)
-  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+  // Streaming endpoints using fetch (SSE) with AbortController support
+  // Pass signal from AbortController to cancel on component unmount
+  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/start/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/start/stream`,
+      { api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 
-  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey) => {
+  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/message/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/message/stream`,
+      { content, api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 
   // Request AI response based on current conversation (no new user message)
-  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/request-response/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/consultation/request-response/stream`,
+      { api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 };
 
@@ -326,71 +317,32 @@ export const businessCaseAPI = {
   extract: (sessionUuid, apiKey) =>
     api.post(`/api/sessions/${sessionUuid}/business-case/extract`, { api_key: apiKey || apiKeyManager.get() }),
 
-  // Streaming endpoints using fetch (SSE)
-  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+  // Streaming endpoints using fetch (SSE) with AbortController support
+  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/start/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/start/stream`,
+      { api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 
-  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey) => {
+  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/message/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/message/stream`,
+      { content, api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 
-  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/request-response/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/business-case/request-response/stream`,
+      { api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 };
 
@@ -409,71 +361,32 @@ export const costEstimationAPI = {
   extract: (sessionUuid, apiKey) =>
     api.post(`/api/sessions/${sessionUuid}/cost-estimation/extract`, { api_key: apiKey || apiKeyManager.get() }),
 
-  // Streaming endpoints using fetch (SSE)
-  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+  // Streaming endpoints using fetch (SSE) with AbortController support
+  startStream: async (sessionUuid, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/start/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/start/stream`,
+      { api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 
-  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey) => {
+  sendMessageStream: async (sessionUuid, content, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/message/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/message/stream`,
+      { content, api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 
-  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey) => {
+  requestAiResponseStream: async (sessionUuid, onChunk, onDone, onError, apiKey, signal) => {
     const key = apiKey || apiKeyManager.get();
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/request-response/stream`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: key }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      await parseSSEStream(response, onChunk, onDone, onError);
-    } catch (error) {
-      onError?.(error.message);
-    }
+    await createStreamRequest(
+      `${API_BASE_URL}/api/sessions/${sessionUuid}/cost-estimation/request-response/stream`,
+      { api_key: key },
+      onChunk, onDone, onError, signal
+    );
   },
 };
 
@@ -622,6 +535,30 @@ export const testModeAPI = {
       onError?.(error.message);
     }
   },
+
+  // Step 2 test mode - generate ideas for 6-3-5 brainwriting
+  generateIdeas: (sessionUuid, personaId, roundNumber = 1, previousIdeas = [], apiKey) =>
+    api.post(
+      `/api/test-mode/${sessionUuid}/generate-ideas?persona_id=${personaId}&round_number=${roundNumber}`,
+      { previous_ideas: previousIdeas },
+      { headers: { 'X-API-Key': apiKey || apiKeyManager.get() } }
+    ),
+
+  // Step 3 test mode - auto-vote on clusters
+  autoVoteClusters: (sessionUuid, personaId, apiKey) =>
+    api.post(
+      `/api/test-mode/${sessionUuid}/auto-vote-clusters?persona_id=${personaId}`,
+      {},
+      { headers: { 'X-API-Key': apiKey || apiKeyManager.get() } }
+    ),
+
+  // Step 3 test mode - auto-vote on ideas
+  autoVoteIdeas: (sessionUuid, personaId, apiKey) =>
+    api.post(
+      `/api/test-mode/${sessionUuid}/auto-vote-ideas?persona_id=${personaId}`,
+      {},
+      { headers: { 'X-API-Key': apiKey || apiKeyManager.get() } }
+    ),
 };
 
 export default api;

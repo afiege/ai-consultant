@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 from ..models import Session as SessionModel, ConsultationFinding, CompanyInfo, MaturityAssessment
 from ..services.pdf_generator import PDFReportGenerator
 from ..services.default_prompts import get_prompt
+from ..services.session_settings import get_llm_settings
 from ..config import settings
 
 router = APIRouter()
@@ -24,23 +25,6 @@ class AutoUpdateRequest(BaseModel):
     api_key: Optional[str] = None
     api_base: Optional[str] = None
     language: Optional[str] = "en"
-
-
-def get_llm_settings(db_session: SessionModel) -> tuple[str, Optional[str]]:
-    """
-    Get LLM settings from a session, falling back to global defaults.
-    This ensures export endpoints use the same LLM configuration as other steps.
-
-    Returns:
-        Tuple of (model, api_base)
-    """
-    # Get model (session override or global default)
-    model = db_session.llm_model or settings.llm_model
-
-    # Get API base (session override or global default)
-    api_base = db_session.llm_api_base or settings.llm_api_base or None
-
-    return model, api_base
 
 
 class TransitionBriefingRequest(BaseModel):

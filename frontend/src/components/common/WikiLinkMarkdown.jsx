@@ -224,18 +224,18 @@ export const WikiLinkMarkdown = ({
         }
 
         return (
-          <ReactMarkdown
-            key={index}
-            remarkPlugins={[remarkGfm]}
-            className="inline"
-            components={{
-              // Customize rendering as needed
-              p: ({ node, ...props }) => <span {...props} />,
-              // Keep other elements as-is but ensure inline wiki-links work
-            }}
-          >
-            {segment.content}
-          </ReactMarkdown>
+          <span key={index} className="inline">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Customize rendering as needed
+                p: ({ node, ...props }) => <span {...props} />,
+                // Keep other elements as-is but ensure inline wiki-links work
+              }}
+            >
+              {segment.content}
+            </ReactMarkdown>
+          </span>
         );
       })}
     </div>

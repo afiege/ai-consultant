@@ -1,10 +1,16 @@
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 import logging
 
 from .config import settings
+from .exceptions import APIError, api_error_handler, generic_exception_handler
 
 # Configure logging
 logging.basicConfig(
@@ -18,11 +24,58 @@ from .database import init_db
 from .routers import sessions, company_info, six_three_five, prioritization, consultation, export, expert_settings, business_case, cost_estimation, session_backup, maturity_assessment, test_mode
 # from .routers import websocket
 
+# Rate limiter configuration
+# Uses client IP address for rate limiting
+limiter = Limiter(key_func=get_remote_address)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Modern lifespan context manager for FastAPI.
+    Replaces deprecated @app.on_event("startup") and @app.on_event("shutdown").
+    """
+    # Startup
+    os.makedirs("./database", exist_ok=True)
+    os.makedirs(settings.upload_dir, exist_ok=True)
+    os.makedirs("./exports", exist_ok=True)
+
+    # Initialize database tables
+    init_db()
+    logger.info("Database initialized successfully")
+
+    yield  # Application runs here
+
+    # Shutdown
+    logger.info("Application shutting down")
+
+
 app = FastAPI(
     title="AI & Digitalization Consultant",
     description="AI-powered digitalization consultant for SMEs with 4-step consultation process",
     version="1.0.0",
+    lifespan=lifespan,
 )
+
+# Add rate limiter to app state
+app.state.limiter = limiter
+
+# Rate limit exceeded handler
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    """Handle rate limit exceeded errors with a friendly message."""
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": "RATE_LIMIT_EXCEEDED",
+            "message": "Too many requests. Please wait before making more requests.",
+            "details": {"retry_after": exc.detail}
+        }
+    )
+
+# Register custom exception handlers
+app.add_exception_handler(APIError, api_error_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
 # CORS middleware configuration
 app.add_middleware(
@@ -32,26 +85,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# Lifecycle events
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup."""
-    # Create database directory if it doesn't exist
-    os.makedirs("./database", exist_ok=True)
-    os.makedirs(settings.upload_dir, exist_ok=True)
-    os.makedirs("./exports", exist_ok=True)
-
-    # Initialize database tables
-    init_db()
-    logger.info("Database initialized successfully")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown."""
-    logger.info("Application shutting down")
 
 
 # Health check endpoint
