@@ -110,22 +110,36 @@
     "startButton": "Neue Beratung starten",
     "creating": "Sitzung wird erstellt...",
     "duration": "Der Beratungsprozess dauert in der Regel 30-60 Minuten, je nach Teamgröße.",
+    "processOverview": {
+      "title": "So funktioniert's",
+      "subtitle": "Ein strukturierter 6-Schritte-Prozess zur Identifizierung des richtigen KI-Projekts für Ihr Unternehmen",
+      "whoIsThisFor": "Für wen ist das?",
+      "whoIsThisForDesc": "Kleine und mittlere Unternehmen, die KI und Digitalisierung erkunden - keine technischen Vorkenntnisse erforderlich!",
+      "whatYouGet": "Was Sie bekommen",
+      "whatYouGetDesc": "Ein konkreter KI-Projektvorschlag mit Business Case, Kostenschätzung und Umsetzungsfahrplan",
+      "timeCommitment": "Benötigte Zeit",
+      "timeCommitmentDesc": "30-60 Minuten für die vollständige Beratung, oder Schritte über mehrere Sitzungen verteilen",
+      "prerequisites": "Was Sie vorbereiten sollten",
+      "prerequisitesDesc": "Grundlegende Informationen über Ihr Unternehmen (Größe, Branche, aktuelle Herausforderungen). Sie können Dokumente hochladen oder uns Ihre Website crawlen lassen."
+    },
     "llmConfig": {
       "title": "KI-Konfiguration",
       "configured": "Konfiguriert",
       "hint": "Klicken Sie, um Ihren KI-Anbieter zu konfigurieren (erforderlich für KI-unterstütztes Brainstorming)"
     },
     "features": {
-      "step1Title": "Unternehmensübersicht",
-      "step1Desc": "Erfassen Sie Unternehmensinformationen durch Text, Dateien oder Web-Crawling",
-      "step2Title": "Interaktives Brainstorming",
-      "step2Desc": "Kollaborative 6-3-5 Methode mit bis zu 6 Teilnehmern",
-      "step3Title": "Ideenpriorisierung",
-      "step3Desc": "Gemeinsames Bewerten und Priorisieren der generierten Ideen",
-      "step4Title": "Business Understanding",
-      "step4Desc": "CRISP-DM-geführte Beratung zur Definition von Zielen und Planung Ihres KI-Projekts",
-      "step5Title": "Business Case Berechnung",
-      "step5Desc": "Potenzielle Wertschöpfung mit dem 5-Stufen-Rahmen für Management-Zustimmung quantifizieren"
+      "step1Title": "1. Unternehmensprofil",
+      "step1Desc": "Erzählen Sie uns von Ihrem Unternehmen, dann bewerten Sie Ihre digitale Reife mit dem acatech Industrie 4.0 Framework (5 Min)",
+      "step2Title": "2. KI-Brainstorming",
+      "step2Desc": "Generieren Sie KI-Ideen mit der bewährten 6-3-5 Kreativmethode - mit KI-Assistenten als Unterstützung (15-20 Min)",
+      "step3Title": "3. Priorisierung",
+      "step3Desc": "Stimmen Sie für die besten Ideen mit einer Impact vs. Aufwand-Matrix ab, um Quick Wins zu finden (5 Min)",
+      "step4Title": "4. Business Understanding",
+      "step4Desc": "Definieren Sie klare Ziele mit CRISP-DM, dem Industriestandard für KI-Projekte (10-15 Min)",
+      "step5Title": "5. Business Case",
+      "step5Desc": "Erstellen Sie einen überzeugenden Business Case mit ROI-Schätzungen für Management-Zustimmung (5-10 Min)",
+      "step6Title": "6. Bericht exportieren",
+      "step6Desc": "Laden Sie Ihre vollständigen Beratungsergebnisse als professionellen PDF-Bericht herunter"
     },
     "restoreSession": {
       "description": "Oder eine zuvor gespeicherte Sitzung fortsetzen:",
@@ -221,14 +235,21 @@
     },
     "maturityLevels": {
       "computerization": "Computerisierung",
+      "computerizationExample": "Beispiel: Sie nutzen Excel, E-Mail und Basissoftware, aber Daten sind verstreut",
       "connectivity": "Konnektivität",
+      "connectivityExample": "Beispiel: Ihre Systeme sind verbunden (ERP, CRM) und können Daten austauschen",
       "visibility": "Sichtbarkeit",
+      "visibilityExample": "Beispiel: Sie haben Dashboards mit Echtzeit-KPIs im gesamten Unternehmen",
       "transparency": "Transparenz",
+      "transparencyExample": "Beispiel: Sie verstehen WARUM Dinge passieren durch Datenanalyse",
       "predictiveCapacity": "Prognosefähigkeit",
-      "adaptability": "Adaptabilität"
+      "predictiveCapacityExample": "Beispiel: Sie können zukünftige Ergebnisse vorhersagen (Nachfrage, Ausfälle, Trends)",
+      "adaptability": "Adaptabilität",
+      "adaptabilityExample": "Beispiel: Systeme passen sich automatisch an Veränderungen an ohne menschliches Eingreifen"
     },
     "levelReference": {
-      "title": "Referenz der Reifegradstufen"
+      "title": "Referenz der Reifegradstufen",
+      "levelGuide": "Stufe 1-2 = Frühes Stadium (die meisten KMU), Stufe 3-4 = Fortgeschritten (datengetrieben), Stufe 5-6 = Sehr fortgeschritten (KI-gestützt)"
     },
     "results": {
       "title": "Ihr Reifegradprofil",
@@ -275,12 +296,14 @@
     "backStep1": "Zurück zur Reifegradanalyse",
     "explanation": {
       "title": "Was ist 6-3-5 Brainstorming?",
-      "description": "Die 6-3-5 Methode ist eine bewährte Kreativitätstechnik: 6 Teilnehmer schreiben jeweils 3 Ideen in 5 Minuten, dann geben sie ihr Blatt an die nächste Person weiter, die auf diesen Ideen aufbaut. So entsteht in nur 30 Minuten eine reiche Ideensammlung.",
-      "bullet1": "Keine Idee ist zu klein oder zu verrückt - Quantität zählt mehr als Perfektion",
-      "bullet2": "KI-Assistenten füllen leere Plätze und bringen zusätzliche Perspektiven ein",
-      "bullet3": "In jeder Runde sehen Sie vorherige Ideen als Inspiration für neues Denken",
-      "bullet4": "Keine Sorge, wenn Sie kein KI-Experte sind - alltägliche Prozessverbesserungen zählen auch!",
-      "tip": "Denken Sie an wiederkehrende Aufgaben, Kommunikationsengpässe oder Bereiche, in denen Sie sich bessere Daten oder schnellere Entscheidungen wünschen."
+      "description": "Die 6-3-5 Methode (auch 'Brainwriting' genannt) ist eine bewährte Kreativitätstechnik, die von Prof. Bernd Rohrbach entwickelt wurde. Sie ist darauf ausgelegt, schnell viele Ideen zu generieren, die aufeinander aufbauen.",
+      "howItWorks": "So funktioniert's: 6 Teilnehmer × 3 Ideen × 5 Minuten × 6 Runden = 108 potenzielle Ideen in 30 Minuten!",
+      "bullet1": "Runde 1: Schreiben Sie 3 frische Ideen auf ein leeres Blatt (5 Min)",
+      "bullet2": "Runden 2-6: Sie erhalten das Blatt einer anderen Person und fügen 3 neue Ideen hinzu, die auf dem Gesehenen aufbauen",
+      "bullet3": "KI-Assistenten füllen leere Plätze, sodass Sie auch alleine eine vollständige Sitzung durchführen können",
+      "bullet4": "Keine Idee ist zu klein - 'E-Mail-Antworten automatisieren' oder 'Papierformulare digitalisieren' sind großartige Startpunkte!",
+      "exampleIdeas": "Beispiel-Ideen: 'KI zur Vorhersage von Maschinenwartung nutzen', 'Chatbot für Kunden-FAQs', 'Rechnungsverarbeitung automatisieren', 'Dashboard für Echtzeit-KPIs'",
+      "tip": "Denken Sie an: wiederkehrende Aufgaben, Kommunikationsengpässe, Daten die Sie gerne leichter zugänglich hätten, oder Entscheidungen die zu lange dauern."
     },
     "share": {
       "title": "Teilnehmer einladen",
@@ -357,6 +380,12 @@
       "clusters": "Cluster-Auswahl",
       "ideas": "Ideenauswahl"
     },
+    "maturity": {
+      "high": "Gut geeignet",
+      "medium": "Mit Aufwand machbar",
+      "low": "Ambitioniert",
+      "tooltip": "Reifegradeinschätzung"
+    },
     "noIdeas": {
       "title": "Keine Ideen zu priorisieren",
       "message": "Sie haben die 6-3-5 Brainstorming-Sitzung übersprungen, ohne Ideen zu erstellen. Sie können direkt zum Beratungsschritt gehen, wo Sie Ideen manuell eingeben können.",
@@ -370,21 +399,33 @@
       "allocateAllPoints": "Bitte vergeben Sie alle {{total}} Punkte. Sie haben noch {{remaining}} übrig.",
       "noParticipant": "Kein Teilnehmer gefunden. Bitte gehen Sie zurück zu Schritt 2 und treten Sie zuerst der Sitzung bei."
     },
+    "fallbackClustering": {
+      "title": "Vereinfachte Gruppierung",
+      "message": "Ideen wurden automatisch gruppiert, da KI-Clustering nicht verfügbar war. Sie können trotzdem abstimmen und einen Schwerpunktbereich wählen."
+    },
     "phase1": {
       "explanation": {
         "title": "Schritt 3a: Schwerpunktbereich wählen",
-        "description": "Ihre Brainstorming-Ideen wurden automatisch nach zugrundeliegender Technologie oder Konzept gruppiert. Wählen Sie zunächst, welchen Bereich Sie fokussieren möchten.",
-        "bullet1": "Überprüfen Sie jeden Cluster und die darin enthaltenen Ideen",
-        "bullet2": "Vergeben Sie Ihre 3 Punkte an die Cluster, die am besten zu Ihren Prioritäten passen",
-        "bullet3": "Nach der Abstimmung wählen Sie einen Cluster zur detaillierten Analyse",
-        "tip": "Überlegen Sie, welcher Technologiebereich den größten Einfluss auf Ihr Unternehmen hätte."
+        "description": "Ihre Brainstorming-Ideen wurden automatisch in 'Cluster' gruppiert - Kategorien basierend auf der zugrundeliegenden Technologie oder dem Konzept (z.B. 'Predictive Maintenance', 'Kundenservice-Automatisierung', 'Prozessoptimierung').",
+        "whatAreClusters": "Was sind Cluster? Die KI hat alle Ideen analysiert und ähnliche zusammengefasst. Zum Beispiel könnten 'Maschinenausfälle vorhersagen' und 'Anlagenzustand überwachen' einen 'Predictive Maintenance'-Cluster bilden.",
+        "bullet1": "Überprüfen Sie jeden Cluster - klicken Sie, um die enthaltenen Ideen zu sehen",
+        "bullet2": "Nutzen Sie die Matrix, um 'Quick Wins' (hoher Impact, geringer Aufwand) im oberen linken Quadranten zu finden",
+        "bullet3": "Vergeben Sie Ihre 3 Punkte: geben Sie mehr Punkte an Cluster, die Sie am vielversprechendsten finden",
+        "votingGuide": "Abstimmungsleitfaden: 3 Punkte = 'Das ist meine Top-Wahl', 2 Punkte = 'Starkes Interesse', 1 Punkt = 'Erwägenswert'",
+        "tip": "Überlegen Sie, welcher Technologiebereich den größten Einfluss auf Ihr Unternehmen hätte, während Sie realistisch bezüglich Ihrer Ressourcen bleiben."
       },
       "generateButton": "Ideen nach Technologie clustern",
       "generating": "Ideen werden analysiert und gruppiert...",
       "generateHint": "Die KI analysiert Ihre Ideen und gruppiert sie nach Technologie oder Konzept",
       "voteHint": "Klicken Sie +, um Punkte zu Clustern hinzuzufügen, die Sie erkunden möchten",
       "ideaCount": "{{count}} Ideen in diesem Cluster",
-      "ideasInCluster": "Ideen in diesem Cluster:",
+      "ideasInCluster": "Ideen in diesem Cluster",
+      "showIdeas": "Ideen anzeigen",
+      "hideIdeas": "Ideen ausblenden",
+      "clusterList": "Cluster-Liste",
+      "expandAll": "Alle Ideen anzeigen",
+      "collapseAll": "Alle Ideen ausblenden",
+      "noIdeaDetails": "Ideendetails nicht verfügbar",
       "moreIdeas": "...und {{count}} weitere",
       "ideas": "Ideen",
       "votesRecorded": "Ihre Cluster-Stimmen wurden aufgezeichnet! Wählen Sie einen Cluster, um fortzufahren.",
@@ -411,7 +452,46 @@
       "pointsRemaining": "Verbleibende Punkte:",
       "clickToAdd": "Klicken Sie +, um Punkte zu Ideen hinzuzufügen, die Ihnen gefallen",
       "submitVotes": "Stimmen abgeben",
-      "submitting": "Wird abgegeben..."
+      "submitting": "Wird abgegeben...",
+      "point": "Punkt",
+      "points": "Punkte",
+      "allocated": "vergeben"
+    },
+    "scatter": {
+      "title": "Cluster-Priorisierungsmatrix",
+      "subtitle": "Klicken Sie auf Cluster zum Abstimmen. Farben zeigen Reifegrad-Eignung.",
+      "impact": "Impact",
+      "effort": "Aufwand",
+      "maturity": "Reifegrad-Eignung",
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "effortAxis": "Implementierungsaufwand →",
+      "impactAxis": "↑ Business Impact",
+      "quadrantQuickWins": "Quick Wins",
+      "quadrantQuickWinsDesc": "Hoher Impact, geringer Aufwand - Hier anfangen! Diese liefern schnelle Ergebnisse mit minimalem Investment.",
+      "quadrantStrategic": "Strategisch",
+      "quadrantStrategicDesc": "Hoher Impact, hoher Aufwand - Das Investment lohnt sich für große Transformation, erfordert aber Planung.",
+      "quadrantFillIn": "Lückenfüller",
+      "quadrantFillInsDesc": "Niedriger Impact, geringer Aufwand - Nice-to-have Verbesserungen, wenn Kapazität übrig ist.",
+      "quadrantAvoid": "Sorgfältig abwägen",
+      "quadrantAvoidDesc": "Niedriger Impact, hoher Aufwand - In der Regel nicht empfohlen, es sei denn aus strategischen Gründen.",
+      "clickToVote": "Klicken, um für diesen Cluster abzustimmen",
+      "voteAdded": "Stimme hinzugefügt!",
+      "selectCluster": "Wählen Sie einen Cluster zum Abstimmen:"
+    },
+    "ideaScatter": {
+      "title": "Ideen-Priorisierungsmatrix",
+      "subtitle": "Klicken Sie auf Ideen zum Abstimmen. Position zeigt Aufwand vs. Impact.",
+      "clickToVote": "Klicken, um für diese Idee abzustimmen",
+      "selectIdea": "Wählen Sie eine Idee zum Abstimmen:",
+      "analyzing": "Analysiere Ideen...",
+      "analyzeHint": "Analysieren Sie Ideen, um sie in einer Impact vs. Aufwand-Matrix zu sehen und die besten Chancen zu finden.",
+      "analyzeButton": "Ideen analysieren",
+      "apiKeyRequired": "API-Schlüssel für Analyse erforderlich"
+    },
+    "errors": {
+      "assessFailed": "Ideenbewertung fehlgeschlagen. Bitte erneut versuchen."
     },
     "results": {
       "votesRecorded": "Ihre Stimmen wurden aufgezeichnet! Hier sind die aktuellen Ergebnisse:",
@@ -433,12 +513,13 @@
     "skipExport": "Zum Export springen",
     "explanation": {
       "title": "Was ist CRISP-DM?",
-      "description": "CRISP-DM (Cross-Industry Standard Process for Data Mining) ist ein weit verbreitetes Framework für die Planung von KI- und Datenprojekten. Wir führen Sie durch die Phase 'Business Understanding' - den entscheidenden ersten Schritt, der sicherstellt, dass Ihr KI-Projekt echte Geschäftsanforderungen erfüllt.",
-      "bullet1": "Wir klären Ihre Geschäftsziele - wie sieht Erfolg für dieses Projekt aus?",
-      "bullet2": "Wir bewerten Ihre aktuelle Situation - Ressourcen, Einschränkungen und Datenverfügbarkeit",
-      "bullet3": "Wir übersetzen Geschäftsziele in technische KI-Ziele",
-      "bullet4": "Wir skizzieren einen realistischen Projektplan mit klaren Phasen",
-      "tip": "Beantworten Sie die Fragen so ehrlich wie möglich. Es gibt keine falschen Antworten - das Ziel ist, Ihre spezifische Situation zu verstehen."
+      "description": "CRISP-DM (Cross-Industry Standard Process for Data Mining) ist das Industrie-Standard-Framework, das weltweit von Data Scientists zur Planung von KI- und Analytics-Projekten verwendet wird. Es hat 6 Phasen - wir fokussieren auf Phase 1: Business Understanding, die entscheidend für den Projekterfolg ist.",
+      "phases": "Die 6 CRISP-DM Phasen: (1) Business Understanding → (2) Data Understanding → (3) Data Preparation → (4) Modeling → (5) Evaluation → (6) Deployment",
+      "bullet1": "Geschäftsziele: Welches Problem lösen Sie? Wie sieht Erfolg aus? (z.B. 'Kundenbeschwerden um 20% reduzieren')",
+      "bullet2": "Situationsbewertung: Welche Ressourcen haben Sie? Welche Einschränkungen gibt es? Welche Daten sind verfügbar?",
+      "bullet3": "KI/Data Mining-Ziele: Geschäftsziele in technische Ziele übersetzen (z.B. 'Modell zur Vorhersage von Kundenabwanderung erstellen')",
+      "bullet4": "Projektplan: Realistische Phasen, Meilensteine und Verantwortlichkeiten definieren",
+      "tip": "Antworten Sie ehrlich basierend auf Ihrer aktuellen Situation. Es gibt keine falschen Antworten - dieses Gespräch hilft uns, Ihren spezifischen Kontext zu verstehen und einen maßgeschneiderten Projektplan zu erstellen."
     },
     "manualEntry": {
       "title": "Manuelle Ideeneingabe erforderlich",
@@ -559,7 +640,7 @@
       "subsequentRounds": "Folgerunden",
       "subsequentDesc": "Anweisungen zum Aufbauen auf vorherigen Ideen in den Runden 2-6",
       "ideaClustering": "Ideen-Clustering",
-      "ideaClusteringDesc": "Gruppiert Brainstorming-Ideen in Technologie-/Konzept-Cluster für zweiphasige Priorisierung",
+      "ideaClusteringDesc": "Gruppiert Brainstorming-Ideen in Cluster und bewertet Reife-Passung, Implementierungsaufwand und Business Impact für die Priorisierungsmatrix",
       "consultationSystem": "Beratungs-System-Prompt",
       "consultationSystemDesc": "Verhaltensregeln für den KI-Berater - Antwortformat, was zu vermeiden ist",
       "consultationContext": "Beratungs-Kontext",
@@ -593,14 +674,15 @@
       "costs": "Kostenschätzung"
     },
     "explanation": {
-      "title": "Einen Business Case erstellen",
-      "description": "Ein solider Business Case hilft Ihnen, das Management zu überzeugen und Investitionen in KI zu rechtfertigen. Wir nutzen den 5-Stufen-Wertrahmen, um den potenziellen Nutzen Ihres Projekts zu quantifizieren.",
-      "bullet1": "Budgetersatz: Kann KI externe Dienstleistungen ersetzen, für die Sie derzeit bezahlen?",
-      "bullet2": "Prozesseffizienz: Wird KI Zeit bei Routineaufgaben sparen?",
-      "bullet3": "Projektbeschleunigung: Kann KI die Entwicklung oder Markteinführung beschleunigen?",
-      "bullet4": "Risikominderung: Wird KI helfen, kostspielige Fehler oder Qualitätsprobleme zu vermeiden?",
-      "bullet5": "Strategische Skalierung: Kann KI Ihnen helfen zu wachsen, ohne die Kosten proportional zu erhöhen?",
-      "tip": "Machen Sie sich keine Sorgen um genaue Zahlen. Grobe Schätzungen ('Pi mal Daumen') sind in diesem Stadium völlig in Ordnung."
+      "title": "Was ist ein Business Case?",
+      "description": "Ein Business Case ist ein Dokument, das rechtfertigt, warum Ihr Unternehmen in dieses KI-Projekt investieren sollte. Es beantwortet die Frage: 'Was ist der Return on Investment (ROI)?' Wir nutzen den 5-Stufen-Wertrahmen, um konkrete Vorteile zu identifizieren.",
+      "whyItMatters": "Warum ist das wichtig? Ohne Business Case erhalten Projekte oft keine Finanzierung oder Management-Unterstützung. Ein klares ROI-Argument macht aus einer 'netten Idee' ein 'genehmigtes Projekt'.",
+      "bullet1": "Stufe 1 - Budgetersatz: Teure externe Services ersetzen (z.B. '50k€/Jahr für ausgelagerte Dateneingabe sparen')",
+      "bullet2": "Stufe 2 - Prozesseffizienz: Repetitive Aufgaben automatisieren (z.B. '10 Stunden/Woche bei Berichtserstellung sparen')",
+      "bullet3": "Stufe 3 - Projektbeschleunigung: Time-to-Market verkürzen (z.B. 'Produkte 3 Monate schneller einführen')",
+      "bullet4": "Stufe 4 - Risikominderung: Teure Fehler vermeiden (z.B. '100k€ Qualitätsmängel mit prädiktiver QC verhindern')",
+      "bullet5": "Stufe 5 - Strategische Skalierung: Wachsen ohne proportionale Kostensteigerung (z.B. '2x Bestellungen mit gleichem Team bewältigen')",
+      "tip": "Grobe Schätzungen sind in Ordnung! 'Ungefähr 30-50k€ Einsparungen' ist besser als keine Zahl. Wir helfen Ihnen, diese Schätzungen zu entwickeln."
     },
     "costsExplanation": {
       "title": "Projektkosten verstehen",
@@ -693,6 +775,9 @@
       "costs": "Kosten",
       "swot": "SWOT",
       "briefing": "Briefing",
+      "ideas": "Ideen",
+      "prioritization": "Priorisierung",
+      "transcripts": "Protokolle",
       "export": "Export"
     },
     "explanation": {
@@ -727,7 +812,10 @@
       "companyProfile": "Kein Unternehmensprofil oder Reifegradanalyse. Schließen Sie Schritt 1 ab.",
       "crispDm": "Keine CRISP-DM Erkenntnisse. Schließen Sie die Beratung in Schritt 4 ab.",
       "businessCase": "Kein Business Case erstellt. Schließen Sie Schritt 5a ab.",
-      "costs": "Keine Kostenschätzung. Schließen Sie Schritt 5b ab."
+      "costs": "Keine Kostenschätzung. Schließen Sie Schritt 5b ab.",
+      "ideas": "Keine Brainstorming-Ideen gesammelt. Schließen Sie Schritt 2 ab.",
+      "prioritization": "Keine Priorisierungsstimmen. Schließen Sie Schritt 3 ab.",
+      "transcripts": "Noch keine Gesprächsprotokolle. Schließen Sie die Beratungsschritte ab."
     },
     "maturity": {
       "resources": "Ressourcen",
@@ -776,6 +864,28 @@
       "regenerateButton": "Neu generieren",
       "regenerating": "Wird neu generiert...",
       "generateNote": "Dies ruft die KI auf, um Ihre Sitzungsdaten zu analysieren und ein strukturiertes Übergabedokument zu erstellen."
+    },
+    "ideas": {
+      "title": "Brainstorming-Ideen",
+      "totalIdeas": "Ideen gesammelt",
+      "participant": "Teilnehmer"
+    },
+    "prioritization": {
+      "title": "Priorisierungsergebnisse",
+      "totalVotes": "Stimmen abgegeben",
+      "rank": "Rang",
+      "idea": "Idee",
+      "feasibility": "Machbarkeit",
+      "impact": "Wirkung",
+      "total": "Gesamt"
+    },
+    "transcripts": {
+      "title": "Gesprächsprotokolle",
+      "consultation": "CRISP-DM Beratung",
+      "businessCase": "Business Case",
+      "costEstimation": "Kostenschätzung",
+      "user": "Benutzer",
+      "assistant": "KI-Berater"
     },
     "export": {
       "title": "Export-Optionen",

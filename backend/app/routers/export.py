@@ -668,3 +668,97 @@ def auto_update_analysis(
         "status": "scheduled",
         "message": "SWOT Analysis and Technical Briefing regeneration scheduled"
     }
+
+
+# ============== Cross-Reference Endpoints ==============
+
+class CrossReferenceRequest(BaseModel):
+    """Request body for cross-reference extraction."""
+    api_key: Optional[str] = None
+    api_base: Optional[str] = None
+    language: Optional[str] = "en"
+
+
+@router.post("/{session_uuid}/cross-references/extract")
+def extract_cross_references(
+    session_uuid: str,
+    request: CrossReferenceRequest,
+    db: Session = Depends(get_db),
+    x_api_key: Optional[str] = Header(None)
+):
+    """
+    Extract cross-references between all findings using LLM.
+
+    This identifies semantic links between different findings
+    for wiki-style cross-referencing in the Results page.
+    """
+    from ..services.cross_reference_service import extract_all_cross_references
+
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    # Get LLM settings
+    session_model, session_api_base = get_llm_settings(db_session)
+
+    api_key = x_api_key or request.api_key
+    model = session_model
+    api_base = request.api_base or session_api_base
+    language = request.language or db_session.prompt_language or "en"
+
+    try:
+        total_refs = extract_all_cross_references(
+            db=db,
+            session_id=db_session.id,
+            model=model,
+            api_key=api_key,
+            api_base=api_base,
+            language=language
+        )
+
+        return {
+            "status": "success",
+            "cross_references_created": total_refs
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to extract cross-references: {str(e)}"
+        )
+
+
+@router.get("/{session_uuid}/cross-references")
+def get_cross_references(
+    session_uuid: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all cross-references for a session.
+
+    Returns cross-references organized by source finding type.
+    """
+    from ..services.cross_reference_service import get_cross_references_for_session
+
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    cross_refs = get_cross_references_for_session(db, db_session.id)
+
+    return {
+        "session_uuid": session_uuid,
+        "cross_references": cross_refs
+    }

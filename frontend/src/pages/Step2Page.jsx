@@ -347,7 +347,7 @@ const Step2Page = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">
-                    {t('step2.progress.round', { current: sessionStatus.current_round, total: sessionStatus.total_sheets })}
+                    {t('step2.progress.round', { current: sessionStatus.current_round, total: sessionStatus.total_rounds || sessionStatus.total_sheets })}
                   </p>
                   <p className="text-lg font-semibold text-gray-900">
                     {t('step2.progress.submitted', { count: sessionStatus.sheets_submitted, total: sessionStatus.total_sheets })}
@@ -396,7 +396,7 @@ const Step2Page = () => {
                       disabled={loading}
                       className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors font-medium"
                     >
-                      {sessionStatus.current_round >= 6
+                      {sessionStatus.current_round >= (sessionStatus.total_rounds || 6)
                         ? t('step2.progress.completeSession')
                         : t('step2.progress.advanceRound', { next: sessionStatus.current_round + 1 })}
                     </button>

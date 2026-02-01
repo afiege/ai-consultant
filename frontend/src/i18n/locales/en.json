@@ -110,22 +110,36 @@
     "startButton": "Start New Consultation",
     "creating": "Creating Session...",
     "duration": "The consultation process typically takes 30-60 minutes depending on team size.",
+    "processOverview": {
+      "title": "How It Works",
+      "subtitle": "A structured 6-step process to identify the right AI project for your company",
+      "whoIsThisFor": "Who is this for?",
+      "whoIsThisForDesc": "Small and medium-sized businesses exploring AI and digitalization - no technical expertise required!",
+      "whatYouGet": "What you'll get",
+      "whatYouGetDesc": "A concrete AI project proposal with business case, cost estimate, and implementation roadmap",
+      "timeCommitment": "Time needed",
+      "timeCommitmentDesc": "30-60 minutes for the full consultation, or complete steps over multiple sessions",
+      "prerequisites": "What to prepare",
+      "prerequisitesDesc": "Basic information about your company (size, industry, current challenges). You can upload documents or let us crawl your website."
+    },
     "llmConfig": {
       "title": "AI Configuration",
       "configured": "Configured",
       "hint": "Click to configure your AI provider (required for AI-assisted brainstorming)"
     },
     "features": {
-      "step1Title": "Company Overview",
-      "step1Desc": "Gather company information through text, files, or web crawling",
-      "step2Title": "Interactive Brainstorming",
-      "step2Desc": "Collaborative 6-3-5 method with up to 6 participants",
-      "step3Title": "Idea Prioritization",
-      "step3Desc": "Rank and prioritize generated ideas collaboratively",
-      "step4Title": "Business Understanding",
-      "step4Desc": "CRISP-DM guided consultation to define objectives and plan your AI project",
-      "step5Title": "Business Case Calculation",
-      "step5Desc": "Quantify potential value using the 5-level framework for management buy-in"
+      "step1Title": "1. Company Profile",
+      "step1Desc": "Tell us about your company, then assess your digital maturity using the acatech Industry 4.0 framework (5 min)",
+      "step2Title": "2. AI Brainstorming",
+      "step2Desc": "Generate AI ideas using the proven 6-3-5 creativity method - with AI assistants helping you (15-20 min)",
+      "step3Title": "3. Prioritization",
+      "step3Desc": "Vote on the best ideas using an Impact vs Effort matrix to find quick wins (5 min)",
+      "step4Title": "4. Business Understanding",
+      "step4Desc": "Define clear objectives using CRISP-DM, the industry-standard framework for AI projects (10-15 min)",
+      "step5Title": "5. Business Case",
+      "step5Desc": "Build a compelling business case with ROI estimates to get management buy-in (5-10 min)",
+      "step6Title": "6. Export Report",
+      "step6Desc": "Download your complete consultation results as a professional PDF report"
     },
     "restoreSession": {
       "description": "Or continue a previously saved session:",
@@ -221,14 +235,21 @@
     },
     "maturityLevels": {
       "computerization": "Computerization",
+      "computerizationExample": "Example: You use Excel, email, and basic software but data is scattered",
       "connectivity": "Connectivity",
+      "connectivityExample": "Example: Your systems are connected (ERP, CRM) and can share data",
       "visibility": "Visibility",
+      "visibilityExample": "Example: You have dashboards showing real-time KPIs across the company",
       "transparency": "Transparency",
+      "transparencyExample": "Example: You understand WHY things happen through data analysis",
       "predictiveCapacity": "Predictive Capacity",
-      "adaptability": "Adaptability"
+      "predictiveCapacityExample": "Example: You can predict future outcomes (demand, failures, trends)",
+      "adaptability": "Adaptability",
+      "adaptabilityExample": "Example: Systems automatically adapt to changes without human intervention"
     },
     "levelReference": {
-      "title": "Maturity Level Reference"
+      "title": "Maturity Level Reference",
+      "levelGuide": "Level 1-2 = Early stage (most SMEs), Level 3-4 = Intermediate (data-driven), Level 5-6 = Advanced (AI-powered)"
     },
     "results": {
       "title": "Your Maturity Profile",
@@ -275,12 +296,14 @@
     "backStep1": "Back to Maturity Assessment",
     "explanation": {
       "title": "What is 6-3-5 Brainstorming?",
-      "description": "The 6-3-5 method is a proven creativity technique: 6 participants each write 3 ideas in 5 minutes, then pass their sheet to the next person who builds upon those ideas. This creates a rich collection of ideas in just 30 minutes.",
-      "bullet1": "No idea is too small or too crazy - quantity matters more than perfection",
-      "bullet2": "AI assistants join to fill empty seats and contribute additional perspectives",
-      "bullet3": "Each round, you'll see previous ideas to inspire new thinking",
-      "bullet4": "Don't worry if you're not an AI expert - everyday process improvements count too!",
-      "tip": "Think about repetitive tasks, communication bottlenecks, or areas where you wish you had better data or faster decisions."
+      "description": "The 6-3-5 method (also called 'Brainwriting') is a proven creativity technique invented by Prof. Bernd Rohrbach. It's designed to generate many ideas quickly while building on each other's thoughts.",
+      "howItWorks": "How it works: 6 participants × 3 ideas × 5 minutes × 6 rounds = 108 potential ideas in 30 minutes!",
+      "bullet1": "Round 1: Write 3 fresh ideas on an empty sheet (5 min)",
+      "bullet2": "Rounds 2-6: Receive someone else's sheet and add 3 new ideas that build on what you see",
+      "bullet3": "AI assistants fill empty seats so you can run a full session even alone",
+      "bullet4": "No idea is too small - 'automate email responses' or 'digitize paper forms' are great starting points!",
+      "exampleIdeas": "Example ideas: 'Use AI to predict machine maintenance needs', 'Chatbot for customer FAQs', 'Automate invoice processing', 'Dashboard for real-time KPIs'",
+      "tip": "Think about: repetitive tasks, communication bottlenecks, data you wish was easier to access, or decisions that take too long."
     },
     "share": {
       "title": "Invite Participants",
@@ -357,6 +380,12 @@
       "clusters": "Cluster Selection",
       "ideas": "Idea Selection"
     },
+    "maturity": {
+      "high": "Well-suited",
+      "medium": "Moderate effort",
+      "low": "Ambitious",
+      "tooltip": "Maturity Assessment"
+    },
     "noIdeas": {
       "title": "No Ideas to Prioritize",
       "message": "You skipped the 6-3-5 brainstorming session without creating any ideas. You can proceed directly to the consultation step where you'll enter ideas manually.",
@@ -370,21 +399,33 @@
       "allocateAllPoints": "Please allocate all {{total}} points. You have {{remaining}} remaining.",
       "noParticipant": "No participant found. Please go back to Step 2 and join the session first."
     },
+    "fallbackClustering": {
+      "title": "Simplified Grouping",
+      "message": "Ideas were grouped automatically because AI clustering was unavailable. You can still vote and select a focus area."
+    },
     "phase1": {
       "explanation": {
         "title": "Step 3a: Choose a Focus Area",
-        "description": "Your brainstorming ideas have been automatically grouped into clusters based on their underlying technology or concept. First, choose which area to focus on.",
-        "bullet1": "Review each cluster and the ideas within it",
-        "bullet2": "Allocate your 3 points to the clusters that best match your priorities",
-        "bullet3": "After voting, select one cluster to explore in detail",
-        "tip": "Consider which technology area would have the biggest impact on your business."
+        "description": "Your brainstorming ideas have been automatically grouped into 'clusters' - categories based on the underlying technology or concept (e.g., 'Predictive Maintenance', 'Customer Service Automation', 'Process Optimization').",
+        "whatAreClusters": "What are clusters? The AI analyzed all ideas and grouped similar ones together. For example, 'predict machine failures' and 'monitor equipment health' might form a 'Predictive Maintenance' cluster.",
+        "bullet1": "Review each cluster - click to see the ideas within",
+        "bullet2": "Use the matrix to find 'Quick Wins' (high impact, low effort) in the top-left quadrant",
+        "bullet3": "Allocate your 3 points: give more points to clusters you find most promising",
+        "votingGuide": "Voting guide: 3 points = 'This is my top choice', 2 points = 'Strong interest', 1 point = 'Worth considering'",
+        "tip": "Consider which technology area would have the biggest impact on your business while being realistic about your resources."
       },
       "generateButton": "Cluster Ideas by Technology",
       "generating": "Analyzing and clustering ideas...",
       "generateHint": "The AI will analyze your ideas and group them by technology or concept",
       "voteHint": "Click + to add points to clusters you want to explore",
       "ideaCount": "{{count}} ideas in this cluster",
-      "ideasInCluster": "Ideas in this cluster:",
+      "ideasInCluster": "Ideas in this cluster",
+      "showIdeas": "Show ideas",
+      "hideIdeas": "Hide ideas",
+      "clusterList": "Cluster List",
+      "expandAll": "Show all ideas",
+      "collapseAll": "Hide all ideas",
+      "noIdeaDetails": "Idea details not available",
       "moreIdeas": "...and {{count}} more",
       "ideas": "ideas",
       "votesRecorded": "Your cluster votes have been recorded! Select a cluster to continue.",
@@ -411,7 +452,46 @@
       "pointsRemaining": "Points Remaining:",
       "clickToAdd": "Click + to add points to ideas you like",
       "submitVotes": "Submit Votes",
-      "submitting": "Submitting..."
+      "submitting": "Submitting...",
+      "point": "point",
+      "points": "points",
+      "allocated": "allocated"
+    },
+    "scatter": {
+      "title": "Cluster Prioritization Matrix",
+      "subtitle": "Click on clusters to vote. Colors indicate maturity fit.",
+      "impact": "Impact",
+      "effort": "Effort",
+      "maturity": "Maturity fit",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "effortAxis": "Implementation Effort →",
+      "impactAxis": "↑ Business Impact",
+      "quadrantQuickWins": "Quick Wins",
+      "quadrantQuickWinsDesc": "High impact, low effort - Start here! These deliver fast results with minimal investment.",
+      "quadrantStrategic": "Strategic",
+      "quadrantStrategicDesc": "High impact, high effort - Worth the investment for major transformation, but requires planning.",
+      "quadrantFillIn": "Fill-ins",
+      "quadrantFillInsDesc": "Low impact, low effort - Nice-to-have improvements when you have spare capacity.",
+      "quadrantAvoid": "Consider carefully",
+      "quadrantAvoidDesc": "Low impact, high effort - Usually not recommended unless there are strategic reasons.",
+      "clickToVote": "Click to vote for this cluster",
+      "voteAdded": "Vote added!",
+      "selectCluster": "Select a cluster to vote:"
+    },
+    "ideaScatter": {
+      "title": "Idea Prioritization Matrix",
+      "subtitle": "Click on ideas to vote. Position shows effort vs impact.",
+      "clickToVote": "Click to vote for this idea",
+      "selectIdea": "Select an idea to vote:",
+      "analyzing": "Analyzing ideas...",
+      "analyzeHint": "Analyze ideas to see them on an Impact vs Effort matrix and find the best opportunities.",
+      "analyzeButton": "Analyze Ideas",
+      "apiKeyRequired": "API key required for analysis"
+    },
+    "errors": {
+      "assessFailed": "Failed to assess ideas. Please try again."
     },
     "results": {
       "votesRecorded": "Your votes have been recorded! Here are the current results:",
@@ -433,12 +513,13 @@
     "skipExport": "Skip to Export",
     "explanation": {
       "title": "What is CRISP-DM?",
-      "description": "CRISP-DM (Cross-Industry Standard Process for Data Mining) is a widely-used framework for planning AI and data projects. We'll guide you through the 'Business Understanding' phase - the crucial first step that ensures your AI project addresses real business needs.",
-      "bullet1": "We'll clarify your business goals - what success looks like for this project",
-      "bullet2": "We'll assess your current situation - resources, constraints, and data availability",
-      "bullet3": "We'll translate business goals into technical AI objectives",
-      "bullet4": "We'll outline a realistic project plan with clear phases",
-      "tip": "Answer the questions as honestly as possible. There are no wrong answers - the goal is to understand your specific situation."
+      "description": "CRISP-DM (Cross-Industry Standard Process for Data Mining) is the industry-standard framework used by data scientists worldwide to plan AI and analytics projects. It has 6 phases - we focus on Phase 1: Business Understanding, which is critical for project success.",
+      "phases": "The 6 CRISP-DM phases: (1) Business Understanding → (2) Data Understanding → (3) Data Preparation → (4) Modeling → (5) Evaluation → (6) Deployment",
+      "bullet1": "Business Objectives: What problem are you solving? What does success look like? (e.g., 'Reduce customer complaints by 20%')",
+      "bullet2": "Situation Assessment: What resources do you have? What constraints exist? What data is available?",
+      "bullet3": "AI/Data Mining Goals: Translate business goals into technical objectives (e.g., 'Build a model to predict customer churn')",
+      "bullet4": "Project Plan: Define realistic phases, milestones, and responsibilities",
+      "tip": "Answer honestly based on your current situation. There are no wrong answers - this conversation helps us understand your specific context and create a tailored project plan."
     },
     "manualEntry": {
       "title": "Manual Idea Entry Required",
@@ -559,7 +640,7 @@
       "subsequentRounds": "Subsequent Rounds",
       "subsequentDesc": "Instructions for building on previous ideas in rounds 2-6",
       "ideaClustering": "Idea Clustering",
-      "ideaClusteringDesc": "Groups brainstormed ideas into technology/concept clusters for two-phase prioritization",
+      "ideaClusteringDesc": "Groups brainstormed ideas into clusters, assessing maturity fit, implementation effort, and business impact for the prioritization matrix",
       "consultationSystem": "Consultation System Prompt",
       "consultationSystemDesc": "Behavioral rules for the AI consultant - response format, what to avoid",
       "consultationContext": "Consultation Context",
@@ -593,14 +674,15 @@
       "costs": "Cost Estimation"
     },
     "explanation": {
-      "title": "Building a Business Case",
-      "description": "A solid business case helps you get management buy-in and justify investment in AI. We'll use the 5-level value framework to quantify the potential benefits of your project.",
-      "bullet1": "Budget Substitution: Can AI replace external services you currently pay for?",
-      "bullet2": "Process Efficiency: Will AI save time in routine tasks?",
-      "bullet3": "Project Acceleration: Can AI speed up development or time-to-market?",
-      "bullet4": "Risk Mitigation: Will AI help avoid costly errors or quality issues?",
-      "bullet5": "Strategic Scaling: Can AI help you grow without proportionally increasing costs?",
-      "tip": "Don't worry about exact numbers. Rough estimates ('ballpark figures') are perfectly fine at this stage."
+      "title": "What is a Business Case?",
+      "description": "A Business Case is a document that justifies why your company should invest in this AI project. It answers the question: 'What's the return on investment (ROI)?' We use the 5-level value framework to identify concrete benefits.",
+      "whyItMatters": "Why does this matter? Without a business case, projects often fail to get funding or management support. A clear ROI argument turns 'nice idea' into 'approved project'.",
+      "bullet1": "Level 1 - Budget Substitution: Replace costly external services (e.g., 'Save €50k/year on manual data entry outsourcing')",
+      "bullet2": "Level 2 - Process Efficiency: Automate repetitive tasks (e.g., 'Save 10 hours/week on report generation')",
+      "bullet3": "Level 3 - Project Acceleration: Speed up time-to-market (e.g., 'Launch products 3 months faster')",
+      "bullet4": "Level 4 - Risk Mitigation: Prevent costly errors (e.g., 'Avoid €100k quality defects with predictive QC')",
+      "bullet5": "Level 5 - Strategic Scaling: Grow without proportional cost increase (e.g., 'Handle 2x orders with same team')",
+      "tip": "Rough estimates are fine! 'Approximately €30k-50k savings' is better than no number at all. We'll help you develop these estimates."
     },
     "costsExplanation": {
       "title": "Understanding Project Costs",
@@ -693,6 +775,9 @@
       "costs": "Costs",
       "swot": "SWOT",
       "briefing": "Briefing",
+      "ideas": "Ideas",
+      "prioritization": "Prioritization",
+      "transcripts": "Transcripts",
       "export": "Export"
     },
     "explanation": {
@@ -727,7 +812,10 @@
       "companyProfile": "No company profile or maturity assessment. Complete Step 1.",
       "crispDm": "No CRISP-DM findings. Complete the consultation in Step 4.",
       "businessCase": "No business case generated. Complete Step 5a.",
-      "costs": "No cost estimation. Complete Step 5b."
+      "costs": "No cost estimation. Complete Step 5b.",
+      "ideas": "No brainstorming ideas collected. Complete Step 2.",
+      "prioritization": "No prioritization votes. Complete Step 3.",
+      "transcripts": "No conversation transcripts yet. Complete the consultation steps."
     },
     "maturity": {
       "resources": "Resources",
@@ -776,6 +864,28 @@
       "regenerateButton": "Regenerate",
       "regenerating": "Regenerating...",
       "generateNote": "This will call the AI to analyze your session data and create a structured handover document."
+    },
+    "ideas": {
+      "title": "Brainstorming Ideas",
+      "totalIdeas": "ideas collected",
+      "participant": "Participant"
+    },
+    "prioritization": {
+      "title": "Prioritization Results",
+      "totalVotes": "votes cast",
+      "rank": "Rank",
+      "idea": "Idea",
+      "feasibility": "Feasibility",
+      "impact": "Impact",
+      "total": "Total"
+    },
+    "transcripts": {
+      "title": "Conversation Transcripts",
+      "consultation": "CRISP-DM Consultation",
+      "businessCase": "Business Case",
+      "costEstimation": "Cost Estimation",
+      "user": "User",
+      "assistant": "AI Consultant"
     },
     "export": {
       "title": "Export Options",

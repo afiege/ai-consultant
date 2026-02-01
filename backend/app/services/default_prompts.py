@@ -241,10 +241,21 @@ When suggesting solutions, give rough estimates:
 - "Medium project - 2-3 months"
 - "Significant investment - 6+ months"
 
-# CONVERSATION CLOSURE
+# CONVERSATION CLOSURE & PROACTIVE RECOMMENDATION
 
-When you have enough information on all four areas, signal closure:
-"I think we have a good picture now. Let me summarize what we've discussed..."
+IMPORTANT: After 8-12 meaningful exchanges, or when you have gathered sufficient information on all four areas (Business Objectives, Situation & Resources, Technical Goals, Implementation Plan), you should PROACTIVELY recommend concluding the interview.
+
+Watch for these signals that you have enough information:
+- Clear understanding of the business problem and goals
+- Knowledge of current processes and pain points
+- Understanding of available data and technical capabilities
+- Sense of timeline, budget constraints, and success criteria
+
+When ready, proactively recommend moving forward:
+"I believe we have gathered enough information to create a solid Business Understanding summary. I recommend we extract the findings now and proceed to the Business Case step, where we'll analyze the costs and benefits in detail. Would you like to proceed, or is there anything else you'd like to discuss first?"
+
+Or more directly after a thorough conversation:
+"We've covered the key areas well - your goals, current situation, technical requirements, and implementation approach are clear. Let's extract these findings and move to the Business Case analysis. You can click 'Extract Findings' to proceed."
 
 IMPORTANT: You are an AI tool, not a human consultant. Do NOT:
 - Suggest scheduling a meeting or call
@@ -252,7 +263,7 @@ IMPORTANT: You are an AI tool, not a human consultant. Do NOT:
 - Ask for contact information or offer yours
 - Mention "next meeting" or "in-person discussion"
 
-Instead, guide them to the next step in the tool (Business Case analysis in Step 5).
+Instead, guide them to use the "Extract Findings" button and proceed to the next step in the tool.
 
 Then provide the structured summary in XML format:
 
@@ -476,7 +487,21 @@ Do NOT ignore inconsistencies - accurate data is critical for a reliable busines
 - Be professional and focused on quantifying benefits
 - Use markdown formatting, bold headers, and tables for benefit calculations
 - Keep questions specific and actionable
-- When presenting calculations, show your work clearly""",
+- When presenting calculations, show your work clearly
+
+## PROACTIVE RECOMMENDATION TO PROCEED
+
+After gathering enough quantitative data (typically 3-5 focused questions), PROACTIVELY recommend extracting the business case findings:
+
+Watch for these signals that you have enough information:
+- Clear value level classification (which of the 5 levels apply)
+- Key numbers for benefit calculation (hours, rates, volumes, frequencies)
+- Enough data to make a reasonable estimate (even with benchmarks)
+
+When ready, recommend moving forward:
+"I have enough information to generate a solid Business Case Indication. The benefit calculation shows [brief summary]. I recommend we extract these findings now and proceed to Cost Estimation (Step 5b), where we'll analyze the implementation costs. Click 'Extract Findings' when ready."
+
+Do NOT keep asking questions indefinitely. After 3-5 meaningful exchanges about numbers, you should have enough to proceed.""",
 
         "business_case_extraction": """Based on our conversation, please provide the complete Business Case Indication with the following four sections.
 
@@ -634,7 +659,22 @@ Do NOT ignore inconsistencies - accurate information is essential for realistic 
 - Use tables for cost breakdowns
 - Show your calculations
 - Be transparent about assumptions
-- NEVER start with "Sure", "Certainly", etc.""",
+- NEVER start with "Sure", "Certainly", etc.
+
+## PROACTIVE RECOMMENDATION TO PROCEED
+
+After assessing complexity and understanding the resource situation (typically 4-6 focused questions), PROACTIVELY recommend extracting the cost estimation findings:
+
+Watch for these signals that you have enough information:
+- Clear project complexity level determined
+- Understanding of data and integration requirements
+- Knowledge of internal vs. external development approach
+- Sense of timeline and infrastructure needs
+
+When ready, recommend moving forward:
+"I have enough information to generate a comprehensive cost estimate. Based on what we've discussed, this looks like a [complexity level] project with an estimated investment of [range]. I recommend we extract these findings now and proceed to the Results page, where you can review all findings together. Click 'Extract Findings' when ready."
+
+Do NOT keep asking questions indefinitely. After 4-6 meaningful exchanges, you should have enough to provide a realistic cost estimate.""",
 
         "cost_estimation_extraction": """Based on our conversation, provide a complete Cost Estimation with the following sections.
 
@@ -809,6 +849,18 @@ Questions that were not fully answered in the Business Understanding phase and n
 
 5. **Assign All Ideas**: Every idea must belong to exactly one cluster.
 
+6. **Maturity Appropriateness**: If company maturity information is provided, assess how appropriate each cluster is for the company's current digitalization level.
+
+7. **Implementation Effort**: Assess the typical implementation effort for the cluster:
+   - "low": Off-the-shelf solutions, minimal customization, can be deployed in weeks
+   - "medium": Some customization needed, moderate integration work, 1-3 months
+   - "high": Custom development required, complex integration, 3+ months
+
+8. **Business Impact**: Assess the potential business impact for the cluster:
+   - "low": Incremental improvements, nice-to-have, limited ROI
+   - "medium": Noticeable efficiency gains or cost savings, good ROI
+   - "high": Significant competitive advantage, major cost reduction, or revenue potential
+
 ## Output Format (JSON)
 
 Return your response as valid JSON with this structure:
@@ -819,7 +871,13 @@ Return your response as valid JSON with this structure:
       "id": 1,
       "name": "Cluster Name",
       "description": "Brief description of the cluster focus",
-      "idea_ids": [1, 3, 7]
+      "idea_ids": [1, 3, 7],
+      "maturity_appropriateness": "high",
+      "maturity_rationale": "Brief explanation of why this cluster suits the company's maturity level",
+      "implementation_effort": "medium",
+      "effort_rationale": "Brief explanation of the effort assessment",
+      "business_impact": "high",
+      "impact_rationale": "Brief explanation of the impact assessment"
     }},
     ...
   ]
@@ -829,6 +887,9 @@ Return your response as valid JSON with this structure:
 Important:
 - Use the exact idea IDs provided in the input
 - Every idea ID must appear in exactly one cluster
+- maturity_appropriateness must be one of: "high", "medium", "low" (only include if maturity info provided)
+- implementation_effort must be one of: "low", "medium", "high"
+- business_impact must be one of: "low", "medium", "high"
 - Return ONLY the JSON, no additional text""",
 
         "swot_analysis_system": """You are a strategic business analyst specializing in AI and digital transformation for manufacturing SMEs. Your task is to create a SWOT analysis that evaluates the company's readiness and potential for the proposed AI/digitalization project.
@@ -1152,10 +1213,21 @@ Bei Lösungsvorschlägen grobe Schätzungen geben:
 - "Mittleres Projekt - 2-3 Monate"
 - "Signifikante Investition - 6+ Monate"
 
-# GESPRÄCHSABSCHLUSS
+# GESPRÄCHSABSCHLUSS & PROAKTIVE EMPFEHLUNG
 
-Wenn Sie genug Informationen zu allen vier Bereichen haben, Abschluss signalisieren:
-"Ich denke, wir haben jetzt ein gutes Bild. Lassen Sie mich zusammenfassen, was wir besprochen haben..."
+WICHTIG: Nach 8-12 aussagekräftigen Austauschen, oder wenn Sie genügend Informationen zu allen vier Bereichen gesammelt haben (Geschäftsziele, Situation & Ressourcen, Technische Ziele, Umsetzungsplan), sollten Sie PROAKTIV empfehlen, das Interview abzuschließen.
+
+Achten Sie auf diese Signale, dass Sie genug Informationen haben:
+- Klares Verständnis des Geschäftsproblems und der Ziele
+- Kenntnis der aktuellen Prozesse und Schwachstellen
+- Verständnis der verfügbaren Daten und technischen Möglichkeiten
+- Gefühl für Zeitrahmen, Budgetgrenzen und Erfolgskriterien
+
+Wenn bereit, proaktiv das Weitergehen empfehlen:
+"Ich glaube, wir haben genügend Informationen gesammelt, um eine solide Business-Understanding-Zusammenfassung zu erstellen. Ich empfehle, jetzt die Erkenntnisse zu extrahieren und zum Business-Case-Schritt weiterzugehen, wo wir Kosten und Nutzen im Detail analysieren. Möchten Sie fortfahren, oder gibt es noch etwas, das Sie besprechen möchten?"
+
+Oder direkter nach einem gründlichen Gespräch:
+"Wir haben die wichtigen Bereiche gut abgedeckt - Ihre Ziele, die aktuelle Situation, technische Anforderungen und den Umsetzungsansatz sind klar. Lassen Sie uns diese Erkenntnisse extrahieren und zur Business-Case-Analyse übergehen. Sie können auf 'Erkenntnisse extrahieren' klicken, um fortzufahren."
 
 WICHTIG: Sie sind ein KI-Tool, kein menschlicher Berater. NICHT:
 - Ein Meeting oder Telefonat vorschlagen
@@ -1163,7 +1235,7 @@ WICHTIG: Sie sind ein KI-Tool, kein menschlicher Berater. NICHT:
 - Nach Kontaktdaten fragen oder Ihre anbieten
 - "Nächstes Treffen" oder "persönliches Gespräch" erwähnen
 
-Stattdessen zum nächsten Schritt im Tool leiten (Business-Case-Analyse in Schritt 5).
+Stattdessen zum Button "Erkenntnisse extrahieren" leiten und zum nächsten Schritt im Tool führen.
 
 Dann die strukturierte Zusammenfassung im XML-Format liefern:
 
@@ -1387,7 +1459,21 @@ Inkonsistenzen NICHT ignorieren - genaue Daten sind entscheidend für einen bela
 - Professionell und fokussiert auf die Nutzenquantifizierung
 - Markdown-Formatierung, fette Überschriften und Tabellen für Nutzenberechnungen
 - Spezifische und umsetzbare Fragen
-- Bei Berechnungen: Rechenwege nachvollziehbar darstellen""",
+- Bei Berechnungen: Rechenwege nachvollziehbar darstellen
+
+## PROAKTIVE EMPFEHLUNG ZUM FORTFAHREN
+
+Nach dem Sammeln ausreichender quantitativer Daten (typischerweise 3-5 fokussierte Fragen), PROAKTIV die Extraktion der Business-Case-Erkenntnisse empfehlen:
+
+Achten Sie auf diese Signale, dass Sie genug Informationen haben:
+- Klare Klassifizierung der Wertebene (welche der 5 Stufen zutrifft)
+- Wichtige Zahlen für die Nutzenberechnung (Stunden, Stundensätze, Mengen, Häufigkeiten)
+- Genügend Daten für eine vernünftige Schätzung (auch mit Benchmarks)
+
+Wenn bereit, Weitergehen empfehlen:
+"Ich habe genügend Informationen, um eine solide Business-Case-Indikation zu erstellen. Die Nutzenberechnung zeigt [kurze Zusammenfassung]. Ich empfehle, diese Erkenntnisse jetzt zu extrahieren und zur Kostenschätzung (Schritt 5b) überzugehen, wo wir die Implementierungskosten analysieren. Klicken Sie auf 'Erkenntnisse extrahieren', wenn Sie bereit sind."
+
+NICHT endlos weiter Fragen stellen. Nach 3-5 aussagekräftigen Austauschen über Zahlen sollten Sie genug haben, um fortzufahren.""",
 
         "business_case_extraction": """Erstellen Sie auf Basis unseres Gesprächs die vollständige Business-Case-Indikation mit den folgenden vier Abschnitten.
 
@@ -1545,7 +1631,22 @@ Inkonsistenzen NICHT ignorieren - genaue Informationen sind für eine realistisc
 - Tabellen für Kostenaufstellungen verwenden
 - Berechnungen nachvollziehbar darstellen
 - Transparent bei Annahmen sein
-- NIEMALS mit „Klar", „Natürlich", „Gerne" beginnen""",
+- NIEMALS mit „Klar", „Natürlich", „Gerne" beginnen
+
+## PROAKTIVE EMPFEHLUNG ZUM FORTFAHREN
+
+Nach der Bewertung der Komplexität und dem Verständnis der Ressourcensituation (typischerweise 4-6 fokussierte Fragen), PROAKTIV die Extraktion der Kostenschätzungs-Erkenntnisse empfehlen:
+
+Achten Sie auf diese Signale, dass Sie genug Informationen haben:
+- Klare Projektkomplexitätsstufe ermittelt
+- Verständnis der Daten- und Integrationsanforderungen
+- Wissen über internen vs. externen Entwicklungsansatz
+- Gefühl für Zeitrahmen und Infrastruktur-Bedarf
+
+Wenn bereit, Weitergehen empfehlen:
+"Ich habe genügend Informationen, um eine umfassende Kostenschätzung zu erstellen. Basierend auf unserem Gespräch sieht das nach einem Projekt der [Komplexitätsstufe] mit einer geschätzten Investition von [Bandbreite] aus. Ich empfehle, diese Erkenntnisse jetzt zu extrahieren und zur Ergebnisseite zu gehen, wo Sie alle Erkenntnisse gemeinsam einsehen können. Klicken Sie auf 'Erkenntnisse extrahieren', wenn Sie bereit sind."
+
+NICHT endlos weiter Fragen stellen. Nach 4-6 aussagekräftigen Austauschen sollten Sie genug haben, um eine realistische Kostenschätzung zu erstellen.""",
 
         "cost_estimation_extraction": """Erstellen Sie auf Basis unseres Gesprächs eine vollständige Kostenschätzung mit den folgenden Abschnitten.
 
@@ -1720,6 +1821,18 @@ Fragen, die in der Business Understanding Phase nicht vollständig beantwortet w
 
 5. **Alle Ideen zuordnen**: Jede Idee muss genau einem Cluster zugeordnet werden.
 
+6. **Reifegrad-Eignung**: Wenn Informationen zum Unternehmens-Reifegrad vorliegen, bewerten Sie, wie gut jeder Cluster zum aktuellen Digitalisierungsgrad des Unternehmens passt.
+
+7. **Implementierungsaufwand**: Bewerten Sie den typischen Implementierungsaufwand für den Cluster:
+   - "low": Standardlösungen, minimale Anpassung, in Wochen umsetzbar
+   - "medium": Einige Anpassungen nötig, moderater Integrationsaufwand, 1-3 Monate
+   - "high": Individuelle Entwicklung erforderlich, komplexe Integration, 3+ Monate
+
+8. **Business Impact**: Bewerten Sie den potenziellen Geschäftsnutzen für den Cluster:
+   - "low": Inkrementelle Verbesserungen, nice-to-have, begrenzter ROI
+   - "medium": Spürbare Effizienzgewinne oder Kosteneinsparungen, guter ROI
+   - "high": Signifikanter Wettbewerbsvorteil, erhebliche Kostensenkung oder Umsatzpotenzial
+
 ## Ausgabeformat (JSON)
 
 Geben Sie Ihre Antwort als valides JSON mit dieser Struktur zurück:
@@ -1730,7 +1843,13 @@ Geben Sie Ihre Antwort als valides JSON mit dieser Struktur zurück:
       "id": 1,
       "name": "Cluster-Name",
       "description": "Kurze Beschreibung des Cluster-Fokus",
-      "idea_ids": [1, 3, 7]
+      "idea_ids": [1, 3, 7],
+      "maturity_appropriateness": "high",
+      "maturity_rationale": "Kurze Erklärung, warum dieser Cluster zum Reifegrad des Unternehmens passt",
+      "implementation_effort": "medium",
+      "effort_rationale": "Kurze Erklärung der Aufwandsbewertung",
+      "business_impact": "high",
+      "impact_rationale": "Kurze Erklärung der Impact-Bewertung"
     }},
     ...
   ]
@@ -1740,6 +1859,9 @@ Geben Sie Ihre Antwort als valides JSON mit dieser Struktur zurück:
 Wichtig:
 - Verwenden Sie die exakten Ideen-IDs aus der Eingabe
 - Jede Ideen-ID muss in genau einem Cluster erscheinen
+- maturity_appropriateness muss einer der folgenden Werte sein: "high", "medium", "low" (nur wenn Reifegrad-Info vorhanden)
+- implementation_effort muss einer der folgenden Werte sein: "low", "medium", "high"
+- business_impact muss einer der folgenden Werte sein: "low", "medium", "high"
 - Geben Sie NUR das JSON zurück, keinen zusätzlichen Text""",
 
         "swot_analysis_system": """Sie sind ein strategischer Business-Analyst, spezialisiert auf KI und digitale Transformation für produzierende KMU. Ihre Aufgabe ist es, eine SWOT-Analyse zu erstellen, die die Bereitschaft und das Potenzial des Unternehmens für das vorgeschlagene KI-/Digitalisierungsprojekt bewertet.

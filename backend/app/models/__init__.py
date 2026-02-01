@@ -3,7 +3,7 @@ from .company_info import CompanyInfo
 from .participant import Participant
 from .idea import IdeaSheet, Idea
 from .prioritization import Prioritization
-from .consultation import ConsultationMessage, ConsultationFinding
+from .consultation import ConsultationMessage, ConsultationFinding, FindingCrossReference
 from .maturity_assessment import MaturityAssessment
 
 __all__ = [
@@ -15,5 +15,6 @@ __all__ = [
     "Prioritization",
     "ConsultationMessage",
     "ConsultationFinding",
+    "FindingCrossReference",
     "MaturityAssessment",
 ]

@@ -20,6 +20,9 @@ const TABS = [
   { id: 'costs', icon: 'currency', color: 'red' },
   { id: 'swot', icon: 'grid', color: 'amber' },
   { id: 'briefing', icon: 'document', color: 'indigo' },
+  { id: 'ideas', icon: 'lightbulb', color: 'yellow' },
+  { id: 'prioritization', icon: 'star', color: 'purple' },
+  { id: 'transcripts', icon: 'chat', color: 'gray' },
   { id: 'export', icon: 'download', color: 'emerald' },
 ];
 
@@ -61,6 +64,44 @@ const Step6Page = () => {
       // Load all findings from the new endpoint
       const findingsRes = await findingsAPI.getAll(sessionUuid);
       setAllFindings(findingsRes.data);
+
+      // Auto-generate SWOT and Technical Briefing if they don't exist and API key is available
+      const hasSwot = findingsRes.data?.analysis?.swot_analysis?.text;
+      const hasBriefing = findingsRes.data?.analysis?.technical_briefing?.text;
+
+      if (apiKeyManager.isSet()) {
+        const language = t('common.languageCode') || 'en';
+
+        // Auto-generate SWOT if missing
+        if (!hasSwot) {
+          setSwotLoading(true);
+          try {
+            await exportAPI.generateSwotAnalysis(sessionUuid, { language });
+          } catch (swotErr) {
+            console.error('Auto-generate SWOT failed:', swotErr);
+          } finally {
+            setSwotLoading(false);
+          }
+        }
+
+        // Auto-generate Technical Briefing if missing
+        if (!hasBriefing) {
+          setBriefingLoading(true);
+          try {
+            await exportAPI.generateTransitionBriefing(sessionUuid, { language });
+          } catch (briefingErr) {
+            console.error('Auto-generate briefing failed:', briefingErr);
+          } finally {
+            setBriefingLoading(false);
+          }
+        }
+
+        // Reload findings if we generated anything
+        if (!hasSwot || !hasBriefing) {
+          const updatedFindings = await findingsAPI.getAll(sessionUuid);
+          setAllFindings(updatedFindings.data);
+        }
+      }
 
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load data');
@@ -169,6 +210,9 @@ const Step6Page = () => {
   const hasCosts = allFindings?.costs?.complexity?.text || allFindings?.costs?.tco?.text || allFindings?.costs?.initial_investment?.text;
   const hasSwot = !!allFindings?.analysis?.swot_analysis?.text;
   const hasBriefing = !!allFindings?.analysis?.technical_briefing?.text;
+  const hasIdeas = allFindings?.brainstorming?.total_ideas > 0;
+  const hasPrioritization = allFindings?.prioritization?.total_votes > 0;
+  const hasTranscripts = allFindings?.transcripts?.consultation?.length > 0 || allFindings?.transcripts?.business_case?.length > 0 || allFindings?.transcripts?.cost_estimation?.length > 0;
 
   if (loading) {
     return (
@@ -188,6 +232,9 @@ const Step6Page = () => {
       grid: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />,
       document: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
       download: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
+      lightbulb: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />,
+      star: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />,
+      chat: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />,
     };
     return icons[iconName] || icons.document;
   };
@@ -200,6 +247,9 @@ const Step6Page = () => {
       case 'costs': return hasCosts;
       case 'swot': return hasSwot;
       case 'briefing': return hasBriefing;
+      case 'ideas': return hasIdeas;
+      case 'prioritization': return hasPrioritization;
+      case 'transcripts': return hasTranscripts;
       case 'export': return true;
       default: return false;
     }
@@ -237,6 +287,12 @@ const Step6Page = () => {
             error={briefingError}
           />
         );
+      case 'ideas':
+        return <IdeasTab findings={allFindings} t={t} />;
+      case 'prioritization':
+        return <PrioritizationTab findings={allFindings} t={t} />;
+      case 'transcripts':
+        return <TranscriptsTab findings={allFindings} t={t} />;
       case 'export':
         return (
           <ExportTab
@@ -245,7 +301,8 @@ const Step6Page = () => {
             exporting={exporting}
             hasAllFindings={{
               hasCompanyProfile, hasCrispDm,
-              hasBusinessCase, hasCosts, hasSwot, hasBriefing
+              hasBusinessCase, hasCosts, hasSwot, hasBriefing,
+              hasIdeas, hasPrioritization, hasTranscripts
             }}
           />
         );
@@ -287,6 +344,8 @@ const Step6Page = () => {
                   amber: isActive ? 'border-amber-500 text-amber-600' : '',
                   indigo: isActive ? 'border-indigo-500 text-indigo-600' : '',
                   emerald: isActive ? 'border-emerald-500 text-emerald-600' : '',
+                  yellow: isActive ? 'border-yellow-500 text-yellow-600' : '',
+                  gray: isActive ? 'border-gray-500 text-gray-600' : '',
                 };
                 return (
                   <button
@@ -695,6 +754,215 @@ const BriefingTab = ({ findings, t, onNavigate, onGenerate, loading, error }) =>
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const IdeasTab = ({ findings, t }) => {
+  const brainstorming = findings?.brainstorming;
+
+  if (!brainstorming?.sheets?.length) {
+    return <EmptyState message={t('step6.incomplete.ideas')} />;
+  }
+
+  // Collect all ideas and group by round
+  const allIdeas = [];
+  brainstorming.sheets.forEach(sheet => {
+    sheet.ideas.forEach(idea => {
+      allIdeas.push(idea);
+    });
+  });
+
+  // Group by round
+  const ideasByRound = {};
+  allIdeas.forEach(idea => {
+    const round = idea.round_number || 1;
+    if (!ideasByRound[round]) {
+      ideasByRound[round] = [];
+    }
+    ideasByRound[round].push(idea);
+  });
+
+  const sortedRounds = Object.keys(ideasByRound).sort((a, b) => a - b);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">{t('step6.ideas.title')}</h3>
+        <span className="text-sm text-gray-500">
+          {brainstorming.total_ideas} {t('step6.ideas.totalIdeas')}
+        </span>
+      </div>
+
+      {sortedRounds.map(round => (
+        <div key={round} className="bg-yellow-50 rounded-lg p-4">
+          <h4 className="font-medium text-yellow-800 mb-3">
+            Round {round}
+          </h4>
+          <div className="space-y-2">
+            {ideasByRound[round].map((idea) => (
+              <div key={idea.id} className="flex items-start gap-3 bg-white/50 rounded p-2">
+                <p className="text-sm text-gray-700 flex-1">{idea.content}</p>
+                {idea.participant_name && (
+                  <span className="text-xs text-yellow-600 whitespace-nowrap">
+                    {idea.participant_name}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const PrioritizationTab = ({ findings, t }) => {
+  const prioritization = findings?.prioritization;
+
+  if (!prioritization?.results?.length) {
+    return <EmptyState message={t('step6.incomplete.prioritization')} />;
+  }
+
+  // Group by idea to aggregate scores
+  const ideaScores = {};
+  prioritization.results.forEach(vote => {
+    if (!vote.idea_id) return;
+    if (!ideaScores[vote.idea_id]) {
+      ideaScores[vote.idea_id] = {
+        idea_content: vote.idea_content,
+        votes: [],
+        totalScore: 0,
+        voteCount: 0
+      };
+    }
+    ideaScores[vote.idea_id].votes.push(vote);
+    ideaScores[vote.idea_id].totalScore += vote.score || 0;
+    ideaScores[vote.idea_id].voteCount += 1;
+  });
+
+  // Sort by total score
+  const sortedIdeas = Object.entries(ideaScores)
+    .sort((a, b) => b[1].totalScore - a[1].totalScore);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">{t('step6.prioritization.title')}</h3>
+        <span className="text-sm text-gray-500">
+          {prioritization.total_votes} {t('step6.prioritization.totalVotes')}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-purple-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
+                {t('step6.prioritization.rank')}
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
+                {t('step6.prioritization.idea')}
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-purple-700 uppercase tracking-wider">
+                {t('step6.prioritization.total')}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {sortedIdeas.map(([ideaId, data], index) => (
+              <tr key={ideaId} className={index === 0 ? 'bg-purple-50' : ''}>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                    index === 0 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {index + 1}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900">
+                  {data.idea_content}
+                  <span className="text-xs text-gray-400 ml-2">({data.voteCount} votes)</span>
+                </td>
+                <td className="px-4 py-3 text-center text-sm font-semibold text-purple-700">
+                  {data.totalScore}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const TranscriptsTab = ({ findings, t }) => {
+  const transcripts = findings?.transcripts;
+  const [activeTranscript, setActiveTranscript] = React.useState('consultation');
+
+  const hasConsultation = transcripts?.consultation?.length > 0;
+  const hasBusinessCase = transcripts?.business_case?.length > 0;
+  const hasCostEstimation = transcripts?.cost_estimation?.length > 0;
+
+  if (!hasConsultation && !hasBusinessCase && !hasCostEstimation) {
+    return <EmptyState message={t('step6.incomplete.transcripts')} />;
+  }
+
+  const transcriptOptions = [
+    { id: 'consultation', label: t('step6.transcripts.consultation'), has: hasConsultation },
+    { id: 'business_case', label: t('step6.transcripts.businessCase'), has: hasBusinessCase },
+    { id: 'cost_estimation', label: t('step6.transcripts.costEstimation'), has: hasCostEstimation },
+  ].filter(opt => opt.has);
+
+  const currentMessages = transcripts?.[activeTranscript] || [];
+
+  return (
+    <div className="space-y-4">
+      {/* Transcript selector */}
+      <div className="flex gap-2 border-b border-gray-200 pb-3">
+        {transcriptOptions.map(opt => (
+          <button
+            key={opt.id}
+            onClick={() => setActiveTranscript(opt.id)}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+              activeTranscript === opt.id
+                ? 'bg-gray-800 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Messages */}
+      <div className="space-y-3 max-h-[600px] overflow-y-auto">
+        {currentMessages.map((msg, index) => (
+          <div
+            key={index}
+            className={`p-3 rounded-lg ${
+              msg.role === 'user'
+                ? 'bg-blue-50 ml-8'
+                : msg.role === 'assistant'
+                ? 'bg-gray-50 mr-8'
+                : 'bg-yellow-50'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-xs font-medium ${
+                msg.role === 'user' ? 'text-blue-600' : 'text-gray-600'
+              }`}>
+                {msg.role === 'user' ? t('step6.transcripts.user') : t('step6.transcripts.assistant')}
+              </span>
+              {msg.created_at && (
+                <span className="text-xs text-gray-400">
+                  {new Date(msg.created_at).toLocaleString()}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{msg.content}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

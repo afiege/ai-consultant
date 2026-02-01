@@ -3,7 +3,8 @@
 import json
 from pathlib import Path
 from typing import Optional, List, Dict
-from fastapi import APIRouter, Depends, HTTPException, Header
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Header, Body
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from litellm import completion
@@ -361,17 +362,21 @@ def get_persona_maturity_assessment(persona_id: str):
     }
 
 
+class GenerateIdeasRequest(BaseModel):
+    previous_ideas: Optional[List[str]] = None
+
+
 @router.post("/{session_uuid}/generate-ideas")
 async def generate_persona_ideas(
     session_uuid: str,
     persona_id: str,
     round_number: int = 1,
-    previous_ideas: List[str] = None,
+    body: Optional[GenerateIdeasRequest] = Body(default=None),
     x_api_key: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
     """Generate ideas for 6-3-5 brainwriting based on persona."""
-    from ..models import SixThreeFiveParticipant, SixThreeFiveIdea
+    from ..models import IdeaSheet, Idea
 
     # Get session
     db_session = db.query(SessionModel).filter(
@@ -396,6 +401,7 @@ async def generate_persona_ideas(
     focus_idea = persona["focus_idea"]
 
     # Build context from previous ideas if provided
+    previous_ideas = body.previous_ideas if body and body.previous_ideas else []
     previous_context = ""
     if previous_ideas and len(previous_ideas) > 0:
         previous_context = f"""
@@ -405,12 +411,22 @@ async def generate_persona_ideas(
 Your task is to ADD NEW ideas that build upon or complement these existing ideas.
 """
 
+    # Get maturity information
+    digital_maturity = company.get("digitalization_maturity", {})
+    maturity_level = digital_maturity.get("level", "Unknown")
+    maturity_name = digital_maturity.get("level_name", "Unknown")
+    maturity_details = digital_maturity.get("details", {})
+    maturity_details_text = chr(10).join([f"- {k}: {v}" for k, v in maturity_details.items()]) if maturity_details else "Not specified"
+
     prompt = f"""You are participating in a 6-3-5 brainwriting session for digitalization ideas.
 
 ## Company Context
 **Company:** {company['name']}
 **Industry:** {company['sub_industry']}
 **Size:** {company['size_employees']} employees
+
+**Digitalization Maturity Level:** {maturity_level} - {maturity_name}
+{maturity_details_text}
 
 **Current Challenges:**
 {chr(10).join([f"- {c}" for c in company.get("current_challenges", [])])}
@@ -425,9 +441,10 @@ Generate exactly 3 creative, practical digitalization ideas for this company.
 ## Guidelines
 1. Each idea should be 1-2 sentences, concise but specific
 2. Focus on practical, implementable solutions
-3. Consider the company's size, industry, and challenges
-4. Ideas should relate to the project focus: {focus_idea['title']}
-5. Be creative but realistic for an SME
+3. Consider the company's size, industry, challenges, AND maturity level
+4. Ideas should be appropriate for a company at maturity level {maturity_level} ({maturity_name})
+5. Ideas should relate to the project focus: {focus_idea['title']}
+6. Be creative but realistic - don't suggest overly advanced solutions for low-maturity companies
 
 Respond with exactly 3 ideas, one per line, without numbering or bullet points."""
 
@@ -482,8 +499,6 @@ async def auto_vote_clusters(
     db: Session = Depends(get_db)
 ):
     """Auto-generate cluster votes based on persona's priorities."""
-    from ..models import Cluster
-
     # Get session
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
@@ -503,10 +518,15 @@ async def auto_vote_clusters(
     if not persona:
         raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
 
-    # Get clusters
-    clusters = db.query(Cluster).filter(
-        Cluster.session_id == db_session.id
-    ).all()
+    # Get clusters from session JSON
+    if not db_session.idea_clusters:
+        raise HTTPException(status_code=400, detail="No clusters to vote on. Generate clusters first.")
+
+    try:
+        clusters_data = json.loads(db_session.idea_clusters)
+        clusters = clusters_data.get("clusters", [])
+    except:
+        raise HTTPException(status_code=400, detail="Invalid cluster data")
 
     if not clusters:
         raise HTTPException(status_code=400, detail="No clusters to vote on")
@@ -516,7 +536,7 @@ async def auto_vote_clusters(
 
     # Build cluster descriptions
     cluster_text = "\n".join([
-        f"Cluster {c.id}: {c.name} - {c.description}"
+        f"Cluster {c['id']}: {c['name']} - {c['description']}"
         for c in clusters
     ])
 
@@ -572,6 +592,7 @@ Only include clusters that receive at least 1 point."""
 
         # Parse votes
         votes = {}
+        valid_cluster_ids = {c['id'] for c in clusters}
         for line in generated_text.strip().split('\n'):
             line = line.strip()
             if ':' in line:
@@ -579,7 +600,7 @@ Only include clusters that receive at least 1 point."""
                 try:
                     cluster_id = int(parts[0].strip())
                     points = int(parts[1].strip())
-                    if any(c.id == cluster_id for c in clusters):
+                    if cluster_id in valid_cluster_ids:
                         votes[cluster_id] = points
                 except (ValueError, IndexError):
                     continue
@@ -614,7 +635,7 @@ async def auto_vote_ideas(
     db: Session = Depends(get_db)
 ):
     """Auto-generate idea votes based on persona's priorities."""
-    from ..models import Cluster, SixThreeFiveIdea
+    from ..models import Idea
 
     # Get session
     db_session = db.query(SessionModel).filter(
@@ -635,19 +656,26 @@ async def auto_vote_ideas(
     if not persona:
         raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
 
-    # Get selected cluster
-    selected_cluster = db.query(Cluster).filter(
-        Cluster.session_id == db_session.id,
-        Cluster.is_selected == True
-    ).first()
+    # Get selected cluster from session JSON
+    if not db_session.selected_cluster_id or not db_session.idea_clusters:
+        raise HTTPException(status_code=400, detail="No cluster selected. Complete Phase 1 first.")
+
+    try:
+        clusters_data = json.loads(db_session.idea_clusters)
+        selected_cluster = next(
+            (c for c in clusters_data.get("clusters", []) if c["id"] == db_session.selected_cluster_id),
+            None
+        )
+    except:
+        raise HTTPException(status_code=400, detail="Invalid cluster data")
 
     if not selected_cluster:
-        raise HTTPException(status_code=400, detail="No cluster selected")
+        raise HTTPException(status_code=400, detail="Selected cluster not found")
 
     # Get ideas in the cluster
-    idea_ids = selected_cluster.idea_ids or []
-    ideas = db.query(SixThreeFiveIdea).filter(
-        SixThreeFiveIdea.id.in_(idea_ids)
+    idea_ids = selected_cluster.get("idea_ids", [])
+    ideas = db.query(Idea).filter(
+        Idea.id.in_(idea_ids)
     ).all()
 
     if not ideas:

@@ -40,3 +40,23 @@ class ConsultationFinding(Base):
 
     # Relationships
     session = relationship("Session", back_populates="consultation_findings")
+    cross_references = relationship("FindingCrossReference", back_populates="source_finding", foreign_keys="FindingCrossReference.source_finding_id", cascade="all, delete-orphan")
+
+
+class FindingCrossReference(Base):
+    """Cross-references between findings, extracted by LLM for wiki-style linking."""
+
+    __tablename__ = "finding_cross_references"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    source_finding_id = Column(Integer, ForeignKey("consultation_findings.id", ondelete="CASCADE"), nullable=False)
+    target_finding_type = Column(String(50), nullable=False)  # The factor_type of the target finding
+    linked_phrase = Column(String(500), nullable=False)  # The exact phrase in source that links to target
+    relationship_type = Column(String(50), default="references")  # 'references', 'depends_on', 'supports', 'contradicts'
+    confidence = Column(Integer, default=80)  # 0-100, how confident the LLM was
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    session = relationship("Session")
+    source_finding = relationship("ConsultationFinding", back_populates="cross_references", foreign_keys=[source_finding_id])

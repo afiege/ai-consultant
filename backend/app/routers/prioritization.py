@@ -22,8 +22,10 @@ from ..models.session import Session as SessionModel
 from ..models.idea import Idea
 from ..models.prioritization import Prioritization
 from ..models.participant import Participant
+from ..models.maturity_assessment import MaturityAssessment
+from ..models.company_info import CompanyInfo
 from ..schemas.prioritization import PrioritizationResponse, IdeaWithScore, ClusteringResult, ClusterWithScore
-from ..services.ai_participant import cluster_ideas
+from ..services.ai_participant import cluster_ideas, assess_ideas, get_company_context_summary, _create_fallback_clusters
 from ..config import settings
 
 
@@ -322,15 +324,55 @@ def generate_clusters(
         except:
             pass
 
-    # Generate clusters
-    result = cluster_ideas(
-        ideas=ideas_list,
-        model=model,
-        language=language,
-        api_key=api_key,
-        api_base=api_base,
-        custom_prompts=custom_prompts
-    )
+    # Get maturity assessment for the session
+    maturity = db.query(MaturityAssessment).filter(
+        MaturityAssessment.session_id == db_session.id
+    ).first()
+
+    maturity_level = None
+    maturity_level_name = None
+    if maturity:
+        maturity_level = maturity.overall_score
+        # Map score to maturity level name
+        maturity_names = {
+            1: "Computerization" if language == "en" else "Computerisierung",
+            2: "Connectivity" if language == "en" else "Konnektivität",
+            3: "Visibility" if language == "en" else "Sichtbarkeit",
+            4: "Transparency" if language == "en" else "Transparenz",
+            5: "Predictive Capacity" if language == "en" else "Prognosefähigkeit",
+            6: "Adaptability" if language == "en" else "Adaptierbarkeit"
+        }
+        maturity_level_name = maturity_names.get(int(maturity_level) if maturity_level else 1, "Unknown")
+
+    # Get company context for clustering
+    company_infos = db.query(CompanyInfo).filter(
+        CompanyInfo.session_id == db_session.id
+    ).all()
+    company_context = get_company_context_summary(company_infos) if company_infos else None
+
+    # Generate clusters with fallback
+    try:
+        result = cluster_ideas(
+            ideas=ideas_list,
+            model=model,
+            language=language,
+            api_key=api_key,
+            api_base=api_base,
+            custom_prompts=custom_prompts,
+            maturity_level=int(maturity_level) if maturity_level else None,
+            maturity_level_name=maturity_level_name,
+            company_context=company_context
+        )
+
+        # Validate result has clusters
+        if not result.get("clusters") or len(result["clusters"]) == 0:
+            raise ValueError("Empty clusters returned")
+
+    except Exception as e:
+        # Fallback: Create simple clusters using helper function
+        import logging
+        logging.error(f"LLM clustering failed, using fallback: {e}")
+        result = _create_fallback_clusters(ideas_list, language)
 
     # Store clusters in session
     db_session.idea_clusters = json.dumps(result)
@@ -730,6 +772,110 @@ def get_cluster_ideas(
             }
             for idea in ideas
         ]
+    }
+
+
+class AssessIdeasRequest(BaseModel):
+    """Schema for requesting idea assessment."""
+    api_key: Optional[str] = None
+
+
+@router.post("/{session_uuid}/prioritization/assess-cluster-ideas")
+def assess_cluster_ideas(
+    session_uuid: str,
+    request: AssessIdeasRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Assess ideas in the selected cluster for effort and impact.
+    Returns ideas with implementation_effort and business_impact ratings.
+    """
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+
+    if not db_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_uuid} not found"
+        )
+
+    if not db_session.selected_cluster_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No cluster selected. Complete Phase 1 first."
+        )
+
+    if not db_session.idea_clusters:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No clusters found"
+        )
+
+    try:
+        clusters_data = json.loads(db_session.idea_clusters)
+        selected_cluster = next(
+            (c for c in clusters_data["clusters"] if c["id"] == db_session.selected_cluster_id),
+            None
+        )
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid cluster data"
+        )
+
+    if not selected_cluster:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Selected cluster not found"
+        )
+
+    # Get the ideas in this cluster
+    idea_ids = selected_cluster.get("idea_ids", [])
+    ideas = db.query(Idea).join(Idea.participant).filter(
+        Idea.id.in_(idea_ids)
+    ).all()
+
+    # Prepare ideas for assessment
+    ideas_list = [
+        {
+            "id": idea.id,
+            "content": idea.content,
+            "participant_name": idea.participant.name,
+            "round_number": idea.round_number
+        }
+        for idea in ideas
+    ]
+
+    # Get LLM config
+    model = db_session.llm_model or settings.DEFAULT_LLM_MODEL
+    api_base = db_session.llm_api_base or settings.DEFAULT_LLM_API_BASE
+    api_key = request.api_key
+    language = db_session.prompt_language or "en"
+
+    # Get company context
+    company_infos = db.query(CompanyInfo).filter(
+        CompanyInfo.session_id == db_session.id
+    ).all()
+    company_context = get_company_context_summary(company_infos) if company_infos else None
+
+    # Assess ideas
+    result = assess_ideas(
+        ideas=ideas_list,
+        cluster_info={
+            "name": selected_cluster.get("name", ""),
+            "description": selected_cluster.get("description", "")
+        },
+        model=model,
+        language=language,
+        api_key=api_key,
+        api_base=api_base,
+        company_context=company_context
+    )
+
+    return {
+        "cluster": selected_cluster,
+        "ideas": result.get("ideas", [])
     }
 
 

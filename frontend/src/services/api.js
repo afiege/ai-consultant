@@ -228,6 +228,8 @@ export const prioritizationAPI = {
   // Phase 2: Idea prioritization (within selected cluster)
   getClusterIdeas: (sessionUuid) =>
     api.get(`/api/sessions/${sessionUuid}/prioritization/cluster-ideas`),
+  assessClusterIdeas: (sessionUuid, apiKey) =>
+    api.post(`/api/sessions/${sessionUuid}/prioritization/assess-cluster-ideas`, { api_key: apiKey || apiKeyManager.get() }),
   submitIdeaVote: (sessionUuid, data) =>
     api.post(`/api/sessions/${sessionUuid}/prioritization/idea-vote`, data),
   getIdeaResults: (sessionUuid) =>
@@ -428,6 +430,16 @@ export const exportAPI = {
   // Auto-update analysis (regenerate SWOT and Briefing)
   autoUpdateAnalysis: (sessionUuid, options = {}) =>
     api.post(`/api/sessions/${sessionUuid}/analysis/auto-update`, {
+      api_key: options.apiKey || apiKeyManager.get(),
+      api_base: options.apiBase,
+      language: options.language,
+    }),
+
+  // Cross-reference extraction for wiki-style linking
+  getCrossReferences: (sessionUuid) =>
+    api.get(`/api/sessions/${sessionUuid}/cross-references`),
+  extractCrossReferences: (sessionUuid, options = {}) =>
+    api.post(`/api/sessions/${sessionUuid}/cross-references/extract`, {
       api_key: options.apiKey || apiKeyManager.get(),
       api_base: options.apiBase,
       language: options.language,

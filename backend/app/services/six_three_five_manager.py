@@ -453,18 +453,23 @@ class SixThreeFiveSession:
         if not sheets:
             raise ValueError("No sheets found")
 
-        # Check if session is complete
+        # Check if we're already on the last round (can't advance further)
         current_round = sheets[0].current_round
         if current_round >= self.MAX_ROUNDS:
-            return {"status": "complete", "total_rounds": current_round}
+            return {"status": "complete", "total_rounds": self.MAX_ROUNDS}
 
         # Rotate sheets (shift right)
         new_round = current_round + 1
         participant_assignments = []
 
+        # Create a lookup for participant index by ID
+        participant_id_to_idx = {p.id: idx for idx, p in enumerate(participants)}
+
         for i, sheet in enumerate(sheets):
-            # Next participant index (rotate right)
-            next_participant_idx = (i + 1) % len(participants)
+            # Find the index of the CURRENT participant holding this sheet
+            current_participant_idx = participant_id_to_idx.get(sheet.current_participant_id, i)
+            # Next participant index (rotate right from current holder)
+            next_participant_idx = (current_participant_idx + 1) % len(participants)
             sheet.current_participant_id = participants[next_participant_idx].id
             sheet.current_round = new_round
             participant_assignments.append({
@@ -530,13 +535,16 @@ class SixThreeFiveSession:
             if ideas_count >= self.IDEAS_PER_ROUND:
                 submitted_count += 1
 
-        is_complete = current_round >= self.MAX_ROUNDS or (
+        # Complete only when all ideas are submitted for the final round
+        # (current_round > MAX_ROUNDS shouldn't happen, but handles edge cases)
+        is_complete = current_round > self.MAX_ROUNDS or (
             submitted_count == len(sheets) and current_round == self.MAX_ROUNDS
         )
 
         return {
             "status": "complete" if is_complete else "in_progress",
             "current_round": current_round,
+            "total_rounds": self.MAX_ROUNDS,
             "total_participants": len(participants),
             "human_participants": sum(1 for p in participants if p.connection_status != "ai_controlled"),
             "ai_participants": sum(1 for p in participants if p.connection_status == "ai_controlled"),

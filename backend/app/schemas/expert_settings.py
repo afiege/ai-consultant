@@ -166,7 +166,7 @@ PROMPT_METADATA = [
     PromptInfo(
         key="idea_clustering_system",
         label="Idea Clustering System Prompt",
-        description="Groups brainstormed ideas into technology/concept clusters for two-phase prioritization",
+        description="Groups brainstormed ideas into clusters, assessing maturity fit, implementation effort, and business impact for the prioritization matrix",
         variables=[]
     ),
     PromptInfo(

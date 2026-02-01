@@ -491,7 +491,7 @@ def get_all_findings(
     Get all findings organized by category for the Results page.
     Aggregates findings from all consultation steps.
     """
-    from ..models import CompanyInfo, MaturityAssessment
+    from ..models import CompanyInfo, MaturityAssessment, IdeaSheet, Idea, Prioritization
 
     db_session = db.query(SessionModel).filter(
         SessionModel.session_uuid == session_uuid
@@ -541,6 +541,80 @@ def get_all_findings(
             "organizational_structure_score": maturity.organizational_structure_score
         }
 
+    # Get brainstorming ideas (Step 2)
+    from ..models import Participant
+    idea_sheets = db.query(IdeaSheet).filter(
+        IdeaSheet.session_id == db_session.id
+    ).all()
+    ideas_data = []
+    for sheet in idea_sheets:
+        ideas = db.query(Idea).filter(Idea.sheet_id == sheet.id).order_by(Idea.round_number, Idea.idea_number).all()
+        sheet_ideas = []
+        for idea in ideas:
+            # Get participant name for this idea
+            participant = db.query(Participant).filter(Participant.id == idea.participant_id).first()
+            sheet_ideas.append({
+                "id": idea.id,
+                "content": idea.content,
+                "round_number": idea.round_number,
+                "idea_number": idea.idea_number,
+                "participant_name": participant.name if participant else None
+            })
+        ideas_data.append({
+            "sheet_id": sheet.id,
+            "sheet_number": sheet.sheet_number,
+            "ideas": sheet_ideas
+        })
+
+    # Get prioritization results (Step 3)
+    prioritizations = db.query(Prioritization).filter(
+        Prioritization.session_id == db_session.id,
+        Prioritization.idea_id.isnot(None)  # Only idea votes, not cluster votes
+    ).all()
+    prioritization_data = []
+    for prio in prioritizations:
+        # Get the idea content
+        idea = db.query(Idea).filter(Idea.id == prio.idea_id).first()
+        # Get participant name
+        participant = db.query(Participant).filter(Participant.id == prio.participant_id).first() if prio.participant_id else None
+        prioritization_data.append({
+            "id": prio.id,
+            "idea_id": prio.idea_id,
+            "idea_content": idea.content if idea else None,
+            "participant_name": participant.name if participant else "Anonymous",
+            "score": prio.score or 0,
+            "vote_type": prio.vote_type
+        })
+    # Sort by score descending
+    prioritization_data.sort(key=lambda x: x["score"], reverse=True)
+
+    # Get chat transcripts
+    from sqlalchemy import or_
+    consultation_messages = db.query(ConsultationMessage).filter(
+        ConsultationMessage.session_id == db_session.id,
+        or_(ConsultationMessage.message_type == "consultation", ConsultationMessage.message_type.is_(None))
+    ).order_by(ConsultationMessage.created_at).all()
+
+    business_case_messages = db.query(ConsultationMessage).filter(
+        ConsultationMessage.session_id == db_session.id,
+        ConsultationMessage.message_type == "business_case"
+    ).order_by(ConsultationMessage.created_at).all()
+
+    cost_estimation_messages = db.query(ConsultationMessage).filter(
+        ConsultationMessage.session_id == db_session.id,
+        ConsultationMessage.message_type == "cost_estimation"
+    ).order_by(ConsultationMessage.created_at).all()
+
+    def format_messages(messages):
+        return [
+            {
+                "role": msg.role,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat() if msg.created_at else None
+            }
+            for msg in messages
+        ]
+
     # Organize findings by category
     result = {
         "session": {
@@ -578,6 +652,20 @@ def get_all_findings(
         "analysis": {
             "swot_analysis": findings_dict.get("swot_analysis"),
             "technical_briefing": findings_dict.get("technical_briefing")
+        },
+        # New sections for completeness with PDF export
+        "brainstorming": {
+            "sheets": ideas_data,
+            "total_ideas": sum(len(sheet["ideas"]) for sheet in ideas_data)
+        },
+        "prioritization": {
+            "results": prioritization_data,
+            "total_votes": len(prioritization_data)
+        },
+        "transcripts": {
+            "consultation": format_messages(consultation_messages),
+            "business_case": format_messages(business_case_messages),
+            "cost_estimation": format_messages(cost_estimation_messages)
         }
     }
 

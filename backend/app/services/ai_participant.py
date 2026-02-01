@@ -234,7 +234,10 @@ def cluster_ideas(
     language: str = "en",
     api_key: str = None,
     api_base: str = None,
-    custom_prompts: dict = None
+    custom_prompts: dict = None,
+    maturity_level: int = None,
+    maturity_level_name: str = None,
+    company_context: str = None
 ) -> dict:
     """
     Cluster brainstorming ideas by technology/concept using LLM.
@@ -246,6 +249,9 @@ def cluster_ideas(
         api_key: Optional API key
         api_base: Optional custom API base URL
         custom_prompts: Optional custom prompt overrides
+        maturity_level: Optional company maturity level (1-6)
+        maturity_level_name: Optional maturity level name
+        company_context: Optional company context summary
 
     Returns:
         Dict with 'clusters' key containing list of cluster dicts
@@ -254,6 +260,10 @@ def cluster_ideas(
 
     if not ideas:
         return {"clusters": []}
+
+    # Early check: if no API key provided, raise to trigger fallback
+    if not api_key:
+        raise ValueError("No API key provided for clustering")
 
     # Build the ideas list for the prompt
     ideas_text = "\n".join([f"- ID {idea['id']}: {idea['content']}" for idea in ideas])
@@ -265,10 +275,53 @@ def cluster_ideas(
         custom_prompts or {}
     )
 
+    # Build maturity context if provided
+    maturity_context = ""
+    if maturity_level is not None:
+        maturity_name = maturity_level_name or f"Level {maturity_level}"
+        if language == "de":
+            maturity_context = f"""
+## Unternehmens-Reifegrad
+Das Unternehmen befindet sich auf **Digitalisierungsreifegrad {maturity_level} ({maturity_name})**.
+
+Bitte bewerten Sie für jeden Cluster, wie gut er zum aktuellen Reifegrad des Unternehmens passt:
+- **high**: Gut geeignet für den aktuellen Reifegrad - realistisch umsetzbar
+- **medium**: Machbar mit etwas Aufwand - erfordert moderate Entwicklung
+- **low**: Ambitioniert für den aktuellen Reifegrad - erfordert signifikante Entwicklung
+
+"""
+        else:
+            maturity_context = f"""
+## Company Maturity Level
+The company is at **digitalization maturity level {maturity_level} ({maturity_name})**.
+
+Please assess for each cluster how appropriate it is for the company's current maturity level:
+- **high**: Well-suited for current maturity - realistically implementable
+- **medium**: Achievable with some effort - requires moderate capability building
+- **low**: Ambitious for current maturity - requires significant capability development
+
+"""
+
+    # Build company context if provided
+    company_section = ""
+    if company_context:
+        if language == "de":
+            company_section = f"""
+## Unternehmenskontext
+{company_context[:1500]}
+
+"""
+        else:
+            company_section = f"""
+## Company Context
+{company_context[:1500]}
+
+"""
+
     user_prompt = f"""Please analyze and cluster the following {len(ideas)} ideas:
 
 {ideas_text}
-
+{maturity_context}{company_section}
 Return the clustering as JSON."""
 
     messages = [
@@ -277,12 +330,17 @@ Return the clustering as JSON."""
     ]
 
     try:
+        # Calculate max_tokens based on idea count (more ideas = more clusters = more tokens needed)
+        # Estimate: ~400 tokens per cluster, ~1 cluster per 5-10 ideas
+        estimated_clusters = max(3, len(ideas) // 7)
+        max_tokens = min(4000, max(1500, estimated_clusters * 400))
+
         # Build completion kwargs
         completion_kwargs = {
             "model": model,
             "messages": messages,
             "temperature": 0.3,  # Lower temperature for more consistent clustering
-            "max_tokens": 1500
+            "max_tokens": max_tokens
         }
         if api_key:
             completion_kwargs["api_key"] = api_key
@@ -325,25 +383,283 @@ Return the clustering as JSON."""
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse clustering response as JSON: {e}")
-        # Fallback: put all ideas in one cluster
-        return {
-            "clusters": [{
-                "id": 1,
-                "name": "All Ideas" if language == "en" else "Alle Ideen",
-                "description": "All brainstormed ideas" if language == "en" else "Alle Brainstorming-Ideen",
-                "idea_ids": [idea["id"] for idea in ideas]
-            }]
-        }
+        return _create_fallback_clusters(ideas, language)
     except Exception as e:
         logger.error(f"Clustering error: {e}")
-        # Fallback: put all ideas in one cluster
+        return _create_fallback_clusters(ideas, language)
+
+
+def _create_fallback_clusters(ideas: list, language: str = "en") -> dict:
+    """
+    Create fallback clusters when LLM clustering fails.
+    Groups ideas into clusters of ~5 ideas each.
+    """
+    if not ideas:
+        return {"clusters": []}
+
+    # Target ~5 ideas per cluster, minimum 3 clusters for variety
+    cluster_size = 5
+    num_clusters = max(3, (len(ideas) + cluster_size - 1) // cluster_size)
+    # Recalculate cluster size based on number of clusters
+    cluster_size = (len(ideas) + num_clusters - 1) // num_clusters
+
+    clusters = []
+    for i in range(num_clusters):
+        start_idx = i * cluster_size
+        end_idx = min(start_idx + cluster_size, len(ideas))
+        cluster_ideas_subset = ideas[start_idx:end_idx]
+
+        if not cluster_ideas_subset:
+            continue
+
+        if language == "de":
+            cluster_name = f"Ideengruppe {i + 1}"
+            cluster_desc = f"Ideen {start_idx + 1} bis {end_idx} aus dem Brainstorming"
+            rationale = "Automatisch gruppiert (KI-Clustering nicht verfügbar)"
+        else:
+            cluster_name = f"Idea Group {i + 1}"
+            cluster_desc = f"Ideas {start_idx + 1} to {end_idx} from brainstorming"
+            rationale = "Auto-grouped (LLM clustering unavailable)"
+
+        clusters.append({
+            "id": i + 1,
+            "name": cluster_name,
+            "description": cluster_desc,
+            "idea_ids": [idea["id"] for idea in cluster_ideas_subset],
+            "maturity_fit": "medium",
+            "maturity_rationale": rationale,
+            "implementation_effort": "medium",
+            "effort_rationale": rationale,
+            "business_impact": "medium",
+            "impact_rationale": rationale
+        })
+
+    return {"clusters": clusters}
+
+
+def assess_ideas(
+    ideas: list,
+    cluster_info: dict,
+    model: str = "mistral/mistral-small-latest",
+    language: str = "en",
+    api_key: str = None,
+    api_base: str = None,
+    company_context: str = None
+) -> dict:
+    """
+    Assess individual ideas within a cluster for effort and impact.
+
+    Args:
+        ideas: List of idea dicts with 'id' and 'content' keys
+        cluster_info: Dict with cluster name and description
+        model: LLM model string
+        language: Language code ("en" or "de")
+        api_key: Optional API key
+        api_base: Optional custom API base URL
+        company_context: Optional company context summary
+
+    Returns:
+        Dict with 'ideas' key containing list of assessed idea dicts
+    """
+    import json
+
+    if not ideas:
+        return {"ideas": []}
+
+    # Build the ideas list for the prompt
+    ideas_text = "\n".join([f"- ID {idea['id']}: {idea['content']}" for idea in ideas])
+
+    # Build company context section
+    company_section = ""
+    if company_context:
+        if language == "de":
+            company_section = f"""
+## Unternehmenskontext
+{company_context[:1000]}
+"""
+        else:
+            company_section = f"""
+## Company Context
+{company_context[:1000]}
+"""
+
+    if language == "de":
+        system_prompt = """Sie sind ein Experte für KI und digitale Transformation in KMUs.
+Ihre Aufgabe ist es, einzelne Ideen innerhalb eines Clusters nach Implementierungsaufwand und Business Impact zu bewerten.
+
+## Bewertungskriterien
+
+**Implementierungsaufwand (implementation_effort)**:
+- "low": Fertige Lösungen verfügbar, minimale Anpassung, wenige Wochen zur Umsetzung
+- "medium": Anpassungen nötig, moderate Integrationsarbeit, 1-3 Monate
+- "high": Eigenentwicklung nötig, komplexe Integration, 3+ Monate
+
+**Business Impact (business_impact)**:
+- "low": Inkrementelle Verbesserungen, Nice-to-have, begrenzter ROI
+- "medium": Spürbare Effizienzgewinne oder Kosteneinsparungen, guter ROI
+- "high": Signifikanter Wettbewerbsvorteil, große Kostensenkung oder Umsatzpotenzial
+
+## Ausgabeformat (JSON)
+
+Geben Sie Ihre Antwort als valides JSON zurück:
+```json
+{
+  "ideas": [
+    {
+      "id": 1,
+      "implementation_effort": "medium",
+      "effort_rationale": "Kurze Begründung des Aufwands",
+      "business_impact": "high",
+      "impact_rationale": "Kurze Begründung des Impacts"
+    }
+  ]
+}
+```
+
+Wichtig:
+- Verwenden Sie die exakten Ideen-IDs aus der Eingabe
+- implementation_effort muss eines von: "low", "medium", "high" sein
+- business_impact muss eines von: "low", "medium", "high" sein
+- Geben Sie NUR das JSON zurück, keinen zusätzlichen Text"""
+    else:
+        system_prompt = """You are an expert in AI and digital transformation for SMEs.
+Your task is to assess individual ideas within a cluster for implementation effort and business impact.
+
+## Assessment Criteria
+
+**Implementation Effort (implementation_effort)**:
+- "low": Off-the-shelf solutions available, minimal customization, can be deployed in weeks
+- "medium": Some customization needed, moderate integration work, 1-3 months
+- "high": Custom development required, complex integration, 3+ months
+
+**Business Impact (business_impact)**:
+- "low": Incremental improvements, nice-to-have, limited ROI
+- "medium": Noticeable efficiency gains or cost savings, good ROI
+- "high": Significant competitive advantage, major cost reduction, or revenue potential
+
+## Output Format (JSON)
+
+Return your response as valid JSON:
+```json
+{
+  "ideas": [
+    {
+      "id": 1,
+      "implementation_effort": "medium",
+      "effort_rationale": "Brief explanation of effort assessment",
+      "business_impact": "high",
+      "impact_rationale": "Brief explanation of impact assessment"
+    }
+  ]
+}
+```
+
+Important:
+- Use the exact idea IDs from the input
+- implementation_effort must be one of: "low", "medium", "high"
+- business_impact must be one of: "low", "medium", "high"
+- Return ONLY the JSON, no additional text"""
+
+    cluster_name = cluster_info.get('name', 'Selected Cluster')
+    cluster_desc = cluster_info.get('description', '')
+
+    if language == "de":
+        user_prompt = f"""Bitte bewerten Sie die folgenden {len(ideas)} Ideen aus dem Cluster "{cluster_name}":
+
+Cluster-Beschreibung: {cluster_desc}
+{company_section}
+Ideen:
+{ideas_text}
+
+Geben Sie die Bewertung als JSON zurück."""
+    else:
+        user_prompt = f"""Please assess the following {len(ideas)} ideas from the cluster "{cluster_name}":
+
+Cluster description: {cluster_desc}
+{company_section}
+Ideas:
+{ideas_text}
+
+Return the assessment as JSON."""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+
+    try:
+        # Build completion kwargs
+        completion_kwargs = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.3,
+            "max_tokens": 1500
+        }
+        if api_key:
+            completion_kwargs["api_key"] = api_key
+        if api_base:
+            completion_kwargs["api_base"] = api_base
+
+        response = completion(**completion_kwargs)
+        content = response.choices[0].message.content
+
+        # Parse JSON from response (handle potential markdown code blocks)
+        content = content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+
+        result = json.loads(content)
+
+        # Create a lookup dict from the result
+        assessed_dict = {item["id"]: item for item in result.get("ideas", [])}
+
+        # Merge assessment data back into original ideas
+        assessed_ideas = []
+        for idea in ideas:
+            assessment = assessed_dict.get(idea["id"], {})
+            assessed_ideas.append({
+                **idea,
+                "implementation_effort": assessment.get("implementation_effort", "medium"),
+                "effort_rationale": assessment.get("effort_rationale", ""),
+                "business_impact": assessment.get("business_impact", "medium"),
+                "impact_rationale": assessment.get("impact_rationale", "")
+            })
+
+        return {"ideas": assessed_ideas}
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse idea assessment response as JSON: {e}")
+        # Fallback: return ideas with default medium ratings
         return {
-            "clusters": [{
-                "id": 1,
-                "name": "All Ideas" if language == "en" else "Alle Ideen",
-                "description": "All brainstormed ideas" if language == "en" else "Alle Brainstorming-Ideen",
-                "idea_ids": [idea["id"] for idea in ideas]
-            }]
+            "ideas": [
+                {
+                    **idea,
+                    "implementation_effort": "medium",
+                    "effort_rationale": "",
+                    "business_impact": "medium",
+                    "impact_rationale": ""
+                }
+                for idea in ideas
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Idea assessment error: {e}")
+        return {
+            "ideas": [
+                {
+                    **idea,
+                    "implementation_effort": "medium",
+                    "effort_rationale": "",
+                    "business_impact": "medium",
+                    "impact_rationale": ""
+                }
+                for idea in ideas
+            ]
         }
 
 
