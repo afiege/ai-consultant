@@ -585,7 +585,7 @@ See [DEPLOY.md](DEPLOY.md) for deployment instructions including:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file.
+BSD 3-Clause License - see [LICENSE](LICENSE) file.
 
 ## Contributing
 
