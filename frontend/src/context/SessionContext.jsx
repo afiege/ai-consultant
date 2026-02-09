@@ -71,7 +71,7 @@ export const SessionProvider = ({ children }) => {
 
   // Move to next step
   const nextStep = async () => {
-    if (!session || session.current_step >= 4) return;
+    if (!session || session.current_step >= 6) return;
     return updateSession({ current_step: session.current_step + 1 });
   };
 

@@ -31,7 +31,7 @@ class Idea(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     sheet_id = Column(Integer, ForeignKey("idea_sheets.id", ondelete="CASCADE"), nullable=False)
-    participant_id = Column(Integer, ForeignKey("participants.id"), nullable=False)
+    participant_id = Column(Integer, ForeignKey("participants.id", ondelete="CASCADE"), nullable=False)
     round_number = Column(Integer, nullable=False)  # Which round (1-6)
     idea_number = Column(Integer, nullable=False)  # 1, 2, or 3 (three ideas per round)
     content = Column(Text, nullable=False)

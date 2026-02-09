@@ -1,47 +1,55 @@
 from sqlalchemy import create_engine, event, Engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
+from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import NullPool, QueuePool
 from .config import settings
 
-# Create database engine with SQLite-specific configuration
-# Using NullPool for better concurrent request handling - each request gets a fresh connection
-engine = create_engine(
-    settings.database_url,
-    connect_args={
-        "check_same_thread": False,  # Allow multiple threads (needed for FastAPI)
-        "timeout": 30  # Wait up to 30 seconds for database locks
-    },
-    poolclass=NullPool,  # Use NullPool for SQLite to avoid connection sharing issues
-    echo=settings.debug  # Log SQL queries in debug mode
-)
+_is_sqlite = settings.database_url.startswith("sqlite")
+
+# Build engine kwargs based on database type
+_engine_kwargs: dict = {"echo": settings.debug}
+
+if _is_sqlite:
+    # SQLite: NullPool + thread safety overrides
+    _engine_kwargs.update(
+        connect_args={
+            "check_same_thread": False,
+            "timeout": 30,
+        },
+        poolclass=NullPool,
+    )
+else:
+    # PostgreSQL / other RDBMS: connection pooling
+    _engine_kwargs.update(
+        poolclass=QueuePool,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,  # verify connections before checkout
+    )
+
+engine = create_engine(settings.database_url, **_engine_kwargs)
 
 
-# Configure SQLite for better concurrency and performance
-@event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_conn, connection_record):
-    """Configure SQLite pragmas for better concurrency and performance.
+# SQLite-specific pragmas (no-op for other databases)
+if _is_sqlite:
+    @event.listens_for(Engine, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        """Configure SQLite pragmas for better concurrency and performance.
 
-    WAL mode allows concurrent reads during writes.
-    busy_timeout prevents immediate failure on lock contention.
-    synchronous=NORMAL is safe with WAL mode and improves write performance.
-    cache_size improves read performance with larger page cache.
-    wal_autocheckpoint controls when WAL file is checkpointed.
-    """
-    cursor = dbapi_conn.cursor()
-    # Core concurrency settings
-    cursor.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging for concurrent reads
-    cursor.execute("PRAGMA busy_timeout=30000")  # 30 second timeout on lock contention
-    cursor.execute("PRAGMA foreign_keys=ON")  # Enable foreign key constraints
-
-    # Performance optimizations (safe with WAL mode)
-    cursor.execute("PRAGMA synchronous=NORMAL")  # Safe with WAL, faster than FULL
-    cursor.execute("PRAGMA cache_size=-64000")  # 64MB page cache (negative = KB)
-    cursor.execute("PRAGMA wal_autocheckpoint=1000")  # Checkpoint every 1000 pages
-
-    # Temp storage in memory for faster queries
-    cursor.execute("PRAGMA temp_store=MEMORY")
-    cursor.close()
+        WAL mode allows concurrent reads during writes.
+        busy_timeout prevents immediate failure on lock contention.
+        synchronous=NORMAL is safe with WAL mode and improves write performance.
+        cache_size improves read performance with larger page cache.
+        wal_autocheckpoint controls when WAL file is checkpointed.
+        """
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA cache_size=-64000")
+        cursor.execute("PRAGMA wal_autocheckpoint=1000")
+        cursor.execute("PRAGMA temp_store=MEMORY")
+        cursor.close()
 
 
 # Create session factory

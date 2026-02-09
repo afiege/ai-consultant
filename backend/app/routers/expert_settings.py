@@ -5,8 +5,11 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import json
 import httpx
+import logging
 from typing import Optional, List
 from litellm import completion
+
+logger = logging.getLogger(__name__)
 
 from ..database import get_db
 from ..models import Session as SessionModel
@@ -166,7 +169,7 @@ async def fetch_provider_models(request: FetchModelsRequest):
     api_base = request.api_base.rstrip('/')
     models_url = f"{api_base}/models"
 
-    print(f"[Fetch Models] Querying: {models_url}")
+    logger.debug(f"[Fetch Models] Querying: {models_url}")
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -178,7 +181,7 @@ async def fetch_provider_models(request: FetchModelsRequest):
                 }
             )
 
-            print(f"[Fetch Models] Response status: {response.status_code}")
+            logger.debug(f"[Fetch Models] Response status: {response.status_code}")
 
             if response.status_code == 200:
                 data = response.json()
@@ -202,7 +205,7 @@ async def fetch_provider_models(request: FetchModelsRequest):
                     # Sort models alphabetically
                     models.sort()
 
-                    print(f"[Fetch Models] Found {len(models)} text models (filtered out {filtered_count} non-text models)")
+                    logger.debug(f"[Fetch Models] Found {len(models)} text models (filtered out {filtered_count} non-text models)")
 
                     return FetchModelsResponse(
                         success=True,
@@ -211,7 +214,7 @@ async def fetch_provider_models(request: FetchModelsRequest):
                         message=f"Found {len(models)} text models"
                     )
                 else:
-                    print(f"[Fetch Models] Unexpected response format: {list(data.keys())}")
+                    logger.warning(f"[Fetch Models] Unexpected response format: {list(data.keys())}")
                     # Fall through to fallback
 
             elif response.status_code == 401:
@@ -223,11 +226,11 @@ async def fetch_provider_models(request: FetchModelsRequest):
                 )
 
             else:
-                print(f"[Fetch Models] Error response: {response.text[:200]}")
+                logger.warning(f"[Fetch Models] Error response: {response.text[:200]}")
                 # Fall through to fallback
 
     except httpx.TimeoutException:
-        print(f"[Fetch Models] Timeout connecting to {models_url}")
+        logger.warning(f"[Fetch Models] Timeout connecting to {models_url}")
         return FetchModelsResponse(
             success=False,
             models=fallback_models,
@@ -235,7 +238,7 @@ async def fetch_provider_models(request: FetchModelsRequest):
             message="Connection timeout. Using default model list."
         )
     except Exception as e:
-        print(f"[Fetch Models] Error: {type(e).__name__}: {str(e)}")
+        logger.error(f"[Fetch Models] Error: {type(e).__name__}: {str(e)}")
         return FetchModelsResponse(
             success=False,
             models=fallback_models,
@@ -295,14 +298,14 @@ def test_llm_connection(request: LLMTestRequest):
             completion_kwargs["api_base"] = request.api_base
 
         # Debug logging
-        print(f"[LLM Test] Model: {request.model}")
-        print(f"[LLM Test] API Base: {request.api_base}")
-        print(f"[LLM Test] API Key (first 10 chars): {request.api_key[:10] if request.api_key else 'None'}...")
-        print(f"[LLM Test] Full completion_kwargs: {list(completion_kwargs.keys())}")
+        logger.debug(f"[LLM Test] Model: {request.model}")
+        logger.debug(f"[LLM Test] API Base: {request.api_base}")
+        logger.debug(f"[LLM Test] API Key provided: {'yes' if request.api_key else 'no'}")
+        logger.debug(f"[LLM Test] Completion kwargs keys: {list(completion_kwargs.keys())}")
 
         # Safety check: if model has openai/ prefix but no api_base, warn
         if request.model and request.model.startswith("openai/") and not request.api_base:
-            print(f"[LLM Test] WARNING: Model has 'openai/' prefix but no api_base - will call OpenAI API!")
+            logger.warning(f"[LLM Test] WARNING: Model has 'openai/' prefix but no api_base - will call OpenAI API!")
             return LLMTestResponse(
                 success=False,
                 message="Model uses 'openai/' prefix but no API base URL is set. This would call the OpenAI API. Please select a provider first."
@@ -322,8 +325,8 @@ def test_llm_connection(request: LLMTestRequest):
 
     except Exception as e:
         error_message = str(e)
-        print(f"[LLM Test] Error: {error_message}")
-        print(f"[LLM Test] Exception type: {type(e).__name__}")
+        logger.error(f"[LLM Test] Error: {error_message}")
+        logger.error(f"[LLM Test] Exception type: {type(e).__name__}")
 
         # Provide more helpful error messages
         if "401" in error_message or "Unauthorized" in error_message.lower() or "invalid" in error_message.lower():

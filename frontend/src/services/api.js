@@ -96,10 +96,16 @@ const parseSSEStream = async (response, onChunk, onDone, onError) => {
 
 // Helper to create SSE streaming request with AbortController support
 const createStreamRequest = async (url, body, onChunk, onDone, onError, signal) => {
+  // Resolve session token for SSE (fetch-based, not Axios)
+  const uuid = sessionTokenManager._resolveUuid(url);
+  const token = uuid ? sessionTokenManager.get(uuid) : null;
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['X-Session-Token'] = token;
+
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
       signal, // AbortController signal for cleanup
     });
@@ -128,13 +134,53 @@ export const apiKeyManager = {
   isSet: () => !!sessionStorage.getItem(API_KEY_STORAGE_KEY),
 };
 
+// Session token management — one token per session UUID
+const SESSION_TOKEN_PREFIX = 'ai_consultant_session_token_';
+
+export const sessionTokenManager = {
+  get: (sessionUuid) => sessionStorage.getItem(`${SESSION_TOKEN_PREFIX}${sessionUuid}`),
+  set: (sessionUuid, token) => sessionStorage.setItem(`${SESSION_TOKEN_PREFIX}${sessionUuid}`, token),
+  clear: (sessionUuid) => sessionStorage.removeItem(`${SESSION_TOKEN_PREFIX}${sessionUuid}`),
+  /** Try to resolve the session UUID from the request URL. */
+  _resolveUuid: (url) => {
+    const match = url?.match?.(/\/api\/sessions\/([0-9a-f-]{36})/);
+    return match ? match[1] : null;
+  },
+};
+
+// Axios interceptor — attach X-Session-Token for session-scoped requests
+api.interceptors.request.use((config) => {
+  const uuid = sessionTokenManager._resolveUuid(config.url);
+  if (uuid) {
+    const token = sessionTokenManager.get(uuid);
+    if (token) {
+      config.headers['X-Session-Token'] = token;
+    }
+  }
+  return config;
+});
+
 // Session endpoints
 export const sessionAPI = {
-  create: (data) => api.post('/api/sessions/', data),
+  create: async (data) => {
+    const res = await api.post('/api/sessions/', data);
+    // Store the one-time access token returned on creation
+    if (res.data?.access_token && res.data?.session_uuid) {
+      sessionTokenManager.set(res.data.session_uuid, res.data.access_token);
+    }
+    return res;
+  },
   get: (sessionUuid) => api.get(`/api/sessions/${sessionUuid}`),
   update: (sessionUuid, data) => api.put(`/api/sessions/${sessionUuid}`, data),
   delete: (sessionUuid) => api.delete(`/api/sessions/${sessionUuid}`),
   list: (skip = 0, limit = 100) => api.get('/api/sessions/', { params: { skip, limit } }),
+};
+
+// Reflection endpoints (P6 / DP8)
+export const reflectionAPI = {
+  getAll: (sessionUuid) => api.get(`/api/sessions/${sessionUuid}/reflections`),
+  save: (sessionUuid, stepKey, data) =>
+    api.put(`/api/sessions/${sessionUuid}/reflections/${stepKey}`, data),
 };
 
 // Company info endpoints

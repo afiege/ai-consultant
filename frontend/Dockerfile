@@ -1,4 +1,4 @@
-# Frontend Dockerfile for Railway deployment
+# Frontend Dockerfile
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -19,19 +19,12 @@ ENV VITE_API_URL=$VITE_API_URL
 # Build the app
 RUN npm run build
 
-# Production stage - serve with a simple static server
-FROM node:20-alpine
+# Production stage - serve with nginx
+FROM nginx:alpine
 
-WORKDIR /app
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Install serve for static file serving
-RUN npm install -g serve
+EXPOSE 80
 
-# Copy built files
-COPY --from=builder /app/dist ./dist
-
-# Railway uses dynamic PORT
-EXPOSE ${PORT:-3000}
-
-# Serve the static files on Railway's PORT
-CMD serve -s dist -l ${PORT:-3000}
+CMD ["nginx", "-g", "daemon off;"]

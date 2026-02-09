@@ -77,6 +77,14 @@ const ExplanationBox = ({
       bullet: 'text-yellow-500',
       tip: 'bg-yellow-100 text-yellow-700',
     },
+    purple: {
+      container: 'bg-purple-50 border-purple-200',
+      icon: 'text-purple-500',
+      title: 'text-purple-900',
+      text: 'text-purple-800',
+      bullet: 'text-purple-400',
+      tip: 'bg-purple-100 text-purple-700',
+    },
   };
 
   const styles = variantStyles[variant] || variantStyles.blue;

@@ -171,19 +171,3 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         status_code=error.status_code,
         content=create_error_response(error)
     )
-
-
-def raise_not_found(resource: str, identifier: str):
-    """Helper function to raise NotFoundError as HTTPException for backwards compatibility."""
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"{resource} with identifier '{identifier}' not found"
-    )
-
-
-def raise_session_not_found(session_uuid: str):
-    """Helper function to raise SessionNotFoundError as HTTPException."""
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Session {session_uuid} not found"
-    )

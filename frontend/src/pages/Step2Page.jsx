@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { sixThreeFiveAPI, apiKeyManager } from '../services/api';
@@ -9,9 +9,11 @@ import { PageHeader, ExplanationBox } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 import Step2TestModePanel from '../components/common/Step2TestModePanel';
 import { useTestMode } from '../hooks/useTestMode';
+import { useBrainwritingWs } from '../hooks/useBrainwritingWs';
+import { extractApiError } from '../utils';
 
 const Step2Page = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { sessionUuid } = useParams();
   const navigate = useNavigate();
 
@@ -27,6 +29,33 @@ const Step2Page = () => {
 
   // Test mode
   const testModeEnabled = useTestMode();
+
+  // ---- WebSocket real-time collaboration ----
+  // Handlers are in a ref so the WS hook doesn't reconnect on every render.
+  const wsHandlers = useRef({});
+  wsHandlers.current = {
+    session_started: () => { loadStatusRef.current(); loadSheetRef.current(); },
+    ideas_submitted: () => { loadStatusRef.current(); loadSheetRef.current(); },
+    round_advanced: () => { loadStatusRef.current(); loadSheetRef.current(); setTimeLeft(300); },
+    session_complete: () => { loadStatusRef.current(); },
+    ai_ideas_ready: () => { loadStatusRef.current(); loadSheetRef.current(); },
+    participant_connected: () => { loadStatusRef.current(); },
+    participant_disconnected: () => { loadStatusRef.current(); },
+  };
+  // Stable dispatch that forwards to latest handlers
+  const stableHandlers = useRef({});
+  if (!stableHandlers.current._init) {
+    for (const evt of ['session_started','ideas_submitted','round_advanced',
+      'session_complete','ai_ideas_ready','participant_connected','participant_disconnected']) {
+      stableHandlers.current[evt] = (data) => wsHandlers.current[evt]?.(data);
+    }
+    stableHandlers.current._init = true;
+  }
+  const { connected: wsConnected } = useBrainwritingWs(sessionUuid, participantUuid, stableHandlers.current);
+
+  // Refs for load functions so WS handler closures always call the latest version
+  const loadStatusRef = useRef(() => {});
+  const loadSheetRef = useRef(() => {});
 
   // Load participant UUID from localStorage
   useEffect(() => {
@@ -70,6 +99,7 @@ const Step2Page = () => {
       console.error('Error loading status:', err);
     }
   };
+  loadStatusRef.current = loadStatus;
 
   const loadMySheet = async () => {
     try {
@@ -79,6 +109,7 @@ const Step2Page = () => {
       console.error('Error loading sheet:', err);
     }
   };
+  loadSheetRef.current = loadMySheet;
 
   const handleJoin = async (name) => {
     try {
@@ -107,7 +138,7 @@ const Step2Page = () => {
       await loadStatus();
       await loadMySheet();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to start session');
+      setError(extractApiError(err, i18n.language));
     } finally {
       setLoading(false);
     }
@@ -360,7 +391,7 @@ const Step2Page = () => {
               </div>
 
               {/* Participants Status */}
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2 items-center">
                 {sessionStatus.participants?.map((p) => (
                   <span
                     key={p.uuid}
@@ -373,6 +404,10 @@ const Step2Page = () => {
                     {p.is_ai ? '🤖' : '👤'} {p.name}
                   </span>
                 ))}
+                {/* WebSocket connection indicator */}
+                <span className={`ml-auto px-2 py-1 rounded-full text-[10px] font-medium ${wsConnected ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                  {wsConnected ? '● live' : '○ polling'}
+                </span>
               </div>
             </div>
 

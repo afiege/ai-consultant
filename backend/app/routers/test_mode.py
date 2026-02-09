@@ -9,11 +9,21 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from litellm import completion
 
+from ..config import settings
 from ..database import get_db
 from ..models import Session as SessionModel, ConsultationMessage
 from ..utils.sse import format_sse_data
 
 router = APIRouter(prefix="/api/test-mode", tags=["test-mode"])
+
+
+def _check_test_mode_enabled():
+    """Raise 403 if test mode is not enabled via ENABLE_TEST_MODE env var."""
+    if not settings.enable_test_mode:
+        raise HTTPException(
+            status_code=403,
+            detail="Test mode is disabled. Set ENABLE_TEST_MODE=true to enable."
+        )
 
 # Load personas from evaluation file
 PERSONAS_FILE = Path(__file__).parent.parent.parent.parent / "evaluation" / "benchmark_personas.json"
@@ -32,6 +42,7 @@ def load_personas() -> List[Dict]:
 @router.get("/personas")
 def get_personas():
     """Get list of available test personas."""
+    _check_test_mode_enabled()
     personas = load_personas()
 
     # Return simplified list for selection
@@ -525,7 +536,7 @@ async def auto_vote_clusters(
     try:
         clusters_data = json.loads(db_session.idea_clusters)
         clusters = clusters_data.get("clusters", [])
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         raise HTTPException(status_code=400, detail="Invalid cluster data")
 
     if not clusters:
@@ -666,7 +677,7 @@ async def auto_vote_ideas(
             (c for c in clusters_data.get("clusters", []) if c["id"] == db_session.selected_cluster_id),
             None
         )
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         raise HTTPException(status_code=400, detail="Invalid cluster data")
 
     if not selected_cluster:

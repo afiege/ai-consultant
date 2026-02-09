@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { sixThreeFiveAPI, prioritizationAPI, consultationAPI, apiKeyManager } from '../services/api';
-import { PageHeader, ExplanationBox, TypingIndicator, LoadingOverlay } from '../components/common';
+import { PageHeader, ExplanationBox, TypingIndicator } from '../components/common';
+import { SkeletonChat } from '../components/common/Skeleton';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 import TestModePanel from '../components/common/TestModePanel';
 import {
@@ -13,9 +14,10 @@ import {
   ManualIdeasEntry,
 } from '../components/consultation';
 import { useTestMode } from '../hooks/useTestMode';
+import { extractApiError } from '../utils';
 
 const Step4Page = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { sessionUuid } = useParams();
   const messagesEndRef = useRef(null);
 
@@ -179,7 +181,7 @@ const Step4Page = () => {
       }
       return true;
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to submit ideas');
+      setError(extractApiError(err, i18n.language));
       return false;
     } finally {
       setSubmitting(false);
@@ -227,7 +229,7 @@ const Step4Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to start consultation');
+      setError(extractApiError(err, i18n.language));
       setSendingMessage(false);
     }
   };
@@ -245,7 +247,7 @@ const Step4Page = () => {
       setFindings(null);
       await loadData();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to reset consultation');
+      setError(extractApiError(err, i18n.language));
     }
   };
 
@@ -299,7 +301,7 @@ const Step4Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send message');
+      setError(extractApiError(err, i18n.language));
       setSendingMessage(false);
     }
   };
@@ -329,7 +331,7 @@ const Step4Page = () => {
       setLastMessageId(response.data.message_id);
       setSendingMessage(false);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send message');
+      setError(extractApiError(err, i18n.language));
       setSendingMessage(false);
     }
   };
@@ -373,7 +375,7 @@ const Step4Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to get AI response');
+      setError(extractApiError(err, i18n.language));
       setSendingMessage(false);
     }
   };
@@ -399,7 +401,7 @@ const Step4Page = () => {
         }]);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to generate summary');
+      setError(extractApiError(err, i18n.language));
     } finally {
       setSummarizing(false);
     }
@@ -463,7 +465,7 @@ const Step4Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send message');
+      setError(extractApiError(err, i18n.language));
       setSendingMessage(false);
     }
   };
@@ -474,7 +476,7 @@ const Step4Page = () => {
       await consultationAPI.setCollaborativeMode(sessionUuid, newMode);
       setCollaborativeMode(newMode);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to toggle collaborative mode');
+      setError(extractApiError(err, i18n.language));
     }
   };
 
@@ -489,11 +491,9 @@ const Step4Page = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <LoadingOverlay
-          isVisible={true}
-          title={t('step4.loading.title', 'Loading consultation...')}
-          description={t('step4.loading.description', 'Please wait while we load your consultation data.')}
-        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <SkeletonChat messageCount={4} />
+        </div>
       </div>
     );
   }
@@ -546,7 +546,7 @@ const Step4Page = () => {
         {ideas.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Chat area */}
-            <div className="lg:col-span-2 flex flex-col bg-white rounded-lg shadow h-[600px]">
+            <div className="lg:col-span-2 flex flex-col bg-white rounded-lg shadow min-h-[400px] max-h-[80vh]">
               {topIdea && (
                 <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3 flex justify-between items-center">
                   <p className="text-sm font-medium text-yellow-800">

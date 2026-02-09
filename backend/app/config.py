@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     port: int = 8000
     debug: bool = False
 
+    # Test mode
+    enable_test_mode: bool = False
+
+    # Backup restore max size (default 50MB)
+    max_backup_size: int = 52428800
+
+    # Session cleanup
+    session_expiry_days: int = 30  # Sessions older than this (by updated_at) are auto-deleted; 0 = disabled
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

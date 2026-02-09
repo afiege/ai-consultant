@@ -10,6 +10,7 @@ import CompanyProfileEditor from '../components/step1/CompanyProfileEditor';
 import { PageHeader, ExplanationBox } from '../components/common';
 import TestModeStep1Panel from '../components/common/TestModeStep1Panel';
 import { useTestMode } from '../hooks/useTestMode';
+import { extractApiError } from '../utils';
 
 // Maturity level names for reference
 const MATURITY_LEVELS = [
@@ -268,7 +269,7 @@ const MaturityResults = ({ scores, t }) => {
 };
 
 const Step1Page = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { sessionUuid } = useParams();
   const navigate = useNavigate();
 
@@ -344,7 +345,7 @@ const Step1Page = () => {
       await loadCompanyInfo();
     } catch (err) {
       console.error('Error uploading file:', err);
-      setProfileError(err.response?.data?.detail || t('errors.failedToSubmit'));
+      setProfileError(extractApiError(err, i18n.language));
       throw err;
     } finally {
       setProfileLoading(false);
@@ -362,7 +363,7 @@ const Step1Page = () => {
       await loadCompanyInfo();
     } catch (err) {
       console.error('Error crawling website:', err);
-      setProfileError(err.response?.data?.detail || t('errors.failedToSubmit'));
+      setProfileError(extractApiError(err, i18n.language));
     } finally {
       setProfileLoading(false);
       setProfileLoadingType(null);

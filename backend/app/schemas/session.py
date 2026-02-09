@@ -10,16 +10,17 @@ class SessionBase(BaseModel):
 
 class SessionCreate(SessionBase):
     """Schema for creating a new session."""
-    pass
+    user_role: Optional[str] = "consultant"
 
 
 class SessionUpdate(BaseModel):
     """Schema for updating a session."""
     company_name: Optional[str] = None
-    current_step: Optional[int] = Field(None, ge=1, le=4)
+    current_step: Optional[int] = Field(None, ge=1, le=6)
     status: Optional[str] = None
     six_three_five_skipped: Optional[bool] = None
     selected_cluster_id: Optional[int] = None
+    user_role: Optional[str] = None
 
 
 class SessionResponse(SessionBase):
@@ -33,6 +34,7 @@ class SessionResponse(SessionBase):
     six_three_five_skipped: bool
     idea_clusters: Optional[str] = None  # JSON string
     selected_cluster_id: Optional[int] = None
+    user_role: Optional[str] = "consultant"
 
     class Config:
         from_attributes = True

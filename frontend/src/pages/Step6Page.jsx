@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import {
   sessionAPI,
   exportAPI,
@@ -11,9 +9,22 @@ import {
 } from '../services/api';
 import { PageHeader } from '../components/common';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
-import { WikiLinkMarkdown } from '../components/common/WikiLinkMarkdown';
+import { WikiLinkMarkdown, RelatedSections } from '../components/common/WikiLinkMarkdown';
+import { extractApiError } from '../utils';
+import {
+  CompanyProfileTab,
+  CrispDmTab,
+  BusinessCaseTab,
+  CostsTab,
+  SwotTab,
+  BriefingTab,
+  IdeasTab,
+  PrioritizationTab,
+  TranscriptsTab,
+  ExportTab,
+} from '../components/step6';
 
-const TABS = [
+const ALL_TABS = [
   { id: 'company_profile', icon: 'building', color: 'blue' },
   { id: 'crisp_dm', icon: 'clipboard', color: 'green' },
   { id: 'business_case', icon: 'calculator', color: 'orange' },
@@ -26,8 +37,18 @@ const TABS = [
   { id: 'export', icon: 'download', color: 'emerald' },
 ];
 
+// Role-based tab ordering (P5 / DP6)
+// business_owner: business impact first; technical_advisor: technical detail first
+const TAB_ORDER_BY_ROLE = {
+  consultant: null, // default order
+  business_owner: ['swot', 'business_case', 'company_profile', 'briefing', 'costs',
+    'crisp_dm', 'prioritization', 'ideas', 'transcripts', 'export'],
+  technical_advisor: ['crisp_dm', 'costs', 'briefing', 'business_case', 'company_profile',
+    'swot', 'ideas', 'prioritization', 'transcripts', 'export'],
+};
+
 const Step6Page = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { sessionUuid } = useParams();
   const navigate = useNavigate();
 
@@ -39,6 +60,10 @@ const Step6Page = () => {
   // Active tab state
   const [activeTab, setActiveTab] = useState('company_profile');
 
+  // Cross-references
+  const [crossReferences, setCrossReferences] = useState({});
+  const [crossRefLoading, setCrossRefLoading] = useState(false);
+
   // Generation states
   const [swotLoading, setSwotLoading] = useState(false);
   const [swotError, setSwotError] = useState(null);
@@ -48,6 +73,15 @@ const Step6Page = () => {
 
   // API key prompt
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
+
+  // Role-based tab ordering (P5 / DP6)
+  const TABS = useMemo(() => {
+    const role = session?.user_role;
+    const order = role && TAB_ORDER_BY_ROLE[role];
+    if (!order) return ALL_TABS;
+    const tabMap = Object.fromEntries(ALL_TABS.map(t => [t.id, t]));
+    return order.map(id => tabMap[id]).filter(Boolean);
+  }, [session?.user_role]);
   const [pendingAction, setPendingAction] = useState(null);
 
   useEffect(() => {
@@ -101,10 +135,32 @@ const Step6Page = () => {
           const updatedFindings = await findingsAPI.getAll(sessionUuid);
           setAllFindings(updatedFindings.data);
         }
+
+        // Extract and load cross-references
+        setCrossRefLoading(true);
+        try {
+          await exportAPI.extractCrossReferences(sessionUuid, {
+            language,
+          });
+          const crossRefRes = await exportAPI.getCrossReferences(sessionUuid);
+          setCrossReferences(crossRefRes.data?.cross_references || {});
+        } catch (crossRefErr) {
+          console.error('Cross-reference extraction failed:', crossRefErr);
+        } finally {
+          setCrossRefLoading(false);
+        }
+      } else {
+        // Try loading existing cross-references even without API key
+        try {
+          const crossRefRes = await exportAPI.getCrossReferences(sessionUuid);
+          setCrossReferences(crossRefRes.data?.cross_references || {});
+        } catch (crossRefErr) {
+          // Cross-references not available yet — that's fine
+        }
       }
 
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load data');
+      setError(extractApiError(err, i18n.language));
     } finally {
       setLoading(false);
     }
@@ -141,7 +197,7 @@ const Step6Page = () => {
       const findingsRes = await findingsAPI.getAll(sessionUuid);
       setAllFindings(findingsRes.data);
     } catch (err) {
-      setBriefingError(err.response?.data?.detail || 'Failed to generate briefing');
+      setBriefingError(extractApiError(err, i18n.language));
     } finally {
       setBriefingLoading(false);
     }
@@ -165,7 +221,7 @@ const Step6Page = () => {
       const findingsRes = await findingsAPI.getAll(sessionUuid);
       setAllFindings(findingsRes.data);
     } catch (err) {
-      setSwotError(err.response?.data?.detail || 'Failed to generate SWOT analysis');
+      setSwotError(extractApiError(err, i18n.language));
     } finally {
       setSwotLoading(false);
     }
@@ -187,7 +243,7 @@ const Step6Page = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to export PDF');
+      setError(extractApiError(err, i18n.language));
     } finally {
       setExporting(false);
     }
@@ -258,13 +314,13 @@ const Step6Page = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'company_profile':
-        return <CompanyProfileTab findings={allFindings} session={session} t={t} onNavigate={handleNavigate} />;
+        return <CompanyProfileTab findings={allFindings} session={session} t={t} onNavigate={handleNavigate} crossReferences={crossReferences} />;
       case 'crisp_dm':
-        return <CrispDmTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+        return <CrispDmTab findings={allFindings} t={t} onNavigate={handleNavigate} crossReferences={crossReferences} />;
       case 'business_case':
-        return <BusinessCaseTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+        return <BusinessCaseTab findings={allFindings} t={t} onNavigate={handleNavigate} crossReferences={crossReferences} />;
       case 'costs':
-        return <CostsTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+        return <CostsTab findings={allFindings} t={t} onNavigate={handleNavigate} crossReferences={crossReferences} />;
       case 'swot':
         return (
           <SwotTab
@@ -274,6 +330,7 @@ const Step6Page = () => {
             onGenerate={handleGenerateSwot}
             loading={swotLoading}
             error={swotError}
+            crossReferences={crossReferences}
           />
         );
       case 'briefing':
@@ -285,6 +342,7 @@ const Step6Page = () => {
             onGenerate={handleGenerateBriefing}
             loading={briefingLoading}
             error={briefingError}
+            crossReferences={crossReferences}
           />
         );
       case 'ideas':
@@ -390,657 +448,5 @@ const Step6Page = () => {
     </div>
   );
 };
-
-// Tab Content Components
-
-const CompanyProfileTab = ({ findings, session, t, onNavigate }) => {
-  const structuredProfile = findings?.company_info?.structured_profile;
-  const rawInfo = findings?.company_info?.raw_info || [];
-  const maturity = findings?.maturity;
-
-  if (!structuredProfile && rawInfo.length === 0 && !maturity) {
-    return <EmptyState message={t('step6.incomplete.companyProfile')} />;
-  }
-
-  const getScoreColor = (score) => {
-    if (score < 2) return 'bg-red-500';
-    if (score < 3) return 'bg-orange-500';
-    if (score < 4) return 'bg-yellow-500';
-    if (score < 5) return 'bg-blue-500';
-    return 'bg-green-500';
-  };
-
-  // Helper to render a profile field
-  const ProfileField = ({ label, value }) => {
-    if (!value) return null;
-    const displayValue = Array.isArray(value) ? value.join(', ') : value;
-    return (
-      <div className="py-2 border-b border-gray-100 last:border-0">
-        <dt className="text-sm font-medium text-gray-500">{label}</dt>
-        <dd className="mt-1 text-sm text-gray-900">{displayValue}</dd>
-      </div>
-    );
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Company Name Header */}
-      <h3 className="text-lg font-semibold text-gray-900">
-        {structuredProfile?.name || session?.company_name || t('step6.unknownCompany')}
-      </h3>
-
-      {/* Structured Profile Display */}
-      {structuredProfile && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Basic Information */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.basic')}</h4>
-            <dl>
-              <ProfileField label={t('companyProfile.fields.industry')} value={structuredProfile.industry} />
-              <ProfileField label={t('companyProfile.fields.subIndustry')} value={structuredProfile.sub_industry} />
-              <ProfileField label={t('companyProfile.fields.employeeCount')} value={structuredProfile.employee_count} />
-              <ProfileField label={t('companyProfile.fields.foundingYear')} value={structuredProfile.founding_year} />
-              <ProfileField label={t('companyProfile.fields.ownership')} value={structuredProfile.ownership} />
-            </dl>
-          </div>
-
-          {/* Location & Markets */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.location')}</h4>
-            <dl>
-              <ProfileField label={t('companyProfile.fields.headquarters')} value={structuredProfile.headquarters} />
-              <ProfileField label={t('companyProfile.fields.otherLocations')} value={structuredProfile.other_locations} />
-              <ProfileField label={t('companyProfile.fields.marketsServed')} value={structuredProfile.markets_served} />
-            </dl>
-          </div>
-
-          {/* Financial KPIs */}
-          {(structuredProfile.annual_revenue || structuredProfile.profit_margin || structuredProfile.growth_rate) && (
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.financial')}</h4>
-              <dl>
-                <ProfileField label={t('companyProfile.fields.annualRevenue')} value={structuredProfile.annual_revenue} />
-                <ProfileField label={t('companyProfile.fields.profitMargin')} value={structuredProfile.profit_margin} />
-                <ProfileField label={t('companyProfile.fields.growthRate')} value={structuredProfile.growth_rate} />
-                <ProfileField label={t('companyProfile.fields.cashFlowStatus')} value={structuredProfile.cash_flow_status} />
-              </dl>
-            </div>
-          )}
-
-          {/* Operational KPIs */}
-          {(structuredProfile.production_volume || structuredProfile.capacity_utilization) && (
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.operational')}</h4>
-              <dl>
-                <ProfileField label={t('companyProfile.fields.productionVolume')} value={structuredProfile.production_volume} />
-                <ProfileField label={t('companyProfile.fields.capacityUtilization')} value={structuredProfile.capacity_utilization} />
-              </dl>
-            </div>
-          )}
-
-          {/* Business Model */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.business')}</h4>
-            <dl>
-              <ProfileField label={t('companyProfile.fields.coreBusiness')} value={structuredProfile.core_business} />
-              <ProfileField label={t('companyProfile.fields.productsServices')} value={structuredProfile.products_services} />
-              <ProfileField label={t('companyProfile.fields.customerSegments')} value={structuredProfile.customer_segments} />
-              <ProfileField label={t('companyProfile.fields.keyProcesses')} value={structuredProfile.key_processes} />
-            </dl>
-          </div>
-
-          {/* Technology & Systems */}
-          {(structuredProfile.current_systems || structuredProfile.data_sources || structuredProfile.automation_level) && (
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.technology')}</h4>
-              <dl>
-                <ProfileField label={t('companyProfile.fields.currentSystems')} value={structuredProfile.current_systems} />
-                <ProfileField label={t('companyProfile.fields.dataSources')} value={structuredProfile.data_sources} />
-                <ProfileField label={t('companyProfile.fields.automationLevel')} value={structuredProfile.automation_level} />
-              </dl>
-            </div>
-          )}
-
-          {/* Challenges & Goals */}
-          {(structuredProfile.pain_points || structuredProfile.digitalization_goals || structuredProfile.competitive_pressures) && (
-            <div className="bg-blue-50 rounded-lg p-4 lg:col-span-2">
-              <h4 className="font-medium text-blue-800 mb-3">{t('companyProfile.sections.challenges')}</h4>
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-                <ProfileField label={t('companyProfile.fields.painPoints')} value={structuredProfile.pain_points} />
-                <ProfileField label={t('companyProfile.fields.digitalizationGoals')} value={structuredProfile.digitalization_goals} />
-                <ProfileField label={t('companyProfile.fields.competitivePressures')} value={structuredProfile.competitive_pressures} />
-              </dl>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Maturity Assessment Section */}
-      {maturity && (
-        <div className="bg-purple-50 rounded-lg p-4">
-          <h4 className="font-medium text-purple-800 mb-4">{t('step6.sections.maturity')}</h4>
-          <div className="flex items-center gap-4 mb-4">
-            <span className={`px-4 py-2 rounded-full text-white font-bold text-lg ${getScoreColor(maturity.overall_score)}`}>
-              {maturity.overall_score?.toFixed(1)}/6
-            </span>
-            <span className="text-xl font-medium text-gray-700">{maturity.maturity_level}</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <DimensionScore label={t('step6.maturity.resources')} score={maturity.resources_score} />
-            <DimensionScore label={t('step6.maturity.infoSystems')} score={maturity.information_systems_score} />
-            <DimensionScore label={t('step6.maturity.culture')} score={maturity.culture_score} />
-            <DimensionScore label={t('step6.maturity.orgStructure')} score={maturity.organizational_structure_score} />
-          </div>
-        </div>
-      )}
-
-      {/* Raw Info Fallback (if no structured profile but has raw info) */}
-      {!structuredProfile && rawInfo.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="font-medium text-gray-800">{t('step6.rawInfo')}</h4>
-          {rawInfo.map((info, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-gray-600 mb-1">{info.info_type}</p>
-              <p className="text-gray-700 whitespace-pre-wrap">{info.content}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const DimensionScore = ({ label, score }) => (
-  <div className="bg-white/50 rounded-lg p-3">
-    <p className="text-sm text-gray-600 mb-1">{label}</p>
-    <div className="flex items-center gap-2">
-      <div className="flex-1 bg-gray-200 rounded-full h-2">
-        <div
-          className="bg-purple-500 h-2 rounded-full"
-          style={{ width: `${(score / 6) * 100}%` }}
-        />
-      </div>
-      <span className="font-medium text-gray-700">{score?.toFixed(1)}</span>
-    </div>
-  </div>
-);
-
-const CrispDmTab = ({ findings, t, onNavigate }) => {
-  const crisp = findings?.crisp_dm;
-
-  const sections = [
-    { id: 'business_objectives', key: 'objectives', data: crisp?.business_objectives },
-    { id: 'situation_assessment', key: 'situation', data: crisp?.situation_assessment },
-    { id: 'ai_goals', key: 'aiGoals', data: crisp?.ai_goals },
-    { id: 'project_plan', key: 'projectPlan', data: crisp?.project_plan },
-  ];
-
-  // Check if any section has data with text content
-  const hasAnyData = sections.some(section => section.data?.text);
-
-  if (!hasAnyData) {
-    return <EmptyState message={t('step6.incomplete.crispDm')} />;
-  }
-
-  return (
-    <div className="space-y-6">
-      {sections.map(section => section.data?.text && (
-        <div key={section.id} id={`finding-${section.id}`} className="bg-green-50 rounded-lg p-4">
-          <h4 className="font-medium text-green-800 mb-2">{t(`step6.crispDm.${section.key}`)}</h4>
-          <WikiLinkMarkdown
-            content={section.data.text}
-            onNavigate={onNavigate}
-            className="text-green-700"
-          />
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const BusinessCaseTab = ({ findings, t, onNavigate }) => {
-  const bc = findings?.business_case;
-
-  const sections = [
-    { id: 'classification', key: 'classification', data: bc?.classification },
-    { id: 'calculation', key: 'calculation', data: bc?.calculation },
-    { id: 'validation_questions', key: 'validation', data: bc?.validation_questions },
-    { id: 'management_pitch', key: 'pitch', data: bc?.management_pitch },
-  ];
-
-  const hasAnyData = sections.some(section => section.data?.text);
-
-  if (!hasAnyData) {
-    return <EmptyState message={t('step6.incomplete.businessCase')} />;
-  }
-
-  return (
-    <div className="space-y-6">
-      {sections.map(section => section.data?.text && (
-        <div key={section.id} id={`finding-${section.id}`} className="bg-orange-50 rounded-lg p-4">
-          <h4 className="font-medium text-orange-800 mb-2">{t(`step6.businessCase.${section.key}`)}</h4>
-          <WikiLinkMarkdown
-            content={section.data.text}
-            onNavigate={onNavigate}
-            className="text-orange-700"
-          />
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const CostsTab = ({ findings, t, onNavigate }) => {
-  const costs = findings?.costs;
-
-  const sections = [
-    { id: 'complexity', key: 'complexity', data: costs?.complexity },
-    { id: 'initial_investment', key: 'initial', data: costs?.initial_investment },
-    { id: 'recurring_costs', key: 'recurring', data: costs?.recurring_costs },
-    { id: 'maintenance', key: 'maintenance', data: costs?.maintenance },
-    { id: 'tco', key: 'tco', data: costs?.tco },
-    { id: 'cost_drivers', key: 'drivers', data: costs?.cost_drivers },
-    { id: 'optimization', key: 'optimization', data: costs?.optimization },
-    { id: 'roi_analysis', key: 'roi', data: costs?.roi_analysis },
-  ];
-
-  const hasAnyData = sections.some(section => section.data?.text);
-
-  if (!hasAnyData) {
-    return <EmptyState message={t('step6.incomplete.costs')} />;
-  }
-
-  return (
-    <div className="space-y-6">
-      {sections.map(section => section.data?.text && (
-        <div key={section.id} id={`finding-${section.id}`} className="bg-red-50 rounded-lg p-4">
-          <h4 className="font-medium text-red-800 mb-2">{t(`step6.costs.${section.key}`)}</h4>
-          <WikiLinkMarkdown
-            content={section.data.text}
-            onNavigate={onNavigate}
-            className="text-red-700"
-          />
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const SwotTab = ({ findings, t, onNavigate, onGenerate, loading, error }) => {
-  const swot = findings?.analysis?.swot_analysis;
-
-  return (
-    <div className="space-y-6">
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      {!swot ? (
-        <div className="text-center py-8">
-          <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-          </svg>
-          <p className="text-gray-600 mb-4">{t('step6.swot.notGenerated')}</p>
-          <GenerateButton onClick={onGenerate} loading={loading} colorClass="bg-amber-600 hover:bg-amber-700">
-            {loading ? t('step6.swot.generating') : t('step6.swot.generateButton')}
-          </GenerateButton>
-          <p className="text-xs text-gray-500 mt-3">{t('step6.swot.generateNote')}</p>
-        </div>
-      ) : (
-        <div>
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={onGenerate}
-              disabled={loading}
-              className="text-sm text-amber-600 hover:text-amber-800 disabled:text-gray-400"
-            >
-              {loading ? t('step6.swot.regenerating') : t('step6.swot.regenerateButton')}
-            </button>
-          </div>
-          <div className="bg-amber-50 rounded-lg p-6">
-            <WikiLinkMarkdown
-              content={swot.text}
-              onNavigate={onNavigate}
-              className="text-amber-800"
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const BriefingTab = ({ findings, t, onNavigate, onGenerate, loading, error }) => {
-  const briefing = findings?.analysis?.technical_briefing;
-
-  return (
-    <div className="space-y-6">
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      {!briefing ? (
-        <div className="text-center py-8">
-          <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p className="text-gray-600 mb-4">{t('step6.briefing.notGenerated')}</p>
-          <GenerateButton onClick={onGenerate} loading={loading} colorClass="bg-indigo-600 hover:bg-indigo-700">
-            {loading ? t('step6.briefing.generating') : t('step6.briefing.generateButton')}
-          </GenerateButton>
-          <p className="text-xs text-gray-500 mt-3">{t('step6.briefing.generateNote')}</p>
-        </div>
-      ) : (
-        <div>
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={onGenerate}
-              disabled={loading}
-              className="text-sm text-indigo-600 hover:text-indigo-800 disabled:text-gray-400"
-            >
-              {loading ? t('step6.briefing.regenerating') : t('step6.briefing.regenerateButton')}
-            </button>
-          </div>
-          <div className="bg-indigo-50 rounded-lg p-6">
-            <WikiLinkMarkdown
-              content={briefing.text}
-              onNavigate={onNavigate}
-              className="text-indigo-800"
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const IdeasTab = ({ findings, t }) => {
-  const brainstorming = findings?.brainstorming;
-
-  if (!brainstorming?.sheets?.length) {
-    return <EmptyState message={t('step6.incomplete.ideas')} />;
-  }
-
-  // Collect all ideas and group by round
-  const allIdeas = [];
-  brainstorming.sheets.forEach(sheet => {
-    sheet.ideas.forEach(idea => {
-      allIdeas.push(idea);
-    });
-  });
-
-  // Group by round
-  const ideasByRound = {};
-  allIdeas.forEach(idea => {
-    const round = idea.round_number || 1;
-    if (!ideasByRound[round]) {
-      ideasByRound[round] = [];
-    }
-    ideasByRound[round].push(idea);
-  });
-
-  const sortedRounds = Object.keys(ideasByRound).sort((a, b) => a - b);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{t('step6.ideas.title')}</h3>
-        <span className="text-sm text-gray-500">
-          {brainstorming.total_ideas} {t('step6.ideas.totalIdeas')}
-        </span>
-      </div>
-
-      {sortedRounds.map(round => (
-        <div key={round} className="bg-yellow-50 rounded-lg p-4">
-          <h4 className="font-medium text-yellow-800 mb-3">
-            Round {round}
-          </h4>
-          <div className="space-y-2">
-            {ideasByRound[round].map((idea) => (
-              <div key={idea.id} className="flex items-start gap-3 bg-white/50 rounded p-2">
-                <p className="text-sm text-gray-700 flex-1">{idea.content}</p>
-                {idea.participant_name && (
-                  <span className="text-xs text-yellow-600 whitespace-nowrap">
-                    {idea.participant_name}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const PrioritizationTab = ({ findings, t }) => {
-  const prioritization = findings?.prioritization;
-
-  if (!prioritization?.results?.length) {
-    return <EmptyState message={t('step6.incomplete.prioritization')} />;
-  }
-
-  // Group by idea to aggregate scores
-  const ideaScores = {};
-  prioritization.results.forEach(vote => {
-    if (!vote.idea_id) return;
-    if (!ideaScores[vote.idea_id]) {
-      ideaScores[vote.idea_id] = {
-        idea_content: vote.idea_content,
-        votes: [],
-        totalScore: 0,
-        voteCount: 0
-      };
-    }
-    ideaScores[vote.idea_id].votes.push(vote);
-    ideaScores[vote.idea_id].totalScore += vote.score || 0;
-    ideaScores[vote.idea_id].voteCount += 1;
-  });
-
-  // Sort by total score
-  const sortedIdeas = Object.entries(ideaScores)
-    .sort((a, b) => b[1].totalScore - a[1].totalScore);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{t('step6.prioritization.title')}</h3>
-        <span className="text-sm text-gray-500">
-          {prioritization.total_votes} {t('step6.prioritization.totalVotes')}
-        </span>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-purple-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
-                {t('step6.prioritization.rank')}
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
-                {t('step6.prioritization.idea')}
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-purple-700 uppercase tracking-wider">
-                {t('step6.prioritization.total')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {sortedIdeas.map(([ideaId, data], index) => (
-              <tr key={ideaId} className={index === 0 ? 'bg-purple-50' : ''}>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                    index === 0 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'
-                  }`}>
-                    {index + 1}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
-                  {data.idea_content}
-                  <span className="text-xs text-gray-400 ml-2">({data.voteCount} votes)</span>
-                </td>
-                <td className="px-4 py-3 text-center text-sm font-semibold text-purple-700">
-                  {data.totalScore}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-const TranscriptsTab = ({ findings, t }) => {
-  const transcripts = findings?.transcripts;
-  const [activeTranscript, setActiveTranscript] = React.useState('consultation');
-
-  const hasConsultation = transcripts?.consultation?.length > 0;
-  const hasBusinessCase = transcripts?.business_case?.length > 0;
-  const hasCostEstimation = transcripts?.cost_estimation?.length > 0;
-
-  if (!hasConsultation && !hasBusinessCase && !hasCostEstimation) {
-    return <EmptyState message={t('step6.incomplete.transcripts')} />;
-  }
-
-  const transcriptOptions = [
-    { id: 'consultation', label: t('step6.transcripts.consultation'), has: hasConsultation },
-    { id: 'business_case', label: t('step6.transcripts.businessCase'), has: hasBusinessCase },
-    { id: 'cost_estimation', label: t('step6.transcripts.costEstimation'), has: hasCostEstimation },
-  ].filter(opt => opt.has);
-
-  const currentMessages = transcripts?.[activeTranscript] || [];
-
-  return (
-    <div className="space-y-4">
-      {/* Transcript selector */}
-      <div className="flex gap-2 border-b border-gray-200 pb-3">
-        {transcriptOptions.map(opt => (
-          <button
-            key={opt.id}
-            onClick={() => setActiveTranscript(opt.id)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-              activeTranscript === opt.id
-                ? 'bg-gray-800 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Messages */}
-      <div className="space-y-3 max-h-[600px] overflow-y-auto">
-        {currentMessages.map((msg, index) => (
-          <div
-            key={index}
-            className={`p-3 rounded-lg ${
-              msg.role === 'user'
-                ? 'bg-blue-50 ml-8'
-                : msg.role === 'assistant'
-                ? 'bg-gray-50 mr-8'
-                : 'bg-yellow-50'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`text-xs font-medium ${
-                msg.role === 'user' ? 'text-blue-600' : 'text-gray-600'
-              }`}>
-                {msg.role === 'user' ? t('step6.transcripts.user') : t('step6.transcripts.assistant')}
-              </span>
-              {msg.created_at && (
-                <span className="text-xs text-gray-400">
-                  {new Date(msg.created_at).toLocaleString()}
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{msg.content}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const ExportTab = ({ t, onExportPDF, exporting, hasAllFindings }) => {
-  const completedCount = Object.values(hasAllFindings).filter(Boolean).length;
-  const totalCount = Object.keys(hasAllFindings).length;
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-emerald-50 rounded-lg p-4 mb-6">
-        <h4 className="font-medium text-emerald-800 mb-2">{t('step6.export.readiness')}</h4>
-        <p className="text-emerald-700">
-          {completedCount}/{totalCount} {t('step6.export.sectionsComplete')}
-        </p>
-        <div className="mt-2 bg-emerald-200 rounded-full h-2">
-          <div
-            className="bg-emerald-600 h-2 rounded-full transition-all"
-            style={{ width: `${(completedCount / totalCount) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      <button
-        onClick={onExportPDF}
-        disabled={exporting}
-        className="w-full flex items-center justify-center gap-3 bg-emerald-600 text-white px-6 py-4 rounded-md hover:bg-emerald-700 disabled:bg-gray-300 transition-colors font-medium"
-      >
-        {exporting ? (
-          <>
-            <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            {t('step6.export.generating')}
-          </>
-        ) : (
-          <>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {t('step6.export.downloadPDF')}
-          </>
-        )}
-      </button>
-
-      <p className="text-sm text-gray-500 text-center">
-        {t('step6.export.pdfNote')}
-      </p>
-    </div>
-  );
-};
-
-// Helper Components
-
-const EmptyState = ({ message }) => (
-  <div className="text-center py-8">
-    <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-    <p className="text-gray-500 italic">{message}</p>
-  </div>
-);
-
-const GenerateButton = ({ onClick, loading, colorClass, children }) => (
-  <button
-    onClick={onClick}
-    disabled={loading}
-    className={`${colorClass} text-white px-6 py-3 rounded-md disabled:bg-gray-300 transition-colors font-medium flex items-center gap-2 mx-auto`}
-  >
-    {loading && (
-      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-    )}
-    {children}
-  </button>
-);
 
 export default Step6Page;

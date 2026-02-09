@@ -4,13 +4,15 @@ import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { companyInfoAPI, companyProfileAPI, prioritizationAPI, consultationAPI, businessCaseAPI, costEstimationAPI, apiKeyManager } from '../services/api';
-import { PageHeader, ExplanationBox, TypingIndicator, LoadingOverlay } from '../components/common';
+import { PageHeader, ExplanationBox, TypingIndicator } from '../components/common';
+import { SkeletonChat } from '../components/common/Skeleton';
 import ApiKeyPrompt from '../components/common/ApiKeyPrompt';
 import TestModePanel from '../components/common/TestModePanel';
 import { useTestMode } from '../hooks/useTestMode';
+import { extractApiError } from '../utils';
 
 const Step5Page = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { sessionUuid } = useParams();
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
@@ -212,7 +214,7 @@ const Step5Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to start potentials analysis');
+      setError(extractApiError(err, i18n.language));
       setPotentialsSending(false);
     }
   };
@@ -267,7 +269,7 @@ const Step5Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send message');
+      setError(extractApiError(err, i18n.language));
       setPotentialsSending(false);
     }
   };
@@ -284,7 +286,7 @@ const Step5Page = () => {
       const response = await businessCaseAPI.extract(sessionUuid);
       setPotentialsFindings(response.data.findings);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to extract potentials');
+      setError(extractApiError(err, i18n.language));
     } finally {
       setPotentialsExtracting(false);
     }
@@ -332,7 +334,7 @@ const Step5Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to start cost estimation');
+      setError(extractApiError(err, i18n.language));
       setCostsSending(false);
     }
   };
@@ -387,7 +389,7 @@ const Step5Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send message');
+      setError(extractApiError(err, i18n.language));
       setCostsSending(false);
     }
   };
@@ -404,7 +406,7 @@ const Step5Page = () => {
       const response = await costEstimationAPI.extract(sessionUuid);
       setCostsFindings(response.data.findings);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to extract cost estimation');
+      setError(extractApiError(err, i18n.language));
     } finally {
       setCostsExtracting(false);
     }
@@ -429,7 +431,7 @@ const Step5Page = () => {
       // Reload data to ensure UI matches database
       await loadData();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to reset');
+      setError(extractApiError(err, i18n.language));
     }
   };
 
@@ -448,7 +450,7 @@ const Step5Page = () => {
       // Reload data to ensure UI matches database
       await loadData();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to reset');
+      setError(extractApiError(err, i18n.language));
     }
   };
 
@@ -516,7 +518,7 @@ const Step5Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send message');
+      setError(extractApiError(err, i18n.language));
       setPotentialsSending(false);
     }
   };
@@ -570,7 +572,7 @@ const Step5Page = () => {
         }
       );
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send message');
+      setError(extractApiError(err, i18n.language));
       setCostsSending(false);
     }
   };
@@ -661,11 +663,9 @@ const Step5Page = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <LoadingOverlay
-          isVisible={true}
-          title={t('step5.loading.title', 'Loading analysis...')}
-          description={t('step5.loading.description', 'Please wait while we load your business case data.')}
-        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <SkeletonChat messageCount={4} />
+        </div>
       </div>
     );
   }
@@ -820,7 +820,7 @@ const Step5Page = () => {
         {/* Main content area */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat area - 2/3 width */}
-          <div className="lg:col-span-2 flex flex-col bg-white rounded-lg shadow h-[600px]">
+          <div className="lg:col-span-2 flex flex-col bg-white rounded-lg shadow min-h-[400px] max-h-[80vh]">
             {/* Top idea banner with reset button */}
             {topIdea && (
               <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3 flex justify-between items-center">
