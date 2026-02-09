@@ -745,7 +745,8 @@ Respond only with these 4 categories, brief and concise."""
             "maturity": maturity_data,
             "ideas": all_ideas,
             "top_idea": all_ideas[0] if all_ideas else None,
-            "collaborative_mode": db_session.collaborative_consultation or False
+            "collaborative_mode": db_session.collaborative_consultation or False,
+            "user_role": db_session.user_role or "consultant"
         }
 
     def _build_system_prompt(self, context: Dict) -> str:
@@ -777,6 +778,12 @@ When multiple people contribute:
             else:
                 multi_participant_section = ""
 
+        # Build role-specific guidance section (P5 / DP6)
+        user_role = context.get("user_role", "consultant")
+        role_section = self._build_role_section(user_role)
+        if role_section:
+            multi_participant_section = f"{multi_participant_section}\n{role_section}\n"
+
         # Get prompt template (behavioral rules only)
         template = get_prompt(
             "consultation_system",
@@ -785,6 +792,47 @@ When multiple people contribute:
         )
 
         return template.format(multi_participant_section=multi_participant_section)
+
+    def _build_role_section(self, user_role: str) -> str:
+        """Return a role-specific prompt section for DP6 role-based views."""
+        role_sections = {
+            "en": {
+                "business_owner": """## USER ROLE: BUSINESS OWNER
+The user is a business owner or executive. Adapt your language accordingly:
+- Emphasize business impact, ROI, and strategic value
+- Use clear, non-technical language — avoid jargon unless explained
+- Focus on cost summaries, competitive advantages, and risk/reward
+- Provide executive-level summaries before diving into details
+- Relate technical concepts to business outcomes""",
+                "technical_advisor": """## USER ROLE: TECHNICAL ADVISOR
+The user is a technical advisor or IT professional. Adapt your language accordingly:
+- Focus on implementation feasibility, architecture, and integration points
+- Use precise technical terminology freely
+- Discuss data requirements, system dependencies, and scalability
+- Provide detailed cost breakdowns (infrastructure, development, maintenance)
+- Address security, compliance, and technical debt considerations""",
+                "consultant": "",  # default — no special adaptation needed
+            },
+            "de": {
+                "business_owner": """## BENUTZERROLLE: GESCHÄFTSINHABER
+Der Benutzer ist ein Geschäftsinhaber oder eine Führungskraft. Passen Sie Ihre Sprache entsprechend an:
+- Betonen Sie Geschäftsauswirkungen, ROI und strategischen Wert
+- Verwenden Sie klare, nicht-technische Sprache — vermeiden Sie Fachjargon, es sei denn, er wird erklärt
+- Fokussieren Sie auf Kostenübersichten, Wettbewerbsvorteile und Risiko/Ertrag
+- Bieten Sie Zusammenfassungen auf Führungsebene, bevor Sie in Details gehen
+- Verbinden Sie technische Konzepte mit Geschäftsergebnissen""",
+                "technical_advisor": """## BENUTZERROLLE: TECHNISCHER BERATER
+Der Benutzer ist ein technischer Berater oder IT-Fachmann. Passen Sie Ihre Sprache entsprechend an:
+- Fokussieren Sie auf Implementierbarkeit, Architektur und Integrationspunkte
+- Verwenden Sie präzise technische Terminologie frei
+- Diskutieren Sie Datenanforderungen, Systemabhängigkeiten und Skalierbarkeit
+- Geben Sie detaillierte Kostenaufschlüsselungen (Infrastruktur, Entwicklung, Wartung)
+- Berücksichtigen Sie Sicherheit, Compliance und technische Schulden""",
+                "consultant": "",
+            },
+        }
+        lang = self.language if self.language in role_sections else "en"
+        return role_sections[lang].get(user_role, "")
 
     def _build_context_message(self, context: Dict) -> str:
         """Build the context message with session-specific data."""

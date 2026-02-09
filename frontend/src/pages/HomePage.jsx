@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { sessionAPI, expertSettingsAPI, sessionBackupAPI, apiKeyManager } from '../services/api';
 import LLMConfigSection from '../components/common/LLMConfigSection';
+import { extractApiError } from '../utils';
 
 // Helper to load/save LLM config from localStorage
 const LLM_CONFIG_KEY = 'ai_consultant_llm_config';
@@ -28,9 +29,10 @@ const saveLLMConfig = (config) => {
 };
 
 const HomePage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [companyName, setCompanyName] = useState('');
+  const [userRole, setUserRole] = useState('consultant');
   const [creating, setCreating] = useState(false);
   const [llmConfig, setLlmConfig] = useState({ model: '', api_key: '', api_base: '' });
   const [showLLMConfig, setShowLLMConfig] = useState(false);
@@ -60,7 +62,8 @@ const HomePage = () => {
     try {
       // Create session
       const response = await sessionAPI.create({
-        company_name: companyName || ''
+        company_name: companyName || '',
+        user_role: userRole
       });
       const sessionUuid = response.data.session_uuid;
 
@@ -108,7 +111,7 @@ const HomePage = () => {
       navigate(`/session/${new_session_uuid}/step1`);
     } catch (err) {
       console.error('Error restoring session:', err);
-      setRestoreError(err.response?.data?.detail || t('errors.failedToRestore'));
+      setRestoreError(extractApiError(err, i18n.language));
     } finally {
       setRestoring(false);
       // Reset file input
@@ -201,6 +204,35 @@ const HomePage = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={creating}
               />
+            </div>
+
+            {/* Role Selection (P5 / DP6) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('home.roleSelect.label')}
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'consultant', icon: '📋', labelKey: 'home.roleSelect.consultant' },
+                  { id: 'business_owner', icon: '💼', labelKey: 'home.roleSelect.businessOwner' },
+                  { id: 'technical_advisor', icon: '⚙️', labelKey: 'home.roleSelect.technicalAdvisor' },
+                ].map((role) => (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => setUserRole(role.id)}
+                    className={`p-3 rounded-lg border text-center text-sm font-medium transition-colors ${
+                      userRole === role.id
+                        ? 'bg-blue-50 border-blue-500 text-blue-700'
+                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="block text-lg mb-1">{role.icon}</span>
+                    {t(role.labelKey)}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">{t('home.roleSelect.hint')}</p>
             </div>
 
             {/* LLM Configuration Section */}

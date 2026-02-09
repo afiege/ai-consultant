@@ -93,7 +93,7 @@ def with_transaction(func: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
-async def with_transaction_async(func: Callable[..., T]) -> Callable[..., T]:
+def with_transaction_async(func: Callable[..., T]) -> Callable[..., T]:
     """
     Async version of with_transaction decorator for async router functions.
 

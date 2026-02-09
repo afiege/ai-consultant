@@ -6,8 +6,10 @@ from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+import asyncio
 import os
 import logging
+from datetime import datetime, timedelta, timezone
 
 from .config import settings
 from .exceptions import APIError, api_error_handler, generic_exception_handler
@@ -18,15 +20,35 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-from .database import init_db
+from .database import init_db, SessionLocal
 
 # Import routers
 from .routers import sessions, company_info, six_three_five, prioritization, consultation, export, expert_settings, business_case, cost_estimation, session_backup, maturity_assessment, test_mode
-# from .routers import websocket
+from .models.session import Session as SessionModel
 
 # Rate limiter configuration
 # Uses client IP address for rate limiting
 limiter = Limiter(key_func=get_remote_address)
+
+
+async def _cleanup_expired_sessions():
+    """Background task: delete sessions not updated within SESSION_EXPIRY_DAYS."""
+    while True:
+        await asyncio.sleep(60 * 60)  # run every hour
+        if settings.session_expiry_days <= 0:
+            continue
+        cutoff = datetime.now(timezone.utc) - timedelta(days=settings.session_expiry_days)
+        try:
+            db = SessionLocal()
+            stale = db.query(SessionModel).filter(SessionModel.updated_at < cutoff).all()
+            if stale:
+                for s in stale:
+                    db.delete(s)
+                db.commit()
+                logger.info("Session cleanup: deleted %d expired sessions (cutoff=%s)", len(stale), cutoff.isoformat())
+            db.close()
+        except Exception as exc:
+            logger.error("Session cleanup failed: %s", exc)
 
 
 @asynccontextmanager
@@ -44,15 +66,19 @@ async def lifespan(app: FastAPI):
     init_db()
     logger.info("Database initialized successfully")
 
+    # Start background cleanup task
+    cleanup_task = asyncio.create_task(_cleanup_expired_sessions())
+
     yield  # Application runs here
 
     # Shutdown
+    cleanup_task.cancel()
     logger.info("Application shutting down")
 
 
 app = FastAPI(
     title="AI & Digitalization Consultant",
-    description="AI-powered digitalization consultant for SMEs with 4-step consultation process",
+    description="AI-powered digitalization consultant for SMEs with 6-step consultation process",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -117,7 +143,6 @@ app.include_router(cost_estimation.router, prefix="/api/sessions", tags=["cost-e
 app.include_router(session_backup.router, prefix="/api/sessions", tags=["session-backup"])
 app.include_router(maturity_assessment.router, prefix="/api/sessions", tags=["maturity-assessment"])
 app.include_router(test_mode.router, tags=["test-mode"])
-# app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
 
 
 if __name__ == "__main__":

@@ -321,7 +321,7 @@ def generate_clusters(
     if db_session.custom_prompts:
         try:
             custom_prompts = json.loads(db_session.custom_prompts)
-        except:
+        except (json.JSONDecodeError, KeyError, ValueError):
             pass
 
     # Get maturity assessment for the session
@@ -410,7 +410,7 @@ def get_clusters(
 
     try:
         clusters = json.loads(db_session.idea_clusters)
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         clusters = {"clusters": []}
 
     # Get ideas to include full content in response
@@ -462,7 +462,7 @@ def submit_cluster_votes(
     try:
         clusters_data = json.loads(db_session.idea_clusters)
         valid_cluster_ids = {c["id"] for c in clusters_data.get("clusters", [])}
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid cluster data"
@@ -554,7 +554,7 @@ def get_cluster_results(
     try:
         clusters_data = json.loads(db_session.idea_clusters)
         clusters = clusters_data.get("clusters", [])
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         return {"ranked_clusters": [], "top_clusters": [], "selected_cluster_id": None}
 
     # Get votes for each cluster
@@ -635,7 +635,7 @@ def select_cluster(
     try:
         clusters_data = json.loads(db_session.idea_clusters)
         valid_cluster_ids = {c["id"] for c in clusters_data.get("clusters", [])}
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid cluster data"
@@ -743,7 +743,7 @@ def get_cluster_ideas(
             (c for c in clusters_data["clusters"] if c["id"] == db_session.selected_cluster_id),
             None
         )
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid cluster data"
@@ -818,7 +818,7 @@ def assess_cluster_ideas(
             (c for c in clusters_data["clusters"] if c["id"] == db_session.selected_cluster_id),
             None
         )
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid cluster data"
@@ -913,7 +913,7 @@ def submit_idea_votes(
             None
         )
         valid_idea_ids = set(selected_cluster.get("idea_ids", [])) if selected_cluster else set()
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid cluster data"
@@ -1009,7 +1009,7 @@ def get_idea_results(
             None
         )
         idea_ids = selected_cluster.get("idea_ids", []) if selected_cluster else []
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError):
         return {"ranked_ideas": [], "top_ideas": [], "cluster": None}
 
     if not idea_ids:

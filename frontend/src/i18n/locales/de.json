@@ -127,6 +127,13 @@
       "configured": "Konfiguriert",
       "hint": "Klicken Sie, um Ihren KI-Anbieter zu konfigurieren (erforderlich für KI-unterstütztes Brainstorming)"
     },
+    "roleSelect": {
+      "label": "Ihre Rolle",
+      "consultant": "Berater",
+      "businessOwner": "Geschäftsinhaber",
+      "technicalAdvisor": "Techn. Berater",
+      "hint": "Die KI passt Sprache und Fokus an Ihre Rolle an."
+    },
     "features": {
       "step1Title": "1. Unternehmensprofil",
       "step1Desc": "Erzählen Sie uns von Ihrem Unternehmen, dann bewerten Sie Ihre digitale Reife mit dem acatech Industrie 4.0 Framework (5 Min)",
@@ -939,5 +946,18 @@
     "networkError": "Netzwerkfehler. Bitte versuchen Sie es erneut.",
     "failedToGeneratePDF": "PDF-Erstellung fehlgeschlagen",
     "failedToRestore": "Sitzung konnte nicht wiederhergestellt werden. Bitte überprüfen Sie das Dateiformat."
+  },
+  "reflection": {
+    "title": "Kurze Reflexion",
+    "subtitle": "Nehmen Sie sich einen Moment, um über das Gelernte nachzudenken.",
+    "surprisedLabel": "Was hat Sie in diesem Schritt am meisten überrascht?",
+    "surprisedPlaceholder": "z.B. Ich hätte nicht erwartet, dass der Reifegrad so niedrig ist…",
+    "confidenceLabel": "Wie sicher fühlen Sie sich mit den Ergebnissen?",
+    "confidenceLow": "Unsicher",
+    "confidenceHigh": "Sehr sicher",
+    "exploreLabel": "Was möchten Sie weiter untersuchen?",
+    "explorePlaceholder": "z.B. Ich würde gerne Wettbewerbsvergleiche anschauen…",
+    "skip": "Überspringen",
+    "save": "Speichern & Weiter"
   }
 }

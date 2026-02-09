@@ -1,0 +1,32 @@
+services:
+  backend:
+    build: ./backend
+    container_name: ai-consultant-backend
+    ports:
+      - "8001:8000"
+    environment:
+      - LLM_MODEL=${LLM_MODEL:-mistral/mistral-small-latest}
+      - CORS_ORIGINS=http://localhost:3001
+      - DATABASE_URL=sqlite:///./database/ai_consultant.db
+    volumes:
+      - backend-data:/app/database
+      - backend-uploads:/app/uploads
+      - backend-exports:/app/exports
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8001
+    container_name: ai-consultant-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend-data:
+  backend-uploads:
+  backend-exports:

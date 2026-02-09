@@ -226,4 +226,24 @@ export default {
   requiresUserAction,
   logError,
   createErrorHandler,
+  extractApiError,
 };
+
+/**
+ * Extract a user-friendly error message from an Axios error or generic error.
+ * This is the convenience function for use in catch blocks:
+ *   catch (err) { setError(extractApiError(err, i18n.language)); }
+ *
+ * @param {Error|Object} error - Axios error or any error
+ * @param {string} language - 'en' or 'de'
+ * @returns {string} User-friendly error message
+ */
+export function extractApiError(error, language = 'en') {
+  // Handle Axios errors with response data (our API's standardized format)
+  const data = error?.response?.data;
+  if (data) {
+    return getErrorMessage(data, language);
+  }
+  // Handle generic errors
+  return getErrorMessage(error, language);
+}

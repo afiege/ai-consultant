@@ -10,7 +10,7 @@ import docx
 class FileProcessor:
     """Process uploaded files and extract text content."""
 
-    ALLOWED_EXTENSIONS = {'.pdf', '.docx', '.doc', '.txt'}
+    ALLOWED_EXTENSIONS = {'.pdf', '.docx', '.txt'}
 
     @staticmethod
     def validate_file(filename: str, file_size: int, max_size: int = 10 * 1024 * 1024) -> Tuple[bool, str]:
@@ -123,7 +123,7 @@ class FileProcessor:
 
         if ext == '.pdf':
             return FileProcessor.extract_text_from_pdf(file_path)
-        elif ext in ['.docx', '.doc']:
+        elif ext == '.docx':
             return FileProcessor.extract_text_from_docx(file_path)
         elif ext == '.txt':
             return FileProcessor.extract_text_from_txt(file_path)

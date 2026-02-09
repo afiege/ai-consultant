@@ -30,7 +30,6 @@ class CompanyInfoResponse(CompanyInfoBase):
     """Schema for company info response."""
     id: int
     session_id: int
-    file_path: Optional[str] = None
     created_at: datetime
 
     class Config:

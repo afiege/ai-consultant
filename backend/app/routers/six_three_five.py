@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import uuid
@@ -9,6 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from ..database import get_db, SessionLocal
+from ..services.ws_manager import ws_manager
 from ..models import (
     Session as SessionModel,
     Participant,
@@ -43,6 +44,11 @@ def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, s
 router = APIRouter()
 
 
+async def _ws_broadcast(session_uuid: str, event: str, data: dict, exclude: str = None):
+    """Async helper so sync route handlers can schedule WS broadcasts via BackgroundTasks."""
+    await ws_manager.broadcast(session_uuid, event, data, exclude=exclude)
+
+
 def generate_ai_ideas_background(
     session_uuid: str,
     model: str,
@@ -60,6 +66,14 @@ def generate_ai_ideas_background(
         manager.api_key = api_key
         manager.api_base = api_base
         manager._generate_ai_ideas_for_round(session_uuid)
+        # Notify connected clients that AI ideas are ready
+        try:
+            asyncio.run(ws_manager.broadcast(
+                session_uuid, "ai_ideas_ready",
+                {"session_uuid": session_uuid},
+            ))
+        except Exception as broadcast_err:
+            logger.debug(f"WS broadcast from background task failed: {broadcast_err}")
     except Exception as e:
         logger.error(f"Background AI generation error: {e}")
     finally:
@@ -116,6 +130,13 @@ def start_six_three_five(
                 language
             )
             result['ai_generation_status'] = 'in_progress'
+
+        # Broadcast session started to connected WS clients
+        background_tasks.add_task(
+            _ws_broadcast, session_uuid, "session_started",
+            {"status": result.get("status"), "current_round": result.get("current_round", 1),
+             "participants": result.get("total_participants", 0)},
+        )
 
         return result
     except ValueError as e:
@@ -324,6 +345,7 @@ def submit_ideas(
     session_uuid: str,
     participant_uuid: str,
     ideas_data: IdeaBatchCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """Submit 3 ideas for the current round."""
@@ -336,6 +358,16 @@ def submit_ideas(
             ideas_data.sheet_id,
             ideas_data.ideas
         )
+
+        # Broadcast to other participants
+        background_tasks.add_task(
+            _ws_broadcast, session_uuid, "ideas_submitted",
+            {"participant_uuid": participant_uuid,
+             "sheet_id": ideas_data.sheet_id,
+             "round": result.get("round_number")},
+            participant_uuid,
+        )
+
         return result
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -402,6 +434,14 @@ async def advance_round(
             language
         )
         result['ai_generation_status'] = 'in_progress'
+
+    # Broadcast round advanced / session complete
+    event = "session_complete" if result.get("status") == "complete" else "round_advanced"
+    await ws_manager.broadcast(
+        session_uuid, event,
+        {"status": result.get("status"), "current_round": result.get("current_round"),
+         "session_uuid": session_uuid},
+    )
 
     return result
 
@@ -519,3 +559,56 @@ def submit_manual_ideas(
         "ideas_created": len(created_ideas),
         "ideas": created_ideas
     }
+
+
+# --- WebSocket endpoint for real-time collaboration ---
+
+@router.websocket("/{session_uuid}/six-three-five/ws")
+async def brainstorming_ws(
+    websocket: WebSocket,
+    session_uuid: str,
+    participant_uuid: str = "",
+):
+    """WebSocket endpoint for real-time 6-3-5 brainstorming updates.
+
+    Query param:
+        participant_uuid – identifies the connecting participant.
+
+    Events pushed to clients:
+        session_started, ideas_submitted, round_advanced, session_complete,
+        participant_connected, participant_disconnected, ai_ideas_ready
+    """
+    if not participant_uuid:
+        await websocket.close(code=4001, reason="participant_uuid query param required")
+        return
+
+    await ws_manager.connect(websocket, session_uuid, participant_uuid)
+
+    # Notify others that a participant connected
+    await ws_manager.broadcast(
+        session_uuid,
+        "participant_connected",
+        {"participant_uuid": participant_uuid,
+         "connected_count": ws_manager.get_connected_count(session_uuid)},
+        exclude=participant_uuid,
+    )
+
+    try:
+        while True:
+            # Keep connection alive — clients may send pings or small messages
+            data = await websocket.receive_text()
+            # Echo a pong for keep-alive
+            if data == "ping":
+                await websocket.send_text(json.dumps({"event": "pong", "data": {}}))
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.debug(f"WS error for {participant_uuid[:8]}…: {e}")
+    finally:
+        ws_manager.disconnect(websocket, session_uuid, participant_uuid)
+        await ws_manager.broadcast(
+            session_uuid,
+            "participant_disconnected",
+            {"participant_uuid": participant_uuid,
+             "connected_count": ws_manager.get_connected_count(session_uuid)},
+        )

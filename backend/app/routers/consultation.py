@@ -470,10 +470,10 @@ def get_findings(
     ).all()
 
     result = {
-        "project": None,
-        "risks": None,
-        "end_user": None,
-        "implementation": None
+        "business_objectives": None,
+        "situation_assessment": None,
+        "ai_goals": None,
+        "project_plan": None
     }
 
     for f in findings:

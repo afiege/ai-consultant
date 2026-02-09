@@ -115,7 +115,11 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 - **Multi-language Support** - English and German
 - **Expert Mode** - Customize all AI prompts and LLM settings
 - **Session Backup/Restore** - Export and import session data
-- **Multi-participant Collaboration** - Real-time collaboration in brainstorming and consultation
+- **Multi-participant Collaboration** - Real-time WebSocket collaboration in brainstorming
+- **Session Authentication** - Token-based access control per session (SHA-256 hashed)
+- **Role-Specific Views** - Consultant, Business Owner, or Technical Lead perspectives
+- **Reflection Prompts** - Learning checkpoints between major steps
+- **Cross-Reference Display** - Wiki-style links between related findings
 
 ## Architecture
 
@@ -137,7 +141,7 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 │  │  apiKeyManager (sessionStorage) + companyProfileAPI + ...          │    │
 │  └───────────────────────────────┬───────────────────────────────────┘    │
 └──────────────────────────────────┼────────────────────────────────────────┘
-                                   │ HTTP/REST + SSE
+                                   │ HTTP/REST + SSE + WebSocket
                                    │ (API key in request body)
 ┌──────────────────────────────────┼────────────────────────────────────────┐
 │                         BACKEND (FastAPI)                                  │
@@ -180,9 +184,11 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 ### Key Design Decisions
 
 - **No server-side API key storage**: User API keys are stored only in browser `sessionStorage` (cleared when tab closes) and passed with each LLM request
+- **Session authentication**: SHA-256 token-based access control per session
 - **LiteLLM abstraction**: Supports 100+ LLM providers through a unified interface
 - **SSE streaming**: Chat responses stream in real-time for better UX
-- **SQLite database**: Simple file-based storage, easy backup/restore
+- **WebSocket collaboration**: Real-time brainstorming with automatic reconnection
+- **Dual database support**: SQLite (development) or PostgreSQL (production)
 - **Modular architecture**: Each step has dedicated router and service layer
 
 ## Tech Stack
@@ -190,11 +196,13 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 ### Backend
 - **FastAPI** - Modern Python web framework
 - **SQLAlchemy** - ORM for database operations
-- **SQLite** - Database with WAL mode for better concurrency
+- **SQLite / PostgreSQL** - SQLite (dev, WAL mode) or PostgreSQL (production)
+- **Alembic** - Database schema migrations
 - **LiteLLM** - Multi-provider LLM integration (OpenAI, Anthropic, Mistral, OpenRouter, etc.)
 - **ReportLab** - PDF generation with charts and professional formatting
 - **BeautifulSoup4** - Web scraping
 - **PyPDF2 & python-docx** - File processing
+- **pytest + httpx** - API test suite (41 tests)
 
 ### Frontend
 - **React 18** - UI framework
@@ -205,16 +213,29 @@ An AI-powered digitalization consultant application for Small and Medium Enterpr
 - **i18next** - Internationalization (English & German)
 - **React Markdown** - Markdown rendering in chat
 - **QRCode.react** - QR code generation for session sharing
+- **Recharts** - Data visualization (radar charts, scatter plots)
+
+### Infrastructure
+- **Docker & Docker Compose** - Containerized deployment
+- **GitHub Actions** - CI/CD pipeline (lint, test, build, Docker)
+- **Nginx** - Frontend static file serving and reverse proxy
 
 ## Project Structure
 
 ```
 ai-consultant/
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # GitHub Actions CI/CD pipeline
 ├── backend/
+│   ├── alembic/                 # Database migration scripts
+│   │   ├── env.py
+│   │   └── versions/
+│   ├── alembic.ini
 │   ├── app/
 │   │   ├── main.py              # FastAPI application entry point
 │   │   ├── config.py            # Configuration (env vars)
-│   │   ├── database.py          # Database setup
+│   │   ├── database.py          # Database setup (SQLite/PostgreSQL)
 │   │   ├── models/              # SQLAlchemy models
 │   │   │   ├── session.py       # Session (+ company_profile), CompanyInfo, MaturityAssessment
 │   │   │   ├── brainstorm.py    # Participant, IdeaSheet, Idea
@@ -236,18 +257,29 @@ ai-consultant/
 │   │   │   ├── export.py
 │   │   │   ├── expert_settings.py
 │   │   │   └── session_backup.py
-│   │   └── services/            # Business logic
-│   │       ├── company_profile_service.py  # AI-powered profile extraction
-│   │       ├── ai_participant.py    # AI brainstorming participant
-│   │       ├── consultation_service.py
-│   │       ├── business_case_service.py
-│   │       ├── cost_estimation_service.py
-│   │       ├── pdf_generator.py
-│   │       ├── web_crawler.py
-│   │       ├── file_processor.py    # PDF/DOCX text extraction
-│   │       └── default_prompts.py   # All AI prompts (EN/DE)
-│   ├── migrations/              # Database migrations
-│   │   └── add_company_profile.py
+│   │   ├── services/            # Business logic
+│   │   │   ├── company_profile_service.py  # AI-powered profile extraction
+│   │   │   ├── ai_participant.py    # AI brainstorming participant
+│   │   │   ├── consultation_service.py
+│   │   │   ├── business_case_service.py
+│   │   │   ├── cost_estimation_service.py
+│   │   │   ├── pdf_generator.py
+│   │   │   ├── web_crawler.py
+│   │   │   ├── ws_manager.py        # WebSocket connection manager
+│   │   │   ├── file_processor.py    # PDF/DOCX text extraction
+│   │   │   └── default_prompts.py   # All AI prompts (EN/DE)
+│   │   └── utils/
+│   │       ├── auth.py              # Session token authentication
+│   │       ├── llm.py               # LLM utilities
+│   │       └── security.py          # Rate limiting, input validation
+│   ├── tests/                   # API test suite (41 tests)
+│   │   ├── conftest.py
+│   │   ├── test_sessions.py
+│   │   ├── test_auth.py
+│   │   ├── test_company_info.py
+│   │   ├── test_maturity.py
+│   │   ├── test_brainstorming.py
+│   │   └── test_export.py
 │   ├── uploads/                 # Uploaded files
 │   ├── exports/                 # Generated PDF reports
 │   └── requirements.txt
@@ -256,43 +288,46 @@ ai-consultant/
 │   ├── src/
 │   │   ├── App.jsx              # Main app with routing
 │   │   ├── main.jsx             # Entry point
-│   │   ├── pages/               # Page components
-│   │   │   ├── HomePage.jsx
-│   │   │   ├── Step1Page.jsx    # Company Info + Profile Extraction + Maturity
-│   │   │   ├── Step2Page.jsx    # 6-3-5 Brainstorming
-│   │   │   ├── Step3Page.jsx    # Idea Prioritization
-│   │   │   ├── Step4Page.jsx    # AI Consultation (CRISP-DM)
-│   │   │   ├── Step5Page.jsx    # Business Case & Cost Estimation
-│   │   │   └── Step6Page.jsx    # Export & Handover
-│   │   ├── components/          # Reusable components
+│   │   ├── pages/               # Page components (Step1–Step6 + Home)
+│   │   ├── components/
 │   │   │   ├── common/          # Shared UI components
 │   │   │   │   ├── ApiKeyPrompt.jsx
 │   │   │   │   ├── PageHeader.jsx
 │   │   │   │   ├── StepProgress.jsx
 │   │   │   │   ├── LLMConfigSection.jsx
-│   │   │   │   └── ExplanationBox.jsx
-│   │   │   ├── step1/
-│   │   │   │   ├── CompanyInfoForm.jsx
-│   │   │   │   ├── CompanyInfoDisplay.jsx
-│   │   │   │   ├── CompanyProfileEditor.jsx  # Editable profile form
-│   │   │   │   ├── FileUploader.jsx
-│   │   │   │   └── WebCrawlerForm.jsx
-│   │   │   ├── step2/
-│   │   │   │   ├── ParticipantJoin.jsx
-│   │   │   │   ├── ShareSession.jsx
-│   │   │   │   └── IdeaSheet.jsx
-│   │   │   └── expert/
-│   │   │       ├── ExpertSettingsModal.jsx
-│   │   │       ├── PromptEditor.jsx
-│   │   │       └── LanguageSelector.jsx
+│   │   │   │   ├── ExplanationBox.jsx
+│   │   │   │   ├── Skeleton.jsx         # Loading skeleton components
+│   │   │   │   ├── ReflectionModal.jsx  # Learning reflection prompts
+│   │   │   │   └── WikiLinkMarkdown.jsx # Wiki-style cross-reference links
+│   │   │   ├── step1/           # Company info, profile, maturity components
+│   │   │   ├── step2/           # Brainstorming components
+│   │   │   ├── step3/           # Prioritization components (decomposed)
+│   │   │   │   ├── ClusterCard.jsx
+│   │   │   │   ├── ClusterScatterPlot.jsx
+│   │   │   │   ├── IdeaScatterPlot.jsx
+│   │   │   │   ├── VotingWidgets.jsx
+│   │   │   │   └── helpers.js
+│   │   │   ├── step6/           # Export components (decomposed)
+│   │   │   │   ├── CompanyProfileTab.jsx
+│   │   │   │   ├── FindingsTabs.jsx
+│   │   │   │   ├── GeneratedTabs.jsx
+│   │   │   │   ├── DataTabs.jsx
+│   │   │   │   ├── ExportTab.jsx
+│   │   │   │   └── SharedWidgets.jsx
+│   │   │   └── expert/          # Expert mode settings
+│   │   ├── hooks/
+│   │   │   ├── useLLMStream.js      # Reusable SSE streaming hook
+│   │   │   └── useBrainwritingWs.js # WebSocket brainstorming hook
 │   │   ├── services/
-│   │   │   └── api.js           # API client + apiKeyManager + companyProfileAPI
+│   │   │   └── api.js           # API client + session token manager
 │   │   └── i18n/
-│   │       └── locales/         # en.json, de.json (with profile translations)
+│   │       └── locales/         # en.json, de.json
 │   ├── package.json
 │   └── vite.config.js
 │
+├── docker-compose.yml           # Docker Compose for local/production deployment
 ├── DEPLOY.md                    # Deployment instructions
+├── COMMIT.md                    # Changelog
 └── README.md
 ```
 
@@ -334,6 +369,8 @@ ai-consultant/
    Edit `.env` and configure:
    - `LLM_MODEL` - Default model (e.g., `mistral/mistral-small-latest`, `gpt-4o`, `claude-3-sonnet`)
    - `LLM_API_BASE` - Custom API base URL (optional, for local models or proxies)
+   - `SESSION_SECRET_KEY` - Secret for session token hashing (auto-generated if not set)
+   - `DATABASE_URL` - Database connection string (default: SQLite)
 
    **Note**: API keys are entered by users in the app at runtime and are NOT stored on the server.
 
@@ -543,10 +580,13 @@ All fields except `name` are nullable to prevent AI hallucination of missing dat
 ## Security Features
 
 - **No API Key Storage**: API keys are entered by users at runtime, stored only in browser sessionStorage, and passed with each request - never persisted on the server
+- **Session Authentication**: Token-based access control — SHA-256 hashed token generated at session creation, required for all mutating operations
 - **Input Validation**: All user inputs validated via Pydantic schemas
-- **File Upload Security**: File type restrictions, size limits, UUID-based filenames
+- **File Upload Security**: File type restrictions, size limits (50 MB max), UUID-based filenames
+- **Rate Limiting**: Request rate limits on session, consultation, and generation endpoints
 - **CORS Protection**: Configured allowed origins
 - **SQL Injection Protection**: SQLAlchemy ORM with parameterized queries
+- **Test Mode Gating**: Test mode endpoints disabled by default (`ENABLE_TEST_MODE=false`)
 
 ## Internationalization
 
@@ -560,10 +600,11 @@ Language can be switched via the UI. Translations are in `frontend/src/i18n/loca
 
 ### Running Tests
 
-Backend:
+Backend (41 tests covering sessions, auth, company info, maturity, brainstorming, exports):
 ```bash
 cd backend
-pytest
+pip install pytest httpx
+pytest -v
 ```
 
 ### Building for Production
@@ -579,9 +620,18 @@ The built files will be in `frontend/dist/`
 ## Deployment
 
 See [DEPLOY.md](DEPLOY.md) for deployment instructions including:
-- Railway deployment
-- Docker deployment
-- Manual VPS deployment
+- **Docker Compose** — Simplest option for local or production deployment
+- **Debian VPS / VM** — Manual setup with systemd + Nginx
+- **Railway** — Quick cloud deployment for testing
+
+### Quick Start with Docker
+
+```bash
+cp .env.example .env  # Edit with your settings
+docker compose up -d
+# Frontend: http://localhost:3001
+# Backend:  http://localhost:8001
+```
 
 ## License
 

@@ -11,6 +11,7 @@ class Session(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_uuid = Column(String(36), unique=True, nullable=False, index=True)
+    access_token_hash = Column(String(64), nullable=True)  # SHA-256 hash of session access token
     company_name = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
@@ -19,6 +20,12 @@ class Session(Base):
     six_three_five_skipped = Column(Boolean, default=False)  # Whether 6-3-5 was skipped
     owner_participant_uuid = Column(String(36), nullable=True)  # UUID of session owner (first participant to join)
     collaborative_consultation = Column(Boolean, default=False)  # Enable multi-participant consultation mode
+
+    # Role-specific view (P5 / DP6)
+    user_role = Column(String(30), default="consultant")  # consultant | business_owner | technical_advisor
+
+    # Reflection responses (P6 / DP8) — JSON dict keyed by step, e.g. {"step3": {"surprised": "...", ...}}
+    reflections = Column(Text, nullable=True)
 
     # Expert mode settings
     expert_mode = Column(Boolean, default=False)  # Enable expert mode features

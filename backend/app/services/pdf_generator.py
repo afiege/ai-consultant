@@ -1611,7 +1611,7 @@ class PDFReportGenerator:
                 if dim_details_json:
                     try:
                         details = json.loads(dim_details_json) if isinstance(dim_details_json, str) else dim_details_json
-                    except:
+                    except (json.JSONDecodeError, ValueError):
                         pass
 
                 # Question scores

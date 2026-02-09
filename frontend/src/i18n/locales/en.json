@@ -127,6 +127,13 @@
       "configured": "Configured",
       "hint": "Click to configure your AI provider (required for AI-assisted brainstorming)"
     },
+    "roleSelect": {
+      "label": "Your Role",
+      "consultant": "Consultant",
+      "businessOwner": "Business Owner",
+      "technicalAdvisor": "Technical Advisor",
+      "hint": "The AI will tailor its language and focus to your role."
+    },
     "features": {
       "step1Title": "1. Company Profile",
       "step1Desc": "Tell us about your company, then assess your digital maturity using the acatech Industry 4.0 framework (5 min)",
@@ -939,5 +946,18 @@
     "networkError": "Network error. Please try again.",
     "failedToGeneratePDF": "Failed to generate PDF",
     "failedToRestore": "Failed to restore session. Please check the file format."
+  },
+  "reflection": {
+    "title": "Quick Reflection",
+    "subtitle": "Take a moment to reflect on what you've learned so far.",
+    "surprisedLabel": "What surprised you most in this step?",
+    "surprisedPlaceholder": "e.g. I didn't expect the maturity score to be so low…",
+    "confidenceLabel": "How confident do you feel about the results?",
+    "confidenceLow": "Not sure",
+    "confidenceHigh": "Very confident",
+    "exploreLabel": "What would you like to explore further?",
+    "explorePlaceholder": "e.g. I'd like to look at competitor benchmarks…",
+    "skip": "Skip",
+    "save": "Save & Continue"
   }
 }

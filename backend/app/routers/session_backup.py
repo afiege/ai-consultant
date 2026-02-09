@@ -210,6 +210,16 @@ async def restore_session_backup(
     """
     try:
         content = await file.read()
+
+        # F8: Enforce file size limit on backup restore
+        from ..config import settings as app_settings
+        if len(content) > app_settings.max_backup_size:
+            max_mb = app_settings.max_backup_size / (1024 * 1024)
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Backup file too large. Maximum size is {max_mb:.0f}MB."
+            )
+
         backup = json.loads(content.decode('utf-8'))
     except json.JSONDecodeError as e:
         raise HTTPException(
