@@ -426,6 +426,8 @@
       "expandAll": "Show all ideas",
       "collapseAll": "Hide all ideas",
       "noIdeaDetails": "Idea details not available",
+      "ideasLoadingError": "Could not load idea details. Try regenerating clusters.",
+      "noIdeas": "No ideas in this cluster",
       "moreIdeas": "...and {{count}} more",
       "ideas": "ideas",
       "votesRecorded": "Your cluster votes have been recorded! Select a cluster to continue.",

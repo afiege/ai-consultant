@@ -11,11 +11,14 @@ Phase 2 (Idea Prioritization):
 """
 
 import json
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Optional
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 from ..database import get_db
 from ..models.session import Session as SessionModel
@@ -421,10 +424,16 @@ def get_clusters(
 
     # Enrich clusters with idea content
     for cluster in clusters.get("clusters", []):
-        cluster["ideas"] = [
-            ideas_dict.get(idea_id, {"id": idea_id, "content": "Unknown"})
-            for idea_id in cluster.get("idea_ids", [])
-        ]
+        cluster_ideas = []
+        for idea_id in cluster.get("idea_ids", []):
+            idea_data = ideas_dict.get(idea_id)
+            if idea_data:
+                cluster_ideas.append(idea_data)
+            else:
+                logger.warning(f"Idea ID {idea_id} not found in database for cluster {cluster.get('name')}")
+        cluster["ideas"] = cluster_ideas
+        # Keep idea_ids for reference but also store actual count
+        cluster["idea_count_actual"] = len(cluster_ideas)
 
     return {
         "clusters": clusters.get("clusters", []),

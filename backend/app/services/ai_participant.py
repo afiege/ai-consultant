@@ -350,7 +350,7 @@ Return the clustering as JSON."""
         response = completion(**completion_kwargs)
         content = response.choices[0].message.content
 
-        # Parse JSON from response (handle potential markdown code blocks)
+        # Parse JSON from response (handle potential markdown code blocks and extra text)
         content = content.strip()
         if content.startswith("```json"):
             content = content[7:]
@@ -360,7 +360,22 @@ Return the clustering as JSON."""
             content = content[:-3]
         content = content.strip()
 
+        # Try to find JSON object in the response (in case there's extra text)
+        json_start = content.find('{')
+        json_end = content.rfind('}')
+        if json_start != -1 and json_end != -1 and json_end > json_start:
+            content = content[json_start:json_end + 1]
+
         result = json.loads(content)
+
+        # Validate that all returned idea_ids exist in the input
+        input_ids = {idea["id"] for idea in ideas}
+        for cluster in result.get("clusters", []):
+            valid_ids = [id for id in cluster.get("idea_ids", []) if id in input_ids]
+            invalid_ids = [id for id in cluster.get("idea_ids", []) if id not in input_ids]
+            if invalid_ids:
+                logger.warning(f"Cluster '{cluster.get('name')}' contains invalid idea IDs: {invalid_ids}")
+            cluster["idea_ids"] = valid_ids
 
         # Validate that all ideas are assigned
         assigned_ids = set()
@@ -383,6 +398,7 @@ Return the clustering as JSON."""
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse clustering response as JSON: {e}")
+        logger.debug(f"Raw LLM response that failed to parse: {content[:500] if content else 'empty'}")
         return _create_fallback_clusters(ideas, language)
     except Exception as e:
         logger.error(f"Clustering error: {e}")

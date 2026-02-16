@@ -100,6 +100,19 @@ class SixThreeFiveSession:
             Participant.session_id == db_session.id
         ).order_by(Participant.id).all()
 
+        # Check if sheets already exist for this session
+        existing_sheets = self.db.query(IdeaSheet).filter(
+            IdeaSheet.session_id == db_session.id
+        ).count()
+
+        if existing_sheets > 0:
+            # Delete existing sheets and ideas (cascade)
+            self.db.query(IdeaSheet).filter(
+                IdeaSheet.session_id == db_session.id
+            ).delete()
+            self.db.commit()
+            logger.info(f"Deleted {existing_sheets} existing sheets for session restart")
+
         # Create idea sheets (one per participant)
         for i, participant in enumerate(all_participants):
             sheet = IdeaSheet(

@@ -426,6 +426,8 @@
       "expandAll": "Alle Ideen anzeigen",
       "collapseAll": "Alle Ideen ausblenden",
       "noIdeaDetails": "Ideendetails nicht verfügbar",
+      "ideasLoadingError": "Ideendetails konnten nicht geladen werden. Versuchen Sie, die Cluster neu zu generieren.",
+      "noIdeas": "Keine Ideen in diesem Cluster",
       "moreIdeas": "...und {{count}} weitere",
       "ideas": "Ideen",
       "votesRecorded": "Ihre Cluster-Stimmen wurden aufgezeichnet! Wählen Sie einen Cluster, um fortzufahren.",

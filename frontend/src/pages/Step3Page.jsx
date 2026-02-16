@@ -942,9 +942,13 @@ const ClusterCard = ({ cluster, votes, totalPoints, onAddPoint, onRemovePoint, c
                   </div>
                 </div>
               ))
+            ) : cluster.idea_ids && cluster.idea_ids.length > 0 ? (
+              <p className="text-sm text-amber-600">
+                {t('step3.phase1.ideasLoadingError', 'Could not load idea details. Try regenerating clusters.')}
+              </p>
             ) : (
               <p className="text-sm text-gray-500 italic">
-                {t('step3.phase1.noIdeaDetails', 'Idea details not available')}
+                {t('step3.phase1.noIdeas', 'No ideas in this cluster')}
               </p>
             )}
           </div>
@@ -1030,15 +1034,18 @@ const Step3Page = () => {
           const clusterIdeasResponse = await prioritizationAPI.getClusterIdeas(sessionUuid);
           const loadedIdeas = clusterIdeasResponse.data.ideas || [];
           setClusterIdeas(loadedIdeas);
+          // Set unassessed ideas first so UI can render immediately
+          setAssessedIdeas(loadedIdeas);
 
-          // Try to load assessed ideas for scatter plot
-          try {
-            const assessResponse = await prioritizationAPI.assessClusterIdeas(sessionUuid, apiKeyManager.get());
-            setAssessedIdeas(assessResponse.data.ideas || []);
-          } catch (assessErr) {
-            console.error('Failed to assess ideas on load:', assessErr);
-            setAssessedIdeas(loadedIdeas); // Fall back to unassessed
-          }
+          // Load assessed ideas in background (don't block UI)
+          prioritizationAPI.assessClusterIdeas(sessionUuid, apiKeyManager.get())
+            .then(assessResponse => {
+              setAssessedIdeas(assessResponse.data.ideas || loadedIdeas);
+            })
+            .catch(assessErr => {
+              console.error('Failed to assess ideas:', assessErr);
+              // Keep unassessed ideas as fallback (already set)
+            });
         } catch (e) {
           console.error('Failed to load cluster ideas:', e);
         }
