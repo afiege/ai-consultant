@@ -28,6 +28,7 @@ class Session(Base):
     # LLM configuration (per-session)
     llm_model = Column(String(100), nullable=True)  # e.g., "meta-llama-3.1-8b-instruct"
     llm_api_base = Column(String(255), nullable=True)  # e.g., "https://chat-ai.academiccloud.de/v1"
+    temperature_config = Column(Text, nullable=True)  # JSON string of TemperatureConfig
 
     # Structured company profile (extracted from raw company info)
     company_profile = Column(Text, nullable=True)  # JSON string of CompanyProfile

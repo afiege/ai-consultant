@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 from ..models import Session as SessionModel, ConsultationFinding, CompanyInfo, MaturityAssessment
 from ..services.pdf_generator import PDFReportGenerator
 from ..services.default_prompts import get_prompt
-from ..services.session_settings import get_llm_settings
+from ..services.session_settings import get_llm_settings, get_temperature_config
 from ..config import settings
 
 router = APIRouter()
@@ -214,6 +214,7 @@ def generate_transition_briefing(
 
     # Get LLM settings from session (same as other steps)
     session_model, session_api_base = get_llm_settings(db_session)
+    temps = get_temperature_config(db_session)
 
     # Use request overrides if provided, otherwise use session settings
     api_key = x_api_key or request.api_key
@@ -242,7 +243,7 @@ def generate_transition_briefing(
                 {"role": "system", "content": filled_prompt},
                 {"role": "user", "content": "Please generate the Technical Transition Briefing based on the provided context."}
             ],
-            "temperature": 0.4,
+            "temperature": temps.get('export', 0.4),
             "max_tokens": 4096
         }
 
@@ -430,6 +431,7 @@ def generate_swot_analysis(
 
     # Get LLM settings from session (same as other steps)
     session_model, session_api_base = get_llm_settings(db_session)
+    temps = get_temperature_config(db_session)
 
     # Use request overrides if provided, otherwise use session settings
     api_key = x_api_key or request.api_key
@@ -458,7 +460,7 @@ def generate_swot_analysis(
                 {"role": "system", "content": filled_prompt},
                 {"role": "user", "content": "Please generate the SWOT analysis based on the provided context."}
             ],
-            "temperature": 0.4,
+            "temperature": temps.get('export', 0.4),
             "max_tokens": 4096
         }
 
@@ -539,6 +541,9 @@ def _trigger_analysis_update_sync(
             logger.warning(f"Session {session_id} not found for analysis update")
             return
 
+        # Get temperature config for export step
+        temps = get_temperature_config(db_session)
+
         # Build context
         context = _build_transition_context(db, db_session)
 
@@ -565,7 +570,7 @@ def _trigger_analysis_update_sync(
                     {"role": "system", "content": swot_filled_prompt},
                     {"role": "user", "content": "Please generate the SWOT analysis based on the provided context."}
                 ],
-                "temperature": 0.4,
+                "temperature": temps.get('export', 0.4),
                 "max_tokens": 4096
             }
 
@@ -598,7 +603,7 @@ def _trigger_analysis_update_sync(
                     {"role": "system", "content": briefing_filled_prompt},
                     {"role": "user", "content": "Please generate the Technical Transition Briefing based on the provided context."}
                 ],
-                "temperature": 0.4,
+                "temperature": temps.get('export', 0.4),
                 "max_tokens": 4096
             }
 

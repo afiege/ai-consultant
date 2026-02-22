@@ -4,6 +4,7 @@ import { expertSettingsAPI, apiKeyManager } from '../../services/api';
 import LanguageSelector from './LanguageSelector';
 import PromptEditor from './PromptEditor';
 import LLMConfigSection from '../common/LLMConfigSection';
+import TemperatureConfigSection from './TemperatureConfigSection';
 
 const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
   const { t, i18n } = useTranslation();
@@ -125,6 +126,9 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
   // LLM Configuration state
   const [llmConfig, setLlmConfig] = useState({ model: '', api_key: '', api_base: '' });
 
+  // Temperature Configuration state
+  const [temperatureConfig, setTemperatureConfig] = useState({});
+
   // Test Mode state (stored in localStorage, not per-session)
   const [testModeEnabled, setTestModeEnabled] = useState(() => {
     return localStorage.getItem('test_mode_enabled') === 'true';
@@ -218,12 +222,20 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
           api_key: existingApiKey,
           api_base: config.api_base || '',
         });
+
+        // Load temperature config if present
+        if (config.temperature_config) {
+          setTemperatureConfig(config.temperature_config);
+        } else {
+          setTemperatureConfig({});
+        }
       } else {
         // No LLM config, but still check if there's an API key stored
         const existingApiKey = apiKeyManager.get() || '';
         if (existingApiKey) {
           setLlmConfig(prev => ({ ...prev, api_key: existingApiKey }));
         }
+        setTemperatureConfig({});
       }
     } catch (err) {
       console.error('Failed to load expert settings:', err);
@@ -252,11 +264,12 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
     try {
       // Build LLM config if any field is set
       let llmConfigData = null;
-      if (llmConfig.model || llmConfig.api_key || llmConfig.api_base) {
+      if (llmConfig.model || llmConfig.api_key || llmConfig.api_base || Object.keys(temperatureConfig).length > 0) {
         llmConfigData = {
           model: llmConfig.model || null,
           api_key: llmConfig.api_key || null, // Only send if user entered a new key
           api_base: llmConfig.api_base || null,
+          temperature_config: Object.keys(temperatureConfig).length > 0 ? temperatureConfig : null,
         };
       }
 
@@ -391,6 +404,14 @@ const ExpertSettingsModal = ({ isOpen, onClose, sessionUuid }) => {
                       onChange={(newConfig) => setLlmConfig(newConfig)}
                       showTitle={true}
                       compact={false}
+                    />
+                  </div>
+
+                  {/* Temperature Configuration */}
+                  <div className="mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <TemperatureConfigSection
+                      config={temperatureConfig}
+                      onChange={(newConfig) => setTemperatureConfig(newConfig)}
                     />
                   </div>
 

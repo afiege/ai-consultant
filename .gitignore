@@ -103,3 +103,11 @@ evaluation/
 .~lock.*
 *.odt
 PublicationDraft_InquiryMethodAndTools_V3.pdf
+
+# Generated documentation
+REQUIREMENTS.md
+
+# Thesis documents
+Aufgabenstellung_DA_Fiege_sign.pdf
+consultation-report-*.pdf
+lib.bib

@@ -32,6 +32,7 @@ from .consultation import (
 from .expert_settings import (
     PromptLanguage,
     CustomPrompts,
+    TemperatureConfig,
     ExpertSettingsUpdate,
     ExpertSettingsResponse,
     DefaultPromptsResponse,
@@ -90,6 +91,7 @@ __all__ = [
     "PromptInfo",
     "PromptMetadataResponse",
     "PROMPT_METADATA",
+    "TemperatureConfig",
     "LLMConfig",
     "LLMProviderInfo",
     "LLM_PROVIDERS",

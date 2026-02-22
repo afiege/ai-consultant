@@ -20,6 +20,7 @@ from ..schemas import (
     LLMConfig,
     LLMProviderInfo,
     LLM_PROVIDERS,
+    TemperatureConfig,
 )
 from ..services.default_prompts import get_all_defaults
 
@@ -358,11 +359,19 @@ def get_expert_settings(
 
     # Build LLM config (api_key is not stored, only model and api_base)
     llm_config = None
-    if db_session.llm_model or db_session.llm_api_base:
+    if db_session.llm_model or db_session.llm_api_base or db_session.temperature_config:
+        temperature_config = None
+        if db_session.temperature_config:
+            try:
+                temp_data = json.loads(db_session.temperature_config)
+                temperature_config = TemperatureConfig(**temp_data)
+            except (json.JSONDecodeError, TypeError):
+                pass
         llm_config = LLMConfig(
             model=db_session.llm_model,
             api_key=None,  # API key is not stored
-            api_base=db_session.llm_api_base
+            api_base=db_session.llm_api_base,
+            temperature_config=temperature_config
         )
 
     return ExpertSettingsResponse(
@@ -416,6 +425,11 @@ def update_expert_settings(
         if llm_config.api_base is not None:
             db_session.llm_api_base = llm_config.api_base if llm_config.api_base else None
 
+        # Update temperature config if provided
+        if llm_config.temperature_config is not None:
+            temp_data = {k: v for k, v in llm_config.temperature_config.model_dump().items() if v is not None}
+            db_session.temperature_config = json.dumps(temp_data) if temp_data else None
+
         # Note: api_key is NOT stored - it's passed per-request by the frontend
 
     db.commit()
@@ -423,11 +437,19 @@ def update_expert_settings(
 
     # Build response (api_key is not stored)
     llm_config_response = None
-    if db_session.llm_model or db_session.llm_api_base:
+    if db_session.llm_model or db_session.llm_api_base or db_session.temperature_config:
+        temperature_config = None
+        if db_session.temperature_config:
+            try:
+                temp_data = json.loads(db_session.temperature_config)
+                temperature_config = TemperatureConfig(**temp_data)
+            except (json.JSONDecodeError, TypeError):
+                pass
         llm_config_response = LLMConfig(
             model=db_session.llm_model,
             api_key=None,  # API key is not stored
-            api_base=db_session.llm_api_base
+            api_base=db_session.llm_api_base,
+            temperature_config=temperature_config
         )
 
     return ExpertSettingsResponse(

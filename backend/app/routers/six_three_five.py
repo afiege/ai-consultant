@@ -25,7 +25,7 @@ from ..schemas import (
 )
 from ..services.six_three_five_manager import SixThreeFiveSession
 from ..services.ai_participant import AIParticipant, get_company_context_summary
-from ..services.session_settings import get_llm_settings, get_custom_prompts, get_prompt_language
+from ..services.session_settings import get_llm_settings, get_temperature_config, get_custom_prompts, get_prompt_language
 from ..schemas import LLMRequest
 from ..config import settings
 
@@ -49,7 +49,8 @@ def generate_ai_ideas_background(
     api_key: Optional[str],
     api_base: Optional[str],
     custom_prompts: Optional[Dict[str, str]],
-    language: str
+    language: str,
+    temperature: Optional[float] = None
 ):
     """Background task to generate AI ideas in parallel."""
     # Create a new database session for background task
@@ -59,6 +60,7 @@ def generate_ai_ideas_background(
         manager.model = model
         manager.api_key = api_key
         manager.api_base = api_base
+        manager.temperature = temperature
         manager._generate_ai_ideas_for_round(session_uuid)
     except Exception as e:
         logger.error(f"Background AI generation error: {e}")
@@ -87,12 +89,13 @@ def start_six_three_five(
 
     # Get LLM settings (model and api_base from session, api_key from request)
     model, api_base = get_llm_settings(db_session)
+    temps = get_temperature_config(db_session)
     api_key = request.api_key
 
     # Get expert settings
     custom_prompts, language = _get_expert_settings(db_session)
 
-    manager = SixThreeFiveSession(db, custom_prompts=custom_prompts, language=language)
+    manager = SixThreeFiveSession(db, custom_prompts=custom_prompts, language=language, temperature=temps.get('brainstorming'))
 
     try:
         # Start session WITHOUT generating AI ideas (we'll do that in background)
@@ -113,7 +116,8 @@ def start_six_three_five(
                 api_key,
                 api_base,
                 custom_prompts,
-                language
+                language,
+                temps.get('brainstorming')
             )
             result['ai_generation_status'] = 'in_progress'
 
@@ -364,6 +368,7 @@ async def advance_round(
 
     # Get LLM settings (model and api_base from session, api_key from request)
     model, api_base = get_llm_settings(db_session)
+    temps = get_temperature_config(db_session)
     api_key = request.api_key
 
     # Get all sheets
@@ -378,7 +383,7 @@ async def advance_round(
     custom_prompts, language = _get_expert_settings(db_session)
 
     # Rotate sheets WITHOUT generating AI ideas (we'll do that in background)
-    manager = SixThreeFiveSession(db, custom_prompts=custom_prompts, language=language)
+    manager = SixThreeFiveSession(db, custom_prompts=custom_prompts, language=language, temperature=temps.get('brainstorming'))
     manager.model = model
     manager.api_key = api_key
     manager.api_base = api_base
@@ -399,7 +404,8 @@ async def advance_round(
             api_key,
             api_base,
             custom_prompts,
-            language
+            language,
+            temps.get('brainstorming')
         )
         result['ai_generation_status'] = 'in_progress'
 

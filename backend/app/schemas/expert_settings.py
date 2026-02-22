@@ -28,11 +28,22 @@ class CustomPrompts(BaseModel):
     swot_analysis_system: Optional[str] = None
 
 
+class TemperatureConfig(BaseModel):
+    """Per-step temperature configuration."""
+    brainstorming: Optional[float] = None  # Step 2 AI idea generation
+    consultation: Optional[float] = None  # Step 4 chat
+    business_case: Optional[float] = None  # Step 5a chat
+    cost_estimation: Optional[float] = None  # Step 5b chat
+    extraction: Optional[float] = None  # All extraction/summary tasks
+    export: Optional[float] = None  # SWOT & briefing generation
+
+
 class LLMConfig(BaseModel):
     """Schema for LLM configuration (model and api_base stored, api_key passed per-request)."""
     model: Optional[str] = None  # e.g., "meta-llama-3.1-8b-instruct"
     api_key: Optional[str] = None  # Only used for connection testing, NOT stored
     api_base: Optional[str] = None  # e.g., "https://chat-ai.academiccloud.de/v1"
+    temperature_config: Optional[TemperatureConfig] = None  # Per-step temperature overrides
 
 
 class ExpertSettingsUpdate(BaseModel):

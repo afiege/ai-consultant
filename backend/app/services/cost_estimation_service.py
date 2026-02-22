@@ -35,7 +35,9 @@ class CostEstimationService:
         custom_prompts: Optional[Dict[str, str]] = None,
         language: str = "en",
         api_key: Optional[str] = None,
-        api_base: Optional[str] = None
+        api_base: Optional[str] = None,
+        chat_temperature: Optional[float] = None,
+        extraction_temperature: Optional[float] = None
     ):
         self.db = db
         self.model = model
@@ -43,6 +45,8 @@ class CostEstimationService:
         self.language = language
         self.api_key = api_key
         self.api_base = api_base
+        self.chat_temperature = chat_temperature
+        self.extraction_temperature = extraction_temperature
         # LLM caller with automatic retry logic for transient failures
         self._llm = LLMCaller(
             model=model,
@@ -53,11 +57,21 @@ class CostEstimationService:
 
     def _call_llm(self, messages: List[Dict], temperature: float = 0.7, max_tokens: int = 1500):
         """Call LLM with automatic retry on transient failures."""
+        if self.chat_temperature is not None:
+            temperature = self.chat_temperature
         return self._llm.call(messages, temperature, max_tokens, timeout=120)
 
     def _call_llm_stream(self, messages: List[Dict], temperature: float = 0.7, max_tokens: int = 1500) -> Generator:
         """Call LLM with streaming and automatic retry on transient failures."""
+        if self.chat_temperature is not None:
+            temperature = self.chat_temperature
         return self._llm.call_stream(messages, temperature, max_tokens, timeout=120)
+
+    def _call_llm_extraction(self, messages: List[Dict], temperature: float = 0.3, max_tokens: int = 2000):
+        """Call LLM for extraction tasks with separate temperature control."""
+        if self.extraction_temperature is not None:
+            temperature = self.extraction_temperature
+        return self._llm.call(messages, temperature, max_tokens, timeout=120)
 
     def start_cost_estimation(self, session_uuid: str) -> Dict:
         """
@@ -490,7 +504,7 @@ class CostEstimationService:
         messages.append({"role": "user", "content": extraction_prompt})
 
         # Use higher max_tokens for potentially lengthy cost breakdown
-        response = self._call_llm(messages, temperature=0.3, max_tokens=2500)
+        response = self._call_llm_extraction(messages, max_tokens=2500)
 
         summary = response.choices[0].message.content
 

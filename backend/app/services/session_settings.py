@@ -5,7 +5,7 @@ Centralized service for retrieving session-specific settings like LLM configurat
 This eliminates duplicated get_llm_settings() functions across routers.
 """
 
-from typing import Optional, Tuple, NamedTuple
+from typing import Optional, NamedTuple
 from ..models import Session as SessionModel
 from ..config import settings
 
@@ -29,6 +29,26 @@ def get_llm_settings(db_session: SessionModel) -> LLMConfig:
     model = db_session.llm_model or settings.llm_model
     api_base = db_session.llm_api_base or settings.llm_api_base or None
     return LLMConfig(model=model, api_base=api_base)
+
+
+def get_temperature_config(db_session: SessionModel) -> dict:
+    """
+    Get per-step temperature configuration from session.
+
+    Args:
+        db_session: The database session model
+
+    Returns:
+        Dictionary with temperature keys (brainstorming, consultation, business_case,
+        cost_estimation, extraction, export) or empty dict if no config stored.
+    """
+    import json
+    if db_session.temperature_config:
+        try:
+            return json.loads(db_session.temperature_config)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    return {}
 
 
 def get_prompt_language(db_session: SessionModel) -> str:

@@ -15,7 +15,7 @@ from ..schemas.consultation import (
     ConsultationMessageWithKey
 )
 from ..services.business_case_service import BusinessCaseService
-from ..services.session_settings import get_llm_settings, get_custom_prompts, get_prompt_language
+from ..services.session_settings import get_llm_settings, get_temperature_config, get_custom_prompts, get_prompt_language
 from ..config import settings
 
 router = APIRouter()
@@ -57,13 +57,16 @@ def start_business_case(
     try:
         custom_prompts, language = _get_expert_settings(db_session)
         model, api_base = get_llm_settings(db_session)
+        temps = get_temperature_config(db_session)
         service = BusinessCaseService(
             db,
             model=model,
             custom_prompts=custom_prompts,
             language=language,
             api_key=request.api_key,
-            api_base=api_base
+            api_base=api_base,
+            chat_temperature=temps.get('business_case'),
+            extraction_temperature=temps.get('extraction')
         )
         result = service.start_business_case(session_uuid)
         return result
@@ -98,13 +101,16 @@ def start_business_case_stream(
 
     custom_prompts, language = _get_expert_settings(db_session)
     model, api_base = get_llm_settings(db_session)
+    temps = get_temperature_config(db_session)
     service = BusinessCaseService(
         db,
         model=model,
         custom_prompts=custom_prompts,
         language=language,
         api_key=body.api_key,
-        api_base=api_base
+        api_base=api_base,
+        chat_temperature=temps.get('business_case'),
+        extraction_temperature=temps.get('extraction')
     )
 
     return StreamingResponse(
@@ -175,13 +181,16 @@ def send_message(
     try:
         custom_prompts, language = _get_expert_settings(db_session)
         model, api_base = get_llm_settings(db_session)
+        temps = get_temperature_config(db_session)
         service = BusinessCaseService(
             db,
             model=model,
             custom_prompts=custom_prompts,
             language=language,
             api_key=message.api_key,
-            api_base=api_base
+            api_base=api_base,
+            chat_temperature=temps.get('business_case'),
+            extraction_temperature=temps.get('extraction')
         )
         result = service.send_message(session_uuid, message.content)
         return result
@@ -221,13 +230,16 @@ def send_message_stream(
 
     custom_prompts, language = _get_expert_settings(db_session)
     model, api_base = get_llm_settings(db_session)
+    temps = get_temperature_config(db_session)
     service = BusinessCaseService(
         db,
         model=model,
         custom_prompts=custom_prompts,
         language=language,
         api_key=message.api_key,
-        api_base=api_base
+        api_base=api_base,
+        chat_temperature=temps.get('business_case'),
+        extraction_temperature=temps.get('extraction')
     )
 
     return StreamingResponse(
@@ -268,13 +280,16 @@ def request_ai_response_stream(
 
     custom_prompts, language = _get_expert_settings(db_session)
     model, api_base = get_llm_settings(db_session)
+    temps = get_temperature_config(db_session)
     service = BusinessCaseService(
         db,
         model=model,
         custom_prompts=custom_prompts,
         language=language,
         api_key=body.api_key,
-        api_base=api_base
+        api_base=api_base,
+        chat_temperature=temps.get('business_case'),
+        extraction_temperature=temps.get('extraction')
     )
 
     return StreamingResponse(
@@ -398,13 +413,16 @@ def extract_findings(
     try:
         custom_prompts, language = _get_expert_settings(db_session)
         model, api_base = get_llm_settings(db_session)
+        temps = get_temperature_config(db_session)
         service = BusinessCaseService(
             db,
             model=model,
             custom_prompts=custom_prompts,
             language=language,
             api_key=request.api_key,
-            api_base=api_base
+            api_base=api_base,
+            chat_temperature=temps.get('business_case'),
+            extraction_temperature=temps.get('extraction')
         )
         result = service.extract_findings_now(session_uuid)
         return result

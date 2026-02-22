@@ -32,7 +32,8 @@ class SixThreeFiveSession:
         self,
         db: Session,
         custom_prompts: Optional[Dict[str, str]] = None,
-        language: str = "en"
+        language: str = "en",
+        temperature: Optional[float] = None
     ):
         """
         Initialize session manager.
@@ -41,10 +42,12 @@ class SixThreeFiveSession:
             db: Database session
             custom_prompts: Optional dict of custom prompt overrides
             language: Language code ("en" or "de")
+            temperature: Optional temperature override for AI generation
         """
         self.db = db
         self.custom_prompts = custom_prompts or {}
         self.language = language
+        self.temperature = temperature
 
     def start_session(
         self,
@@ -180,7 +183,8 @@ class SixThreeFiveSession:
                 custom_prompts=self.custom_prompts,
                 language=self.language,
                 api_key=self.api_key,
-                api_base=self.api_base
+                api_base=self.api_base,
+                temperature=self.temperature
             )
             generated_ideas = ai_participant.generate_ideas(
                 company_context=company_context,
@@ -425,7 +429,8 @@ class SixThreeFiveSession:
             custom_prompts=self.custom_prompts,
             language=self.language,
             api_key=self.api_key,
-            api_base=self.api_base
+            api_base=self.api_base,
+            temperature=self.temperature
         )
         generated_ideas = ai_participant.generate_ideas(
             company_context=company_context,

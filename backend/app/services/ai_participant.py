@@ -18,7 +18,8 @@ class AIParticipant:
         custom_prompts: Optional[Dict[str, str]] = None,
         language: str = "en",
         api_key: Optional[str] = None,
-        api_base: Optional[str] = None
+        api_base: Optional[str] = None,
+        temperature: Optional[float] = None
     ):
         """
         Initialize AI participant with LiteLLM model.
@@ -29,12 +30,14 @@ class AIParticipant:
             language: Language code ("en" or "de")
             api_key: Optional API key (uses provider's env var if not provided)
             api_base: Optional custom API base URL for OpenAI-compatible endpoints
+            temperature: Optional temperature override for generation
         """
         self.model = model
         self.custom_prompts = custom_prompts or {}
         self.language = language
         self.api_key = api_key
         self.api_base = api_base
+        self.temperature = temperature
 
     def generate_ideas(
         self,
@@ -77,7 +80,7 @@ class AIParticipant:
             completion_kwargs = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": 0.7,  # Balanced temperature for creativity with consistency
+                "temperature": self.temperature or 0.7,  # Balanced temperature for creativity with consistency
                 "max_tokens": 300  # Reduced to encourage concise responses
             }
             if self.api_key:

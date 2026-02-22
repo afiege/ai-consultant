@@ -610,6 +610,17 @@
       "description": "Aktivieren Sie automatisiertes Testen mit vordefinierten Personas für Demonstration und Evaluation",
       "enabledNote": "Das Testmodus-Panel erscheint auf den Beratungsseiten (Schritte 1, 4 und 5)"
     },
+    "temperature": {
+      "title": "Temperatur-Konfiguration",
+      "description": "Niedriger = fokussierter/deterministischer, Höher = kreativer/vielfältiger",
+      "brainstorming": "Brainstorming (Schritt 2)",
+      "consultation": "Beratung (Schritt 4)",
+      "business_case": "Business Case (Schritt 5a)",
+      "cost_estimation": "Kostenschätzung (Schritt 5b)",
+      "extraction": "Extraktion / Zusammenfassungen",
+      "export": "Export (SWOT / Briefing)",
+      "resetAll": "Alle zurücksetzen"
+    },
     "language": {
       "title": "Sprache",
       "note": "Bei Sprachwechsel werden die Standard-Prompts für diese Sprache geladen. Ihre benutzerdefinierten Prompts bleiben separat erhalten.",

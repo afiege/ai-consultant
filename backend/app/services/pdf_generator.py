@@ -57,15 +57,23 @@ class MyDocTemplate(BaseDocTemplate):
 
 
 def add_page_number(canvas, doc):
-    """Add page number to the bottom center of each page (adjusted for title page offset)."""
+    """Add page footer with confidentiality notice and page number."""
     canvas.saveState()
     # Subtract 1 to account for title page (which has no number)
     page_num = canvas.getPageNumber() - 1
-    if page_num > 0:  # Only show page number after title page
-        text = f"Page {page_num}"
-        canvas.setFont('Helvetica', 9)
-        canvas.setFillColor(colors.gray)
-        canvas.drawCentredString(A4[0] / 2, 1.5 * cm, text)
+    if page_num > 0:  # Only show footer after title page
+        # Confidentiality notice on the left
+        canvas.setFont('Helvetica', 8)
+        canvas.setFillColor(colors.HexColor('#9ca3af'))
+        canvas.drawString(2 * cm, 1.2 * cm, "Confidential - AI Consultation Report")
+
+        # Page number on the right
+        canvas.drawRightString(A4[0] - 2 * cm, 1.2 * cm, f"Page {page_num}")
+
+        # Thin line above footer
+        canvas.setStrokeColor(colors.HexColor('#e5e7eb'))
+        canvas.setLineWidth(0.5)
+        canvas.line(2 * cm, 1.6 * cm, A4[0] - 2 * cm, 1.6 * cm)
     canvas.restoreState()
 
 
@@ -88,10 +96,14 @@ from ..models import (
 def markdown_to_reportlab(text: str) -> str:
     """
     Convert markdown text to ReportLab-compatible HTML.
-    Supports: **bold**, *italic*, bullet lists, numbered lists.
+    Supports: **bold**, *italic*, bullet lists, numbered lists, wiki-links.
     """
     if not text:
         return ""
+
+    # Strip wiki-links BEFORE HTML escaping (converts [[target|display]] to display, [[target]] to target)
+    text = re.sub(r'\[\[([^\]|]+)\|([^\]]+)\]\]', r'\2', text)  # [[target|display]] → display
+    text = re.sub(r'\[\[([^\]]+)\]\]', r'\1', text)  # [[target]] → target
 
     # Escape HTML special characters first
     text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
@@ -121,10 +133,136 @@ def markdown_to_reportlab(text: str) -> str:
     return text
 
 
+def parse_markdown_table(text: str, style) -> Optional[Table]:
+    """
+    Parse a markdown table and return a ReportLab Table.
+    Returns None if the text is not a valid markdown table.
+
+    Markdown table format:
+    | Header1 | Header2 |
+    | --- | --- |
+    | Cell1 | Cell2 |
+    """
+    lines = [line.strip() for line in text.strip().split('\n') if line.strip()]
+
+    if len(lines) < 2:
+        return None
+
+    # Check if it looks like a markdown table
+    if not all('|' in line for line in lines):
+        return None
+
+    # Check for separator line (| --- | --- |)
+    separator_pattern = r'^\|?\s*[-:]+\s*(\|\s*[-:]+\s*)+\|?\s*$'
+    separator_idx = None
+    for i, line in enumerate(lines):
+        if re.match(separator_pattern, line):
+            separator_idx = i
+            break
+
+    if separator_idx is None or separator_idx == 0:
+        return None
+
+    def parse_row(line: str) -> List[str]:
+        """Parse a table row, handling leading/trailing pipes."""
+        line = line.strip()
+        if line.startswith('|'):
+            line = line[1:]
+        if line.endswith('|'):
+            line = line[:-1]
+        cells = [cell.strip() for cell in line.split('|')]
+        return cells
+
+    # Parse header and data rows
+    header_rows = [parse_row(lines[i]) for i in range(separator_idx)]
+    data_rows = [parse_row(lines[i]) for i in range(separator_idx + 1, len(lines))]
+
+    if not header_rows or not data_rows:
+        return None
+
+    # Determine column count
+    num_cols = max(len(row) for row in header_rows + data_rows)
+
+    # Normalize all rows to have the same number of columns
+    def normalize_row(row: List[str]) -> List[str]:
+        while len(row) < num_cols:
+            row.append('')
+        return row[:num_cols]
+
+    header_rows = [normalize_row(row) for row in header_rows]
+    data_rows = [normalize_row(row) for row in data_rows]
+
+    # Create table cell style
+    cell_style = ParagraphStyle(
+        'TableCell',
+        parent=style,
+        fontSize=9,
+        leading=11,
+        alignment=TA_LEFT
+    )
+
+    header_style = ParagraphStyle(
+        'TableHeader',
+        parent=style,
+        fontSize=9,
+        leading=11,
+        alignment=TA_LEFT,
+        textColor=colors.white
+    )
+
+    # Convert cells to Paragraphs
+    def make_cell(text: str, is_header: bool = False) -> Paragraph:
+        # Strip wiki-links
+        text = re.sub(r'\[\[([^\]|]+)\|([^\]]+)\]\]', r'\2', text)
+        text = re.sub(r'\[\[([^\]]+)\]\]', r'\1', text)
+        # Apply basic markdown
+        text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+        text = re.sub(r'(?<!\*)\*([^*]+?)\*(?!\*)', r'<i>\1</i>', text)
+        return Paragraph(text, header_style if is_header else cell_style)
+
+    table_data = []
+    for row in header_rows:
+        table_data.append([make_cell(cell, is_header=True) for cell in row])
+    for row in data_rows:
+        table_data.append([make_cell(cell) for cell in row])
+
+    # Calculate column widths (distribute evenly, max ~15cm total)
+    available_width = 15 * cm
+    col_width = available_width / num_cols
+    col_widths = [col_width] * num_cols
+
+    # Create table
+    table = Table(table_data, colWidths=col_widths, repeatRows=len(header_rows))
+
+    # Style the table
+    style_commands = [
+        # Header styling
+        ('BACKGROUND', (0, 0), (-1, len(header_rows) - 1), colors.HexColor('#374151')),
+        ('TEXTCOLOR', (0, 0), (-1, len(header_rows) - 1), colors.white),
+        ('FONTNAME', (0, 0), (-1, len(header_rows) - 1), 'Helvetica-Bold'),
+
+        # Alternating row colors for data
+        ('ROWBACKGROUNDS', (0, len(header_rows)), (-1, -1), [colors.white, colors.HexColor('#f9fafb')]),
+
+        # Grid and padding
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#d1d5db')),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]
+
+    table.setStyle(TableStyle(style_commands))
+
+    return table
+
+
 def markdown_to_elements(text: str, style, bullet_style=None) -> List:
     """
     Convert markdown text to a list of ReportLab elements.
-    Handles bullet lists as separate paragraphs for better formatting.
+    Handles bullet lists, markdown tables, and regular paragraphs.
     """
     if not text:
         return []
@@ -136,6 +274,12 @@ def markdown_to_elements(text: str, style, bullet_style=None) -> List:
 
     for para in paragraphs:
         if not para.strip():
+            continue
+
+        # First, check if this is a markdown table
+        table = parse_markdown_table(para, style)
+        if table is not None:
+            elements.append(KeepTogether([table, Spacer(1, 0.1*inch)]))
             continue
 
         # Check if this is a list (all lines start with - or number.)
@@ -151,6 +295,10 @@ def markdown_to_elements(text: str, style, bullet_style=None) -> List:
                 # Remove the bullet/number prefix
                 item_text = re.sub(r'^\s*[-•]\s*', '', line)
                 item_text = re.sub(r'^\s*\d+\.\s*', '', item_text)
+
+                # Strip wiki-links first
+                item_text = re.sub(r'\[\[([^\]|]+)\|([^\]]+)\]\]', r'\2', item_text)
+                item_text = re.sub(r'\[\[([^\]]+)\]\]', r'\1', item_text)
 
                 # Apply markdown formatting
                 item_text = item_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
@@ -176,72 +324,103 @@ class PDFReportGenerator:
         self._setup_custom_styles()
 
     def _setup_custom_styles(self):
-        """Set up custom paragraph styles."""
+        """Set up custom paragraph styles with improved density and hierarchy."""
+        # Title - large, prominent
         self.styles.add(ParagraphStyle(
             name='Title1',
             parent=self.styles['Heading1'],
-            fontSize=24,
-            spaceAfter=30,
+            fontSize=26,
+            spaceAfter=24,
             textColor=colors.HexColor('#1a365d'),
-            alignment=TA_CENTER
+            alignment=TA_CENTER,
+            leading=32
         ))
 
+        # Section headers - clear hierarchy
         self.styles.add(ParagraphStyle(
             name='SectionHeader',
             parent=self.styles['Heading2'],
-            fontSize=16,
-            spaceBefore=20,
-            spaceAfter=12,
-            textColor=colors.HexColor('#2c5282'),
-            borderPadding=5
+            fontSize=14,
+            spaceBefore=16,
+            spaceAfter=8,
+            textColor=colors.HexColor('#1a365d'),
+            borderPadding=4,
+            leading=18
         ))
 
         self.styles.add(ParagraphStyle(
             name='SubHeader',
             parent=self.styles['Heading3'],
-            fontSize=12,
-            spaceBefore=12,
-            spaceAfter=8,
-            textColor=colors.HexColor('#4a5568')
+            fontSize=11,
+            spaceBefore=10,
+            spaceAfter=5,
+            textColor=colors.HexColor('#374151'),
+            leading=14
         ))
 
+        # Body text - tighter leading for density
         self.styles.add(ParagraphStyle(
             name='ReportBody',
             parent=self.styles['Normal'],
             fontSize=10,
-            spaceBefore=6,
-            spaceAfter=6,
+            spaceBefore=4,
+            spaceAfter=4,
             alignment=TA_JUSTIFY,
-            leading=14
+            leading=13  # Tighter leading for better density
         ))
 
         self.styles.add(ParagraphStyle(
             name='IdeaText',
             parent=self.styles['Normal'],
-            fontSize=10,
-            leftIndent=20,
-            spaceBefore=4,
-            spaceAfter=4,
-            bulletIndent=10
+            fontSize=9,
+            leftIndent=15,
+            spaceBefore=2,
+            spaceAfter=2,
+            bulletIndent=8,
+            leading=12
         ))
 
         self.styles.add(ParagraphStyle(
             name='ChatUser',
             parent=self.styles['Normal'],
-            fontSize=10,
-            leftIndent=40,
-            textColor=colors.HexColor('#2b6cb0'),
-            spaceBefore=8,
-            spaceAfter=4
+            fontSize=9,
+            leftIndent=30,
+            textColor=colors.HexColor('#1d4ed8'),
+            spaceBefore=6,
+            spaceAfter=3,
+            leading=12
         ))
 
         self.styles.add(ParagraphStyle(
             name='ChatAssistant',
             parent=self.styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor('#374151'),
+            spaceBefore=6,
+            spaceAfter=3,
+            leading=12
+        ))
+
+        # Appendix header style
+        self.styles.add(ParagraphStyle(
+            name='AppendixHeader',
+            parent=self.styles['Heading2'],
+            fontSize=13,
+            spaceBefore=14,
+            spaceAfter=8,
+            textColor=colors.HexColor('#4b5563'),
+            leading=16
+        ))
+
+        # Empty state style - italicized, gray
+        self.styles.add(ParagraphStyle(
+            name='EmptyState',
+            parent=self.styles['Normal'],
             fontSize=10,
-            textColor=colors.HexColor('#2d3748'),
-            spaceBefore=8,
-            spaceAfter=4,
+            textColor=colors.HexColor('#6b7280'),
+            alignment=TA_CENTER,
+            spaceBefore=12,
+            spaceAfter=12,
             leading=14
         ))
 
@@ -296,6 +475,10 @@ class PDFReportGenerator:
             # Technical Transition Briefing
             story.append(PageBreak())
             story.extend(self._build_technical_briefing_section(db_session))
+
+            # Glossary
+            story.append(PageBreak())
+            story.extend(self._build_glossary_section())
 
             # Appendix header
             story.append(PageBreak())
@@ -391,58 +574,125 @@ class PDFReportGenerator:
         return pdf_bytes
 
     def _build_title_page(self, db_session: SessionModel) -> list:
-        """Build the title page."""
+        """Build the title page with visual accent."""
         elements = []
 
-        elements.append(Spacer(1, 2*inch))
+        # Top accent bar - gradient-like visual element
+        accent_bar = Drawing(17*cm, 0.5*cm)
+        # Primary color bar
+        accent_bar.add(Rect(0, 0, 17*cm, 0.5*cm, fillColor=colors.HexColor('#1a365d'), strokeColor=None))
+        # Accent highlight
+        accent_bar.add(Rect(0, 0, 4*cm, 0.5*cm, fillColor=colors.HexColor('#3182ce'), strokeColor=None))
+        elements.append(accent_bar)
+
+        elements.append(Spacer(1, 1.5*inch))
 
         # Title
         elements.append(Paragraph(
-            "AI & Digitalization<br/>Consultation Report",
-            self.styles['Title1']
+            "AI & Digitalization",
+            ParagraphStyle(
+                'TitleMain',
+                parent=self.styles['Title1'],
+                fontSize=32,
+                textColor=colors.HexColor('#1a365d'),
+                spaceAfter=6,
+                leading=38
+            )
         ))
+        elements.append(Paragraph(
+            "Consultation Report",
+            ParagraphStyle(
+                'TitleSub',
+                parent=self.styles['Title1'],
+                fontSize=22,
+                textColor=colors.HexColor('#4a5568'),
+                spaceAfter=30,
+                leading=28
+            )
+        ))
+
+        # Decorative line
+        line = Drawing(10*cm, 0.1*cm)
+        line.add(Rect(0, 0, 10*cm, 2, fillColor=colors.HexColor('#e5e7eb'), strokeColor=None))
+        elements.append(line)
 
         elements.append(Spacer(1, 0.5*inch))
 
-        # Company name
+        # Company name - more prominent
         company_name = db_session.company_name or "Company"
+        elements.append(Paragraph(
+            f"Prepared for",
+            ParagraphStyle(
+                'PreparedFor',
+                parent=self.styles['Normal'],
+                fontSize=11,
+                alignment=TA_CENTER,
+                textColor=colors.HexColor('#6b7280')
+            )
+        ))
+        elements.append(Spacer(1, 0.1*inch))
         elements.append(Paragraph(
             f"<b>{company_name}</b>",
             ParagraphStyle(
                 'CompanyName',
                 parent=self.styles['Normal'],
-                fontSize=18,
+                fontSize=20,
                 alignment=TA_CENTER,
-                textColor=colors.HexColor('#4a5568')
+                textColor=colors.HexColor('#1a365d'),
+                leading=26
             )
         ))
 
-        elements.append(Spacer(1, 1*inch))
+        elements.append(Spacer(1, 1.2*inch))
 
         # Date
         date_str = datetime.now().strftime("%B %d, %Y")
         elements.append(Paragraph(
-            f"Generated: {date_str}",
+            date_str,
             ParagraphStyle(
                 'DateStyle',
                 parent=self.styles['Normal'],
                 fontSize=12,
                 alignment=TA_CENTER,
-                textColor=colors.gray
+                textColor=colors.HexColor('#4b5563')
             )
         ))
 
-        elements.append(Spacer(1, 0.5*inch))
+        elements.append(Spacer(1, 0.3*inch))
 
-        # Session ID
+        # Session reference
         elements.append(Paragraph(
-            f"Session ID: {db_session.session_uuid[:8]}...",
+            f"Reference: {db_session.session_uuid[:8].upper()}",
             ParagraphStyle(
                 'SessionId',
                 parent=self.styles['Normal'],
+                fontSize=9,
+                alignment=TA_CENTER,
+                textColor=colors.HexColor('#9ca3af')
+            )
+        ))
+
+        # Bottom confidentiality notice
+        elements.append(Spacer(1, 1.5*inch))
+        elements.append(Paragraph(
+            "CONFIDENTIAL",
+            ParagraphStyle(
+                'Confidential',
+                parent=self.styles['Normal'],
                 fontSize=10,
                 alignment=TA_CENTER,
-                textColor=colors.lightgrey
+                textColor=colors.HexColor('#dc2626'),
+                spaceBefore=20
+            )
+        ))
+        elements.append(Paragraph(
+            "This document contains proprietary information for internal use only.",
+            ParagraphStyle(
+                'ConfidentialNote',
+                parent=self.styles['Normal'],
+                fontSize=8,
+                alignment=TA_CENTER,
+                textColor=colors.HexColor('#6b7280')
             )
         ))
 
@@ -466,6 +716,7 @@ class PDFReportGenerator:
             ("5.", "Implementation Roadmap", "5. Implementation Roadmap", "Main Report"),
             ("6.", "SWOT Analysis", "6. SWOT Analysis", "Main Report"),
             ("7.", "Technical Transition Briefing", "7. Technical Transition Briefing", "Main Report"),
+            ("8.", "Glossary of Terms", "8. Glossary of Terms", "Main Report"),
             ("", "", "", ""),  # Spacer
             ("A.", "Company Profile & Maturity", "Appendix A: Company Profile & Maturity Assessment", "Appendix"),
             ("B.", "Brainstorming Session", "Appendix B: Brainstorming Session (6-3-5 Method)", "Appendix"),
@@ -626,8 +877,8 @@ class PDFReportGenerator:
                     ))
             else:
                 elements.append(Paragraph(
-                    "No detailed company information was provided. Complete Step 1 to populate this section.",
-                    self.styles['ReportBody']
+                    "<i>No company information available. Complete Step 1 to add company profile.</i>",
+                    self.styles['EmptyState']
                 ))
 
         elements.append(Spacer(1, 0.3*inch))
@@ -700,7 +951,7 @@ class PDFReportGenerator:
         if use_case_parts:
             use_case_text = "<br/><br/>".join(use_case_parts)
         else:
-            use_case_text = "No specific use case has been defined yet. Complete the brainstorming and consultation steps to define the project scope."
+            use_case_text = "<i>Use case pending. Complete Steps 2-4 to define the AI project scope.</i>"
 
         use_case_style = ParagraphStyle(
             'UseCaseText',
@@ -821,8 +1072,8 @@ class PDFReportGenerator:
 
         if not has_overview_data:
             elements.append(Paragraph(
-                "Complete Steps 4 and 5 to generate a business case overview.",
-                self.styles['ReportBody']
+                "<i>Business case overview pending. Complete Steps 4 and 5 to generate metrics.</i>",
+                self.styles['EmptyState']
             ))
 
         elements.append(Spacer(1, 0.3*inch))
@@ -877,8 +1128,8 @@ class PDFReportGenerator:
                 elements.append(roi_table)
         else:
             elements.append(Paragraph(
-                "Complete Step 5b (Cost Estimation) to generate ROI analysis.",
-                self.styles['ReportBody']
+                "<i>ROI analysis pending. Complete Step 5b (Cost Estimation) to generate.</i>",
+                self.styles['EmptyState']
             ))
 
         elements.append(Spacer(1, 0.3*inch))
@@ -937,8 +1188,8 @@ class PDFReportGenerator:
 
         if not has_findings:
             elements.append(Paragraph(
-                "Complete Step 4 (Consultation) to document key findings.",
-                self.styles['ReportBody']
+                "<i>Key findings pending. Complete Step 4 (Consultation) to generate.</i>",
+                self.styles['EmptyState']
             ))
 
         elements.append(Spacer(1, 0.2*inch))
@@ -966,6 +1217,55 @@ class PDFReportGenerator:
                 ('RIGHTPADDING', (0, 0), (-1, -1), 15),
             ]))
             elements.append(pitch_table)
+
+        # ============================================================
+        # RISK STATEMENT (Important caveat for executive summary)
+        # ============================================================
+        elements.append(Spacer(1, 0.3*inch))
+        elements.append(Paragraph("Important Considerations", self.styles['SubHeader']))
+        elements.append(Spacer(1, 0.1*inch))
+
+        # Build risk statement from available data
+        risk_points = []
+
+        # Data quality caveat
+        risk_points.append("All estimates and projections in this report are based on information provided during the consultation. Actual results may vary based on implementation quality, market conditions, and organizational readiness.")
+
+        # Add complexity-specific risks if available
+        if findings_dict.get('cost_complexity'):
+            complexity = findings_dict['cost_complexity'].lower()
+            if 'enterprise' in complexity or 'complex' in complexity:
+                risk_points.append("Complex AI projects typically face higher risk of timeline extensions and budget overruns. A phased implementation approach is strongly recommended.")
+            elif 'standard' in complexity:
+                risk_points.append("Standard complexity projects require dedicated resources and clear stakeholder commitment for successful implementation.")
+
+        # Add validation questions if present
+        if findings_dict.get('business_case_validation'):
+            risk_points.append("Key assumptions should be validated with domain experts and real data before significant investment decisions.")
+
+        # Create risk box with amber/warning styling
+        risk_text = "<br/><br/>".join([f"• {point}" for point in risk_points])
+        risk_style = ParagraphStyle(
+            'RiskText',
+            parent=self.styles['ReportBody'],
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor('#92400e')
+        )
+
+        risk_table = Table(
+            [[Paragraph(risk_text, risk_style)]],
+            colWidths=[15*cm]
+        )
+        risk_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fef3c7')),
+            ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#f59e0b')),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+            ('LEFTPADDING', (0, 0), (-1, -1), 12),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(risk_table)
 
         return elements
 
@@ -1053,8 +1353,8 @@ class PDFReportGenerator:
         # Check if any business case findings exist
         if not findings_dict:
             elements.append(Paragraph(
-                "No business case analysis was completed. Complete Step 5 to populate this section.",
-                self.styles['ReportBody']
+                "<i>Business case analysis pending. Complete Step 5a to generate value assessment.</i>",
+                self.styles['EmptyState']
             ))
             return elements
 
@@ -1095,7 +1395,10 @@ class PDFReportGenerator:
         if findings_dict.get('business_case_calculation'):
             elements.extend(self._build_calculation_visual(findings_dict['business_case_calculation']))
         else:
-            elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
+            elements.append(Paragraph(
+                "<i>Financial impact estimates will be generated during the Business Case consultation (Step 5a).</i>",
+                self.styles['EmptyState']
+            ))
 
         elements.append(Spacer(1, 0.3*inch))
 
@@ -1106,7 +1409,10 @@ class PDFReportGenerator:
         if findings_dict.get('business_case_validation'):
             elements.extend(self._build_validation_checklist(findings_dict['business_case_validation']))
         else:
-            elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
+            elements.append(Paragraph(
+                "<i>Validation questions will be identified during the Business Case analysis.</i>",
+                self.styles['EmptyState']
+            ))
 
         return elements
 
@@ -1648,10 +1954,11 @@ class PDFReportGenerator:
         return elements
 
     def _build_ideas_section(self, db_session: SessionModel) -> list:
-        """Build the brainstorming ideas section."""
+        """Build a compact brainstorming ideas summary table."""
         elements = []
 
         elements.append(Paragraph("Appendix B: Brainstorming Session (6-3-5 Method)", self.styles['SectionHeader']))
+        elements.append(Spacer(1, 0.1*inch))
 
         # Get participants
         participants = self.db.query(Participant).filter(
@@ -1659,17 +1966,14 @@ class PDFReportGenerator:
         ).all()
 
         if participants:
-            participant_names = [p.name for p in participants]
             human_count = sum(1 for p in participants if p.connection_status != 'ai_controlled')
             ai_count = len(participants) - human_count
-
             elements.append(Paragraph(
-                f"<b>Participants:</b> {len(participants)} total ({human_count} human, {ai_count} AI)",
+                f"<b>Session Overview:</b> {len(participants)} participants ({human_count} human, {ai_count} AI)",
                 self.styles['ReportBody']
             ))
-            elements.append(Spacer(1, 0.1*inch))
 
-        # Get all ideas
+        # Get all ideas with votes
         sheets = self.db.query(IdeaSheet).filter(
             IdeaSheet.session_id == db_session.id
         ).all()
@@ -1681,44 +1985,114 @@ class PDFReportGenerator:
                 participant = self.db.query(Participant).filter(
                     Participant.id == idea.participant_id
                 ).first()
+                votes = self.db.query(Prioritization).filter(
+                    Prioritization.idea_id == idea.id
+                ).all()
+                total_points = sum(v.score or 0 for v in votes)
                 all_ideas.append({
                     'content': idea.content,
                     'participant': participant.name if participant else 'Unknown',
-                    'round': idea.round_number
+                    'round': idea.round_number,
+                    'votes': total_points
                 })
 
         if not all_ideas:
             elements.append(Paragraph(
-                "No ideas were generated in the brainstorming session.",
-                self.styles['ReportBody']
+                "<i>No ideas were generated in the brainstorming session.</i>",
+                self.styles['EmptyState']
             ))
             return elements
 
         elements.append(Paragraph(
-            f"<b>Total Ideas Generated:</b> {len(all_ideas)}",
+            f"<b>Total Ideas:</b> {len(all_ideas)} | <b>Rounds:</b> {len(set(i['round'] for i in all_ideas))}",
             self.styles['ReportBody']
         ))
-        elements.append(Spacer(1, 0.2*inch))
+        elements.append(Spacer(1, 0.15*inch))
 
-        # Group ideas by round
-        ideas_by_round = {}
-        for idea in all_ideas:
-            r = idea['round']
-            if r not in ideas_by_round:
-                ideas_by_round[r] = []
-            ideas_by_round[r].append(idea)
+        # Sort ideas by votes (descending), then by round
+        all_ideas.sort(key=lambda x: (-x['votes'], x['round']))
 
-        for round_num in sorted(ideas_by_round.keys()):
-            elements.append(Paragraph(f"Round {round_num}", self.styles['SubHeader']))
+        # Create compact table
+        table_style = ParagraphStyle(
+            'TableCell',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            leading=10,
+            alignment=TA_LEFT
+        )
 
-            for idea in ideas_by_round[round_num]:
-                content = idea['content'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-                elements.append(Paragraph(
-                    f"- {content} <i>(by {idea['participant']})</i>",
-                    self.styles['IdeaText']
-                ))
+        header_style = ParagraphStyle(
+            'TableHeader',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            leading=10,
+            textColor=colors.white
+        )
 
+        # Header row
+        table_data = [[
+            Paragraph("<b>#</b>", header_style),
+            Paragraph("<b>Idea</b>", header_style),
+            Paragraph("<b>Author</b>", header_style),
+            Paragraph("<b>Rd</b>", header_style),
+            Paragraph("<b>Pts</b>", header_style)
+        ]]
+
+        # Data rows (limit display for very long lists, show top ideas)
+        max_display = 50  # Show top 50 ideas to keep appendix manageable
+        for idx, idea in enumerate(all_ideas[:max_display], 1):
+            content = idea['content']
+            # Truncate very long ideas
+            if len(content) > 200:
+                content = content[:197] + "..."
+            content = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+            table_data.append([
+                Paragraph(str(idx), table_style),
+                Paragraph(content, table_style),
+                Paragraph(idea['participant'][:15], table_style),  # Truncate name
+                Paragraph(str(idea['round']), table_style),
+                Paragraph(str(idea['votes']), table_style)
+            ])
+
+        # Create table with column widths optimized for content
+        idea_table = Table(
+            table_data,
+            colWidths=[0.6*cm, 10*cm, 2.5*cm, 0.8*cm, 0.8*cm],
+            repeatRows=1
+        )
+
+        idea_table.setStyle(TableStyle([
+            # Header styling
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#374151')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+
+            # Alternating row colors
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fafb')]),
+
+            # Grid and padding
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e7eb')),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+
+            # Align numeric columns
+            ('ALIGN', (0, 0), (0, -1), 'CENTER'),  # #
+            ('ALIGN', (3, 0), (3, -1), 'CENTER'),  # Round
+            ('ALIGN', (4, 0), (4, -1), 'CENTER'),  # Points
+        ]))
+
+        elements.append(idea_table)
+
+        # Note if truncated
+        if len(all_ideas) > max_display:
             elements.append(Spacer(1, 0.1*inch))
+            elements.append(Paragraph(
+                f"<i>Showing top {max_display} of {len(all_ideas)} ideas, sorted by priority votes.</i>",
+                ParagraphStyle('Note', parent=self.styles['Normal'], fontSize=8, textColor=colors.gray)
+            ))
 
         return elements
 
@@ -1964,8 +2338,8 @@ class PDFReportGenerator:
         # Check if any cost estimation findings exist
         if not findings_dict:
             elements.append(Paragraph(
-                "No cost estimation was completed. Complete Step 5b to populate this section.",
-                self.styles['ReportBody']
+                "<i>Cost estimation pending. Complete Step 5b to generate investment analysis.</i>",
+                self.styles['EmptyState']
             ))
             return elements
 
@@ -1992,7 +2366,10 @@ class PDFReportGenerator:
                 colors.HexColor('#c6f6d5')
             ))
         else:
-            elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
+            elements.append(Paragraph(
+                "<i>Initial investment estimates will be calculated during Cost Estimation (Step 5b).</i>",
+                self.styles['EmptyState']
+            ))
 
         elements.append(Spacer(1, 0.2*inch))
 
@@ -2008,7 +2385,10 @@ class PDFReportGenerator:
                 colors.HexColor('#bee3f8')
             ))
         else:
-            elements.append(Paragraph("Not yet determined.", self.styles['ReportBody']))
+            elements.append(Paragraph(
+                "<i>Recurring cost projections will be developed during Cost Estimation.</i>",
+                self.styles['EmptyState']
+            ))
 
         elements.append(Spacer(1, 0.2*inch))
 
@@ -2858,6 +3238,71 @@ class PDFReportGenerator:
                 self.styles['IdeaText']
             )
             elements.extend(content_elements)
+
+        return elements
+
+    def _build_glossary_section(self) -> list:
+        """Build a glossary of technical terms used in the report."""
+        elements = []
+
+        elements.append(Paragraph("8. Glossary of Terms", self.styles['SectionHeader']))
+        elements.append(Spacer(1, 0.15*inch))
+
+        elements.append(Paragraph(
+            "Key terms and frameworks used throughout this consultation report:",
+            self.styles['ReportBody']
+        ))
+        elements.append(Spacer(1, 0.1*inch))
+
+        # Define glossary terms
+        glossary_terms = [
+            ("6-3-5 Method", "A structured brainstorming technique where 6 participants write 3 ideas in 5 minutes, then pass their sheet to build on others' ideas."),
+            ("acatech Industry 4.0 Maturity Index", "A six-level framework (1-6) measuring organizational digital maturity across structure, culture, and technology dimensions."),
+            ("AI/ML", "Artificial Intelligence / Machine Learning - technologies that enable systems to learn from data and make decisions."),
+            ("Business Case", "A justification for a proposed project based on expected costs, benefits, and value creation."),
+            ("CRISP-DM", "Cross-Industry Standard Process for Data Mining - a six-phase methodology for analytics and AI projects."),
+            ("MVP", "Minimum Viable Product - the simplest version of a product that delivers value and enables learning."),
+            ("POC", "Proof of Concept - a small-scale implementation to validate technical feasibility."),
+            ("ROI", "Return on Investment - a measure of profitability calculated as (Gain - Cost) / Cost."),
+            ("SWOT Analysis", "Strategic analysis of Strengths, Weaknesses, Opportunities, and Threats."),
+            ("TCO", "Total Cost of Ownership - the complete cost of a solution over its lifecycle, including hidden costs."),
+        ]
+
+        # Create glossary table
+        term_style = ParagraphStyle(
+            'GlossaryTerm',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            leading=11,
+            textColor=colors.HexColor('#1a365d')
+        )
+
+        def_style = ParagraphStyle(
+            'GlossaryDef',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            leading=11,
+            textColor=colors.HexColor('#374151')
+        )
+
+        table_data = []
+        for term, definition in glossary_terms:
+            table_data.append([
+                Paragraph(f"<b>{term}</b>", term_style),
+                Paragraph(definition, def_style)
+            ])
+
+        glossary_table = Table(table_data, colWidths=[4*cm, 11.5*cm])
+        glossary_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (0, -1), 0),
+            ('LEFTPADDING', (1, 0), (1, -1), 8),
+            ('LINEBELOW', (0, 0), (-1, -2), 0.5, colors.HexColor('#e5e7eb')),
+        ]))
+
+        elements.append(glossary_table)
 
         return elements
 

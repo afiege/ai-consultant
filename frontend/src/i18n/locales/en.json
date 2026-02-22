@@ -610,6 +610,17 @@
       "description": "Enable automated testing with predefined personas for demonstration and evaluation",
       "enabledNote": "Test mode panel will appear on consultation pages (Steps 1, 4, and 5)"
     },
+    "temperature": {
+      "title": "Temperature Configuration",
+      "description": "Lower = more focused/deterministic, Higher = more creative/varied",
+      "brainstorming": "Brainstorming (Step 2)",
+      "consultation": "Consultation (Step 4)",
+      "business_case": "Business Case (Step 5a)",
+      "cost_estimation": "Cost Estimation (Step 5b)",
+      "extraction": "Extraction / Summaries",
+      "export": "Export (SWOT / Briefing)",
+      "resetAll": "Reset All"
+    },
     "language": {
       "title": "Language",
       "note": "Changing language will load the default prompts for that language. Your custom prompts are preserved separately.",
