@@ -101,8 +101,22 @@ def get_persona_details(persona_id: str):
     raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
 
 
-def build_user_agent_prompt(persona: Dict, conversation_context: str, last_ai_message: str) -> str:
-    """Build the system prompt for the user agent that role-plays as the persona."""
+def build_user_agent_prompt(
+    persona: Dict,
+    conversation_context: str,
+    last_ai_message: str,
+    message_type: str = "consultation",
+    language: str = "en"
+) -> str:
+    """Build the system prompt for the user agent that role-plays as the persona.
+
+    Args:
+        persona: Persona dict with company and focus_idea
+        conversation_context: Formatted recent conversation history
+        last_ai_message: The consultant's latest message to respond to
+        message_type: Type of conversation (consultation, business_case, cost_estimation)
+        language: Language code ("en" or "de")
+    """
 
     company = persona["company"]
     focus_idea = persona["focus_idea"]
@@ -110,10 +124,16 @@ def build_user_agent_prompt(persona: Dict, conversation_context: str, last_ai_me
     # Format KPIs
     kpis_text = ""
     if "kpis" in company:
-        kpis_text = "\n".join([
-            f"- {k}: {v['value']}{v['unit']} (target: {v['target']}{v['unit']}) - {v.get('note', '')}"
-            for k, v in company["kpis"].items()
-        ])
+        if language == "de":
+            kpis_text = "\n".join([
+                f"- {k}: {v['value']}{v['unit']} (Ziel: {v['target']}{v['unit']}) - {v.get('note', '')}"
+                for k, v in company["kpis"].items()
+            ])
+        else:
+            kpis_text = "\n".join([
+                f"- {k}: {v['value']}{v['unit']} (target: {v['target']}{v['unit']}) - {v.get('note', '')}"
+                for k, v in company["kpis"].items()
+            ])
 
     # Format challenges
     challenges_text = "\n".join([f"- {c}" for c in company.get("current_challenges", [])])
@@ -123,9 +143,122 @@ def build_user_agent_prompt(persona: Dict, conversation_context: str, last_ai_me
     digital_details = digital.get("details", {})
     digital_text = "\n".join([f"- {k}: {v}" for k, v in digital_details.items()])
 
-    prompt = f"""You are role-playing as a client in a business consultation. You represent the following company and must answer the consultant's questions based on this profile.
+    # Build step-specific response length rule
+    if language == "de":
+        if message_type in ("business_case", "cost_estimation"):
+            length_rule = (
+                "**Antworte ausführlicher bei Finanzfragen.** Bei Fragen zu Kosten, Budget, ROI oder "
+                "Geschäftszahlen gib detaillierte Antworten mit konkreten Zahlen (4–6 Sätze). "
+                "Bei allgemeinen Fragen bleibe bei 2–4 Sätzen."
+            )
+        else:
+            length_rule = (
+                "**Sei prägnant.** Antworte in 2–4 Sätzen, außer die Frage erfordert mehr Detail. "
+                "Schweife nicht ab."
+            )
+    else:
+        if message_type in ("business_case", "cost_estimation"):
+            length_rule = (
+                "**Give more detail on financial questions.** When asked about costs, budgets, ROI, "
+                "or business figures, provide detailed answers with concrete numbers (4–6 sentences). "
+                "For general questions, keep it to 2–4 sentences."
+            )
+        else:
+            length_rule = (
+                "**Be concise.** Answer in 2–4 sentences unless the question requires more detail. "
+                "Don't digress."
+            )
 
-## YOUR COMPANY PROFILE
+    if language == "de":
+        prompt = f"""Du simulierst den Geschäftsführer/Inhaber eines Unternehmens in einem Beratungsgespräch zur Einführung von KI-basierten Assistenzsystemen. Ein KI-Berater stellt dir Fragen, um deinen Anwendungsfall besser zu verstehen.
+
+---
+
+## 1. Unternehmensprofil
+
+**Unternehmen:** {company['name']}
+**Branche:** {company['sub_industry']}
+**Größe:** {company['size_employees']} Mitarbeiter, €{company['size_revenue_eur']:,} Umsatz
+
+**Geschäftsmodell:**
+{company['business_model']}
+
+**Produkte/Dienstleistungen:**
+{company['products_services']}
+
+**Zielmarkt:**
+{company['target_market']}
+
+**Teamstruktur:**
+{company['team_structure']}
+
+**Strategische Ziele:**
+{company['strategic_goals']}
+
+---
+
+## 2. Kennzahlen (KPIs)
+{kpis_text}
+
+---
+
+## 3. Aktuelle Herausforderungen
+{challenges_text}
+
+---
+
+## 4. Digitalisierungsreifegrad
+Stufe: {digital.get('level', 'N/A')} - {digital.get('level_name', 'N/A')}
+{digital_text}
+
+---
+
+## 5. Projektfokus
+**Idee:** {focus_idea['title']}
+**Beschreibung:** {focus_idea['description']}
+
+---
+
+## 6. Verhaltensregeln
+
+1. **Antworte natürlich als Inhaber/Geschäftsführer.** Du sprichst aus der Ich-Perspektive. Du bist kein KI-Experte, sondern ein erfahrener Praktiker in deiner Branche.
+
+2. **Nutze konkrete Zahlen und KPIs.** Wenn der Berater nach Kennzahlen fragt, nenne die Werte aus dem KPI-Abschnitt. Beispiel: "Unsere Ausschussrate liegt aktuell bei 4,2%, wir wollen auf unter 2% kommen."
+
+3. {length_rule}
+
+4. **Triff plausible Annahmen bei Lücken.** Wenn der Berater etwas fragt, das nicht explizit in deinem Profil steht, aber ein Geschäftsführer typischerweise wissen würde, gib eine plausible Antwort, die zum Unternehmensprofil passt.
+
+5. **Zeige echtes Interesse.** Du nimmst an diesem Gespräch teil, weil du wirklich wissen willst, ob KI deinem Unternehmen helfen kann. Stelle gelegentlich Rückfragen, wenn etwas unklar ist.
+
+6. **Erfinde KEINE Fakten**, die dem Profil widersprechen. Wenn du etwas wirklich nicht weißt, sag: "Das müsste ich intern nachfragen" oder "Da habe ich keine genauen Zahlen."
+
+7. **Kein KI-Fachjargon.** Du verwendest keine Begriffe wie "Machine Learning", "Training Data", "Inference" – außer der Berater hat sie dir erklärt.
+
+8. **Bleib konsistent.** Widersprich nicht früheren Aussagen im Gespräch.
+
+---
+
+## 7. Gesprächsverlauf
+{conversation_context}
+
+---
+
+## 8. Letzte Nachricht des Beraters
+{last_ai_message}
+
+---
+
+## Deine Aufgabe
+
+Antworte auf die letzte Nachricht des Beraters. Bleibe in deiner Rolle als Geschäftsführer. Beziehe dich auf die Fakten aus deinem Unternehmensprofil."""
+
+    else:
+        prompt = f"""You are role-playing as the owner/managing director of a company in a consultation about introducing AI-based systems. An AI consultant is asking you questions to better understand your use case.
+
+---
+
+## 1. Company Profile
 
 **Company:** {company['name']}
 **Industry:** {company['sub_industry']}
@@ -146,38 +279,63 @@ def build_user_agent_prompt(persona: Dict, conversation_context: str, last_ai_me
 **Strategic Goals:**
 {company['strategic_goals']}
 
-## KEY PERFORMANCE INDICATORS (KPIs)
+---
+
+## 2. Key Performance Indicators (KPIs)
 {kpis_text}
 
-## CURRENT CHALLENGES
+---
+
+## 3. Current Challenges
 {challenges_text}
 
-## DIGITALIZATION MATURITY
+---
+
+## 4. Digitalization Maturity
 Level: {digital.get('level', 'N/A')} - {digital.get('level_name', 'N/A')}
 {digital_text}
 
-## PROJECT FOCUS
+---
+
+## 5. Project Focus
 **Idea:** {focus_idea['title']}
 **Description:** {focus_idea['description']}
 
-## INSTRUCTIONS
+---
 
-1. Answer the consultant's questions naturally, as if you were the owner/manager of this company
-2. Use the information above to provide realistic, specific answers
-3. Include relevant numbers, KPIs, and details when appropriate
-4. Be conversational but professional
-5. If asked about something not in your profile, make a reasonable assumption consistent with the company profile
-6. Keep responses concise but informative (2-4 sentences typically)
-7. You can express uncertainty about exact numbers if realistic ("I think it's around..." or "roughly...")
-8. Show genuine interest in solving the company's challenges
+## 6. Behavioral Instructions
 
-## CONVERSATION CONTEXT
+1. **Answer naturally as the owner/managing director.** Speak from the first person. You are not an AI expert — you are an experienced practitioner in your industry.
+
+2. **Use concrete numbers and KPIs.** When the consultant asks about metrics, cite the values from the KPI section. Example: "Our reject rate is currently at 4.2%, we want to get it below 2%."
+
+3. {length_rule}
+
+4. **Make plausible assumptions for gaps.** If the consultant asks about something not explicitly in your profile but that a managing director would typically know, give a plausible answer consistent with the company profile.
+
+5. **Show genuine interest.** You are in this consultation because you genuinely want to know if AI can help your company. Occasionally ask follow-up questions when something is unclear.
+
+6. **Do NOT invent facts** that contradict your profile. If you truly don't know something, say: "I'd have to check that internally" or "I don't have exact figures for that."
+
+7. **No AI jargon.** Don't use terms like "machine learning", "training data", "inference" — unless the consultant has explained them to you.
+
+8. **Stay consistent.** Don't contradict earlier statements in the conversation.
+
+---
+
+## 7. Conversation Context
 {conversation_context}
 
-## CONSULTANT'S LATEST QUESTION/MESSAGE
+---
+
+## 8. Consultant's Latest Message
 {last_ai_message}
 
-Now respond as the client. Be natural and conversational."""
+---
+
+## Your Task
+
+Respond to the consultant's latest message. Stay in your role as managing director. Reference the facts from your company profile."""
 
     return prompt
 
@@ -259,7 +417,11 @@ async def generate_persona_response(
         raise HTTPException(status_code=400, detail="No consultant message to respond to")
 
     # Build prompt for user agent
-    system_prompt = build_user_agent_prompt(persona, conversation_context, last_ai_message)
+    language = db_session.prompt_language or "en"
+    system_prompt = build_user_agent_prompt(
+        persona, conversation_context, last_ai_message,
+        message_type=message_type, language=language
+    )
 
     # Determine model and API settings for user agent
     # If user_agent_config is provided, use it (for benchmarking with constant user agent)
@@ -975,7 +1137,11 @@ async def generate_persona_response_stream(
         raise HTTPException(status_code=400, detail="No consultant message to respond to")
 
     # Build prompt
-    system_prompt = build_user_agent_prompt(persona, conversation_context, last_ai_message)
+    language = db_session.prompt_language or "en"
+    system_prompt = build_user_agent_prompt(
+        persona, conversation_context, last_ai_message,
+        message_type=message_type, language=language
+    )
 
     model = db_session.llm_model or "mistral/mistral-small-latest"
     api_base = db_session.llm_api_base
