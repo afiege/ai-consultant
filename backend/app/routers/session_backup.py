@@ -26,6 +26,7 @@ router = APIRouter()
 @router.get("/{session_uuid}/backup")
 def export_session_backup(
     session_uuid: str,
+    anonymize: bool = False,
     db: Session = Depends(get_db)
 ):
     """
@@ -53,8 +54,8 @@ def export_session_backup(
         'expert_mode': db_session.expert_mode,
         'prompt_language': db_session.prompt_language,
         'custom_prompts': db_session.custom_prompts,
-        'llm_model': db_session.llm_model,
-        'llm_api_base': db_session.llm_api_base,
+        'llm_model': '[anonymized]' if anonymize else db_session.llm_model,
+        'llm_api_base': '[anonymized]' if anonymize else db_session.llm_api_base,
         'created_at': db_session.created_at.isoformat() if db_session.created_at else None,
     }
 
