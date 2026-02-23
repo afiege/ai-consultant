@@ -512,8 +512,18 @@ class CostEstimationService:
         # Extract and save cost estimation findings
         complexity = (
             self._extract_section(summary, "COMPLEXITY ASSESSMENT") or
-            self._extract_section(summary, "KOMPLEXITÄTSBEWERTUNG")
+            self._extract_section(summary, "KOMPLEXITÄTSBEWERTUNG") or
+            self._extract_section(summary, "COMPLEXITY") or
+            self._extract_section(summary, "KOMPLEXITÄT") or
+            self._extract_section(summary, "PROJEKTKOMPLEXITÄT")
         )
+        if not complexity:
+            logger.warning(
+                "Cost estimation COMPLEXITY section missing for session %s. "
+                "LLM response headers: %s",
+                session_uuid,
+                [l.strip() for l in summary.split('\n') if l.strip().startswith('#')][:15]
+            )
         self._save_finding(db_session.id, "cost_complexity", complexity)
 
         initial = (

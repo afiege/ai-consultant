@@ -20,6 +20,7 @@ from ..schemas.consultation import (
 )
 from ..services.consultation_service import ConsultationService
 from ..services.session_settings import get_llm_settings, get_temperature_config
+from ..utils.recommendation import generate_management_recommendation
 from ..config import settings
 import logging
 
@@ -501,6 +502,20 @@ def get_findings(
     return result
 
 
+def _build_management_recommendation(findings_dict: dict, prioritization_data: list, company_name: str) -> str:
+    """Compute management recommendation on the fly from findings_dict entries.
+
+    findings_dict values are either {"text": ..., "created_at": ...} dicts or None.
+    Flattens them to plain text before calling the shared generator.
+    """
+    flat = {
+        k: (v.get("text") if isinstance(v, dict) else v)
+        for k, v in findings_dict.items()
+    }
+    top_idea = prioritization_data[0]["idea_content"] if prioritization_data else None
+    return generate_management_recommendation(flat, top_idea, company_name)
+
+
 @router.get("/{session_uuid}/all-findings")
 def get_all_findings(
     session_uuid: str,
@@ -657,7 +672,7 @@ def get_all_findings(
             "calculation": findings_dict.get("business_case_calculation"),
             "validation_questions": findings_dict.get("business_case_validation"),
             "management_pitch": findings_dict.get("business_case_pitch"),
-            "management_recommendation": findings_dict.get("management_recommendation"),
+            "management_recommendation": findings_dict.get("management_recommendation") or _build_management_recommendation(findings_dict, prioritization_data, db_session.company_name or ""),
         },
         "costs": {
             "complexity": findings_dict.get("cost_complexity"),

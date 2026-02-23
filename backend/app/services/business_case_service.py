@@ -509,8 +509,18 @@ class BusinessCaseService:
         # Extract and save business case findings
         classification = (
             self._extract_section(summary, "CLASSIFICATION") or
-            self._extract_section(summary, "KLASSIFIZIERUNG")
+            self._extract_section(summary, "KLASSIFIZIERUNG") or
+            self._extract_section(summary, "WERTKLASSIFIZIERUNG") or
+            self._extract_section(summary, "VALUE CLASSIFICATION") or
+            self._extract_section(summary, "PROJEKTKLASS")
         )
+        if not classification:
+            logger.warning(
+                "Business case CLASSIFICATION section missing for session %s. "
+                "LLM response headers: %s",
+                session_uuid,
+                [l.strip() for l in summary.split('\n') if l.strip().startswith('#')][:15]
+            )
         self._save_finding(db_session.id, "business_case_classification", classification)
 
         calculation = (
