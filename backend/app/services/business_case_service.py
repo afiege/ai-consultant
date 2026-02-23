@@ -719,9 +719,10 @@ class BusinessCaseService:
             return None
 
         header_patterns = [
-            rf'^#{{2,3}}\s*(\d+\.\s*)?{re.escape(section_name)}[^\n]*$',
-            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}\*\*[:\s]*$',
-            rf'^(\d+\.\s*)?{re.escape(section_name)}[:\s]*$',
+            rf'^#{{2,3}}\s*\*{{0,2}}(\d+\.\s*)?{re.escape(section_name)}\*{{0,2}}[^\n]*$',  # ## SECTION or ## **SECTION**
+            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}\*\*[:\s]*$',                         # **SECTION**: (colon outside bold)
+            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}:\*\*\s*$',                           # **SECTION:** (colon inside bold)
+            rf'^(\d+\.\s*)?{re.escape(section_name)}[:\s]*$',                                 # SECTION: (plain)
         ]
 
         lines = text.split('\n')

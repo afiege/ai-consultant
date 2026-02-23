@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+
+/* ============================================================
+   PAGE SETUP
+   ============================================================ */
+@page {
+  size: A4;
+  margin: 2cm 2cm 2.5cm 2cm;
+  @bottom-left {
+    content: "Confidential – AI Consultation Report";
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 8pt;
+    color: #9ca3af;
+    border-top: 0.5pt solid #e5e7eb;
+    padding-top: 4pt;
+  }
+  @bottom-right {
+    content: "Page " counter(page);
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 8pt;
+    color: #9ca3af;
+    border-top: 0.5pt solid #e5e7eb;
+    padding-top: 4pt;
+  }
+}
+
+@page title-page {
+  @bottom-left  { content: none; border: none; }
+  @bottom-right { content: none; border: none; }
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  color: #374151;
+  line-height: 1.45;
+  margin: 0;
+}
+
+h1, h2, h3, h4 { margin-top: 0; }
+
+p { margin: 0 0 6pt; }
+
+a { color: inherit; text-decoration: none; }
+
+/* ============================================================
+   PAGE BREAKS
+   ============================================================ */
+.new-page { break-before: page; }
+.keep-together { break-inside: avoid; }
+
+/* ============================================================
+   TITLE PAGE
+   ============================================================ */
+.title-page {
+  page: title-page;
+  height: 255mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.title-accent-bar {
+  width: 100%;
+  height: 14pt;
+  background: #1a365d;
+  position: relative;
+  margin-bottom: 60pt;
+  flex-shrink: 0;
+}
+.title-accent-highlight {
+  position: absolute;
+  top: 0; left: 0;
+  width: 30%;
+  height: 100%;
+  background: #2d4a7a;
+}
+
+.title-main { font-size: 32pt; color: #1a365d; margin-bottom: 4pt; font-weight: bold; }
+.title-sub  { font-size: 22pt; color: #4a5568; margin-bottom: 30pt; font-weight: normal; }
+
+.title-divider {
+  width: 200pt;
+  border: none;
+  border-top: 1pt solid #e5e7eb;
+  margin: 0 auto 24pt;
+}
+
+.title-prepared-for { color: #6b7280; font-size: 11pt; margin-bottom: 6pt; }
+.title-company { font-size: 20pt; color: #1a365d; font-weight: bold; margin-bottom: 60pt; }
+.title-date { font-size: 12pt; color: #4b5563; margin-bottom: 4pt; }
+.title-ref  { font-size: 9pt;  color: #9ca3af; margin-bottom: 60pt; }
+.title-confidential { font-size: 10pt; color: #dc2626; font-weight: bold; letter-spacing: 2pt; margin-bottom: 4pt; }
+.title-conf-note { font-size: 8pt; color: #6b7280; }
+
+/* ============================================================
+   TABLE OF CONTENTS
+   ============================================================ */
+.toc-title {
+  font-size: 24pt;
+  color: #1a365d;
+  text-align: center;
+  margin-bottom: 30pt;
+  font-weight: bold;
+}
+.toc-group-label {
+  font-size: 8pt;
+  color: #9ca3af;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1pt;
+  margin: 16pt 0 4pt;
+}
+.toc-row {
+  display: flex;
+  align-items: baseline;
+  padding: 5pt 0;
+  border-bottom: 0.5pt dotted #d1d5db;
+}
+.toc-num   { min-width: 24pt; font-weight: bold; color: #1a365d; font-size: 10pt; }
+.toc-label { flex: 1; color: #1a365d; font-size: 10pt; }
+.toc-page  { min-width: 30pt; text-align: right; font-size: 10pt; color: #6b7280; }
+.toc-page a::after { content: target-counter(attr(href), page); }
+.toc-appendix .toc-num   { color: #4b5563; font-weight: normal; }
+.toc-appendix .toc-label { color: #4b5563; }
+
+/* ============================================================
+   SECTION HEADERS
+   ============================================================ */
+.section-header {
+  font-size: 14pt;
+  color: #1a365d;
+  border-bottom: 2pt solid #1a365d;
+  padding-bottom: 5pt;
+  margin-bottom: 14pt;
+}
+.section-header-appendix {
+  font-size: 13pt;
+  color: #4b5563;
+  border-bottom: 1pt solid #9ca3af;
+  padding-bottom: 4pt;
+  margin-bottom: 12pt;
+}
+.sub-header {
+  font-size: 11pt;
+  color: #374151;
+  font-weight: bold;
+  margin: 14pt 0 5pt;
+}
+
+/* ============================================================
+   APPENDIX DIVIDER PAGE
+   ============================================================ */
+.appendix-divider {
+  height: 255mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #f9fafb;
+  text-align: center;
+}
+.appendix-divider h1 {
+  font-size: 28pt;
+  color: #1a365d;
+  margin-bottom: 10pt;
+}
+.appendix-divider p {
+  font-size: 12pt;
+  color: #6b7280;
+}
+
+/* ============================================================
+   CALLOUT BOXES
+   ============================================================ */
+.box {
+  padding: 12pt;
+  margin: 8pt 0;
+  break-inside: avoid;
+}
+.box-blue,
+.box-green,
+.box-green2,
+.box-purple,
+.box-sky,
+.box-indigo,
+.box-cyan   { background: #f8f9fa; border-left: 4pt solid #6b7280; }
+.box-amber  { background: #fffbeb; border-left: 4pt solid #b45309; }
+.box-red    { background: #fef2f2; border-left: 4pt solid #dc2626; }
+.box-gray   { background: #f8f9fa; border: 1pt solid #e5e7eb; }
+.box-recommendation { background: #f8f9fa; border: 1.5pt solid #1a365d; padding: 15pt; margin: 8pt 0; break-inside: avoid; }
+.box-pitch  { background: #f8f9fa; border-left: 3pt solid #1a365d; border-top: none; border-right: none; border-bottom: none; padding: 12pt; margin: 8pt 0; break-inside: avoid; font-size: 11pt; color: #1a365d; font-style: italic; }
+.box-use-case { background: #f8f9fa; border: 1pt solid #e5e7eb; padding: 12pt; margin: 8pt 0; break-inside: avoid; }
+
+.box-label {
+  font-size: 8pt;
+  font-weight: bold;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  margin-bottom: 5pt;
+}
+
+/* ============================================================
+   VALUE FRAMEWORK
+   ============================================================ */
+.value-ladder {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 3pt;
+  margin: 8pt 0;
+}
+.value-level {
+  padding: 7pt 12pt;
+  background: #f9fafb;
+  border: 1pt solid #e5e7eb;
+  border-radius: 3pt;
+  font-size: 9pt;
+  color: #6b7280;
+  display: flex;
+  justify-content: space-between;
+}
+.value-level.selected {
+  background: #1a365d;
+  color: white;
+  border-color: #1a365d;
+  font-weight: bold;
+}
+.value-level-desc { font-size: 8pt; opacity: 0.8; }
+
+/* ============================================================
+   COMPLEXITY SELECTOR
+   ============================================================ */
+.complexity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 6pt;
+  margin: 8pt 0;
+}
+.complexity-item {
+  padding: 9pt 6pt;
+  text-align: center;
+  border-radius: 4pt;
+  font-size: 8.5pt;
+  background: #f9fafb;
+  border: 1pt solid #e5e7eb;
+  color: #6b7280;
+  break-inside: avoid;
+}
+.complexity-item.selected { color: white; font-weight: bold; }
+.complexity-item.sel-quick_win  { background: #1a365d; border-color: #1a365d; }
+.complexity-item.sel-standard   { background: #1a365d; border-color: #1a365d; }
+.complexity-item.sel-complex    { background: #92400e; border-color: #92400e; }
+.complexity-item.sel-enterprise { background: #7f1d1d; border-color: #7f1d1d; }
+.complexity-sub { font-size: 7.5pt; margin-top: 3pt; opacity: 0.85; }
+
+/* ============================================================
+   MATURITY BARS
+   ============================================================ */
+.maturity-row {
+  display: flex;
+  align-items: center;
+  gap: 8pt;
+  margin: 5pt 0;
+}
+.maturity-label { min-width: 130pt; font-size: 9pt; }
+.maturity-bar-wrap {
+  flex: 1;
+  background: #e5e7eb;
+  height: 13pt;
+  border-radius: 3pt;
+  overflow: hidden;
+}
+.maturity-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #93c5fd 0%, #1a365d 100%);
+}
+.maturity-score { min-width: 28pt; text-align: right; font-size: 8.5pt; color: #6b7280; }
+
+/* ============================================================
+   SWOT GRID
+   ============================================================ */
+.swot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8pt;
+  margin: 8pt 0;
+}
+.swot-cell {
+  padding: 10pt;
+  border-radius: 3pt;
+  break-inside: avoid;
+}
+.swot-cell h3 { font-size: 10pt; margin: 0 0 6pt; font-weight: bold; }
+.swot-s { background: #f8f9fa; border: 1pt solid #d1d5db; }
+.swot-s h3 { color: #1a365d; }
+.swot-w { background: #ffffff; border: 1pt solid #9ca3af; }
+.swot-w h3 { color: #374151; }
+.swot-o { background: #f8f9fa; border: 1pt solid #d1d5db; }
+.swot-o h3 { color: #1a365d; }
+.swot-t { background: #ffffff; border: 1pt solid #9ca3af; }
+.swot-t h3 { color: #374151; }
+
+/* ============================================================
+   ROI TABLE
+   ============================================================ */
+.roi-table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 6pt 0; }
+.roi-table td { padding: 7pt 9pt; vertical-align: top; border-bottom: 0.5pt solid #e5e7eb; }
+.roi-table .roi-label { background: #f3f4f6; font-weight: bold; width: 30%; color: #111827; }
+.roi-table .roi-value { background: #ffffff; }
+
+/* ============================================================
+   TABLES (general markdown)
+   ============================================================ */
+table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 8pt 0; }
+th { background: #374151; color: white; padding: 6pt 8pt; text-align: left; font-weight: bold; }
+td { padding: 5pt 8pt; border-bottom: 0.5pt solid #e5e7eb; vertical-align: top; }
+tr:nth-child(even) td { background: #f9fafb; }
+
+/* ============================================================
+   GLOSSARY TABLE
+   ============================================================ */
+.glossary-table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 8pt 0; }
+.glossary-table td { padding: 6pt 0; border-bottom: 0.5pt solid #e5e7eb; vertical-align: top; }
+.glossary-term { width: 110pt; font-weight: bold; color: #1a365d; padding-right: 10pt; }
+.glossary-def  { color: #374151; }
+
+/* ============================================================
+   CHAT TRANSCRIPT
+   ============================================================ */
+.chat-message { margin: 5pt 0; padding: 8pt 11pt; border-radius: 3pt; font-size: 9pt; break-inside: avoid; }
+.chat-user      { background: #f8f9fa; border-left: 3pt solid #1a365d; margin-left: 18pt; }
+.chat-assistant { background: #ffffff; border-left: 3pt solid #d1d5db; }
+.chat-role { font-size: 7.5pt; font-weight: bold; color: #6b7280; margin-bottom: 3pt; text-transform: uppercase; letter-spacing: 0.5pt; }
+
+/* ============================================================
+   IDEAS TABLE
+   ============================================================ */
+.ideas-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.ideas-table th { background: #374151; color: white; padding: 6pt 8pt; text-align: left; }
+.ideas-table td { padding: 5pt 8pt; border-bottom: 0.5pt solid #e5e7eb; vertical-align: top; }
+.ideas-table tr:nth-child(even) td { background: #f9fafb; }
+.ideas-rank { width: 28pt; text-align: center; font-weight: bold; color: #1a365d; }
+.ideas-score { width: 50pt; text-align: center; color: #6b7280; }
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty { color: #6b7280; font-style: italic; text-align: center; padding: 16pt 0; }
+
+/* ============================================================
+   TECHNOLOGY INQUIRY CANVAS (TIC)
+   ============================================================ */
+.tic-axis-col {
+  text-align: center;
+  font-size: 8.5pt;
+  font-weight: bold;
+  color: #1a365d;
+  letter-spacing: 0.3pt;
+  padding: 4pt 0;
+  border-bottom: 1.5pt solid #1a365d;
+}
+.tic-axis-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1.5pt solid #1a365d;
+  padding: 2pt;
+}
+.tic-axis-row span {
+  display: inline-block;
+  font-size: 8pt;
+  font-weight: bold;
+  color: #1a365d;
+  letter-spacing: 0.3pt;
+  transform: rotate(-90deg);
+  white-space: nowrap;
+}
+.tic-cell {
+  padding: 10pt;
+  min-height: 110pt;
+  border: 1pt solid #d1d5db;
+  vertical-align: top;
+}
+.tic-cell-tl { border-right: 0.5pt solid #d1d5db; border-bottom: 0.5pt solid #d1d5db; }
+.tic-cell-tr { border-left: 0.5pt solid #d1d5db; border-bottom: 0.5pt solid #d1d5db; }
+.tic-cell-bl { border-right: 0.5pt solid #d1d5db; border-top: 0.5pt solid #d1d5db; }
+.tic-cell-br { border-left: 0.5pt solid #d1d5db; border-top: 0.5pt solid #d1d5db; }
+.tic-cell-label {
+  font-size: 8pt;
+  font-weight: bold;
+  color: #1a365d;
+  text-transform: uppercase;
+  letter-spacing: 0.4pt;
+  margin-bottom: 5pt;
+  padding-bottom: 3pt;
+  border-bottom: 0.5pt solid #e5e7eb;
+}
+.tic-item {
+  font-size: 8pt;
+  color: #374151;
+  margin: 2pt 0;
+}
+.tic-diamond-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 88pt;
+  height: 88pt;
+  z-index: 10;
+}
+.tic-diamond-shape {
+  position: absolute;
+  width: 60pt;
+  height: 60pt;
+  border: 1.5pt solid #1a365d;
+  background: #ffffff;
+  transform: rotate(45deg);
+  top: 14pt;
+  left: 14pt;
+}
+.tic-diamond-label {
+  position: absolute;
+  left: 0;
+  width: 88pt;
+  text-align: center;
+  font-size: 7.5pt;
+  font-weight: bold;
+  color: #1a365d;
+  white-space: nowrap;
+}
+.tic-diamond-label-top    { top: 6pt; }
+.tic-diamond-label-bottom { bottom: 6pt; }
+
+/* ============================================================
+   SECTION CONTENT (from markdown)
+   ============================================================ */
+.section-content ul { margin: 4pt 0; padding-left: 16pt; }
+.section-content li { margin-bottom: 3pt; }
+.section-content h1, .section-content h2, .section-content h3 {
+  font-size: 10pt;
+  color: #374151;
+  font-weight: bold;
+  margin: 10pt 0 4pt;
+}
+.section-content h2 { font-size: 10.5pt; color: #1a365d; }
+
+</style>
+</head>
+<body>
+
+{# ================================================================
+   TITLE PAGE
+   ================================================================ #}
+<div class="title-page">
+  <div class="title-accent-bar"><div class="title-accent-highlight"></div></div>
+  <h1 class="title-main">AI &amp; Digitalization</h1>
+  <h2 class="title-sub">Consultation Report</h2>
+  <hr class="title-divider">
+  <p class="title-prepared-for">Prepared for</p>
+  <p class="title-company">{{ company_name }}</p>
+  <p class="title-date">{{ date }}</p>
+  <p class="title-ref">Reference: {{ session_ref }}</p>
+  <p class="title-confidential">CONFIDENTIAL</p>
+  <p class="title-conf-note">This document contains proprietary information for internal use only.</p>
+</div>
+
+{# ================================================================
+   TABLE OF CONTENTS
+   ================================================================ #}
+<div class="new-page">
+  <h1 class="toc-title">Table of Contents</h1>
+
+  <p class="toc-group-label">Main Report</p>
+  {% for num, label, anchor in [
+    ("1.", "Company Profile and Maturity Assessment", "section-1"),
+    ("2.", "Executive Summary",                       "section-2"),
+    ("3.", "Business Case Indication",                "section-3"),
+    ("4.", "Cost Estimation",                         "section-4"),
+    ("5.", "Implementation Roadmap",                  "section-5"),
+    ("6.", "SWOT Analysis",                           "section-6"),
+    ("7.", "Technical Transition Briefing",           "section-7"),
+    ("8.", "Glossary of Terms",                       "section-8"),
+  ] %}
+  <div class="toc-row">
+    <span class="toc-num">{{ num }}</span>
+    <span class="toc-label">{{ label }}</span>
+    <span class="toc-page"><a href="#{{ anchor }}"></a></span>
+  </div>
+  {% endfor %}
+
+  <p class="toc-group-label">Appendices</p>
+  {% for num, label, anchor in [
+    ("A.", "Company Profile &amp; Maturity",       "appendix-a"),
+    ("B.", "Brainstorming Session",                "appendix-b"),
+    ("C.", "Prioritization Results",               "appendix-c"),
+    ("D.", "Consultation Transcript",              "appendix-d"),
+    ("E.", "Business Case Transcript",             "appendix-e"),
+    ("F.", "Cost Estimation Transcript",           "appendix-f"),
+    ("G.", "Technology Inquiry Canvas",            "appendix-g"),
+  ] %}
+  <div class="toc-row toc-appendix">
+    <span class="toc-num">{{ num }}</span>
+    <span class="toc-label">{{ label }}</span>
+    <span class="toc-page"><a href="#{{ anchor }}"></a></span>
+  </div>
+  {% endfor %}
+</div>
+
+{# ================================================================
+   SECTION 1: Company Profile and Maturity Assessment
+   ================================================================ #}
+<div class="new-page" id="section-1">
+  <h1 class="section-header">1. Company Profile and Maturity Assessment</h1>
+
+  {% if findings.get('company_profile') %}
+    <div class="section-content">{{ findings['company_profile'] | markdown | safe }}</div>
+  {% else %}
+    <p class="empty">Company profile pending. Complete Step 1 to generate.</p>
+  {% endif %}
+
+  {% if maturity %}
+  <h2 class="sub-header" style="margin-top:16pt;">Digital Maturity Overview</h2>
+  {% set dim_labels = [
+    ('overall',             'Overall Maturity'),
+    ('resources',           'Resources &amp; Technology'),
+    ('information_systems', 'Information Systems'),
+    ('culture',             'Culture &amp; Leadership'),
+    ('org_structure',       'Organisational Structure'),
+  ] %}
+  {% for key, label in dim_labels %}
+    {% if maturity[key] is not none %}
+    <div class="maturity-row keep-together">
+      <span class="maturity-label">{{ label | safe }}</span>
+      <div class="maturity-bar-wrap">
+        <div class="maturity-bar-fill" style="width:{{ maturity[key ~ '_pct'] }}%; background-position:{{ 100 - maturity[key ~ '_pct'] }}% 0;"></div>
+      </div>
+      <span class="maturity-score">{{ "%.1f" | format(maturity[key]) }}/6</span>
+    </div>
+    {% endif %}
+  {% endfor %}
+  {% if maturity.level %}
+    <p style="margin-top:8pt; font-size:9pt; color:#6b7280;">
+      Maturity level: <strong>{{ maturity.level }}</strong>
+    </p>
+  {% endif %}
+  {% endif %}
+</div>
+
+{# ================================================================
+   SECTION 2: Executive Summary
+   ================================================================ #}
+<div class="new-page" id="section-2">
+  <h1 class="section-header">2. Executive Summary</h1>
+
+  <h2 class="sub-header">Use Case Overview</h2>
+  <div class="box-use-case">
+    {% if top_idea %}
+      <p><strong>Selected Project:</strong> {{ top_idea }}</p>
+    {% endif %}
+    {% if findings.get('ai_goals') %}
+      <p><strong>AI/Data Mining Objectives:</strong> {{ findings['ai_goals'] }}</p>
+    {% endif %}
+    {% if not top_idea and not findings.get('ai_goals') %}
+      <p class="empty">Use case pending. Complete Steps 2–4 to define the AI project scope.</p>
+    {% endif %}
+  </div>
+
+  <h2 class="sub-header">Recommendation</h2>
+  <div class="box-recommendation">
+    <div class="section-content">{{ findings.get('management_recommendation', '') | markdown | safe }}</div>
+  </div>
+
+  <h2 class="sub-header">Business Case Overview</h2>
+  {% set has_overview = top_idea or findings.get('business_case_classification') or findings.get('business_case_calculation') or findings.get('cost_complexity') or findings.get('cost_initial') %}
+  {% if has_overview %}
+    {% if top_idea %}
+    <div class="box box-blue keep-together">
+      <div class="box-label">Focus Project</div>
+      <p>{{ top_idea }}</p>
+    </div>
+    {% endif %}
+    {% if findings.get('business_case_classification') %}
+    <div class="box box-purple keep-together">
+      <div class="box-label">Value Classification</div>
+      <div class="section-content">{{ findings['business_case_classification'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+    {% if findings.get('business_case_calculation') %}
+    <div class="box box-green keep-together">
+      <div class="box-label">Estimated Benefits</div>
+      <div class="section-content">{{ findings['business_case_calculation'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+    {% if findings.get('cost_complexity') %}
+    <div class="box box-amber keep-together">
+      <div class="box-label">Project Complexity</div>
+      <div class="section-content">{{ findings['cost_complexity'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+    {% if findings.get('cost_initial') %}
+    <div class="box box-red keep-together">
+      <div class="box-label">Initial Investment</div>
+      <div class="section-content">{{ findings['cost_initial'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+  {% else %}
+    <p class="empty">Business case overview pending. Complete Steps 4 and 5 to generate metrics.</p>
+  {% endif %}
+
+  <h2 class="sub-header">ROI &amp; Investment Analysis</h2>
+  {% set has_roi = findings.get('cost_tco') or findings.get('cost_roi') or findings.get('business_case_calculation') %}
+  {% if has_roi %}
+  <table class="roi-table">
+    {% if findings.get('cost_tco') %}
+    <tr><td class="roi-label">3-Year TCO</td><td class="roi-value"><div class="section-content">{{ findings['cost_tco'] | markdown | safe }}</div></td></tr>
+    {% endif %}
+    {% if findings.get('cost_roi') %}
+    <tr><td class="roi-label">ROI Analysis</td><td class="roi-value"><div class="section-content">{{ findings['cost_roi'] | markdown | safe }}</div></td></tr>
+    {% endif %}
+    {% if findings.get('business_case_calculation') and findings.get('cost_tco') %}
+    <tr><td class="roi-label">Benefits</td><td class="roi-value"><div class="section-content">{{ findings['business_case_calculation'] | markdown | safe }}</div></td></tr>
+    {% endif %}
+  </table>
+  {% else %}
+    <p class="empty">ROI analysis pending. Complete Step 5b (Cost Estimation) to generate.</p>
+  {% endif %}
+
+  <h2 class="sub-header">Key Findings</h2>
+  {% set has_findings = findings.get('business_objectives') or findings.get('situation_assessment') or findings.get('ai_goals') or findings.get('project_plan') %}
+  {% if has_findings %}
+    {% if findings.get('business_objectives') %}
+    <div class="box box-sky keep-together">
+      <div class="box-label">Business Objectives</div>
+      <div class="section-content">{{ findings['business_objectives'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+    {% if findings.get('situation_assessment') %}
+    <div class="box box-indigo keep-together">
+      <div class="box-label">Situation Assessment</div>
+      <div class="section-content">{{ findings['situation_assessment'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+    {% if findings.get('ai_goals') %}
+    <div class="box box-purple keep-together">
+      <div class="box-label">AI / Data Mining Goals</div>
+      <div class="section-content">{{ findings['ai_goals'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+    {% if findings.get('project_plan') %}
+    <div class="box box-cyan keep-together">
+      <div class="box-label">Project Plan</div>
+      <div class="section-content">{{ findings['project_plan'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+  {% else %}
+    <p class="empty">Key findings pending. Complete Step 4 (Consultation) to generate.</p>
+  {% endif %}
+
+  {% if findings.get('business_case_pitch') %}
+  <h2 class="sub-header">Management Pitch</h2>
+  <div class="box-pitch">"{{ findings['business_case_pitch'] }}"</div>
+  {% endif %}
+</div>
+
+{# ================================================================
+   SECTION 3: Business Case Indication
+   ================================================================ #}
+<div class="new-page" id="section-3">
+  <h1 class="section-header">3. Business Case Indication</h1>
+
+  {% set has_bc = findings.get('business_case_classification') or findings.get('business_case_calculation') or findings.get('business_case_validation') or findings.get('business_case_pitch') %}
+  {% if not has_bc %}
+    <p class="empty">Business case analysis pending. Complete Step 5a to generate value assessment.</p>
+  {% else %}
+
+    <h2 class="sub-header">Value Framework Classification</h2>
+    {# 5-level visual ladder — reversed so Level 5 appears at top #}
+    <div class="value-ladder">
+      {% for lvl_num, lvl_name, lvl_desc in value_levels %}
+      <div class="value-level{% if value_level == lvl_num %} selected{% endif %}">
+        <span>{{ lvl_name }}</span>
+        <span class="value-level-desc">{{ lvl_desc }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% if findings.get('business_case_classification') %}
+    <div class="box box-gray" style="margin-top:6pt;">
+      <div class="box-label">Analysis</div>
+      <div class="section-content">{{ findings['business_case_classification'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+
+    {% if findings.get('business_case_calculation') %}
+    <h2 class="sub-header">Financial Projection</h2>
+    <div class="box box-green2">
+      <div class="section-content">{{ findings['business_case_calculation'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+
+    {% if findings.get('business_case_validation') %}
+    <h2 class="sub-header">Validation Checklist</h2>
+    <div class="section-content">{{ findings['business_case_validation'] | markdown | safe }}</div>
+    {% endif %}
+
+    {% if findings.get('business_case_pitch') %}
+    <h2 class="sub-header">Management Pitch</h2>
+    <div class="box-pitch">"{{ findings['business_case_pitch'] }}"</div>
+    {% endif %}
+
+  {% endif %}
+</div>
+
+{# ================================================================
+   SECTION 4: Cost Estimation
+   ================================================================ #}
+<div class="new-page" id="section-4">
+  <h1 class="section-header">4. Cost Estimation</h1>
+
+  {% set has_cost = findings.get('cost_complexity') or findings.get('cost_initial') or findings.get('cost_recurring') or findings.get('cost_tco') %}
+  {% if not has_cost %}
+    <p class="empty">Cost estimation pending. Complete Step 5b to generate investment analysis.</p>
+  {% else %}
+
+    <h2 class="sub-header">Project Complexity Assessment</h2>
+    <div class="complexity-grid">
+      {% for key, label, color, desc in complexity_levels %}
+      <div class="complexity-item{% if complexity_level == key %} selected sel-{{ key }}{% endif %}">
+        <div>{{ label }}</div>
+        <div class="complexity-sub">{{ desc }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if findings.get('cost_complexity') %}
+    <div class="box box-gray" style="margin-top:4pt;">
+      <div class="section-content">{{ findings['cost_complexity'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+
+    {% if findings.get('cost_initial') %}
+    <h2 class="sub-header">Initial Investment</h2>
+    <div class="box box-green keep-together">
+      <div class="box-label">One-Time Investment</div>
+      <div class="section-content">{{ findings['cost_initial'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+
+    {% if findings.get('cost_recurring') or findings.get('cost_maintenance') %}
+    <h2 class="sub-header">Recurring Costs</h2>
+    <div class="box box-blue keep-together">
+      <div class="box-label">Annual Operating Costs</div>
+      <div class="section-content">{{ (findings.get('cost_recurring') or findings.get('cost_maintenance')) | markdown | safe }}</div>
+    </div>
+    {% endif %}
+
+    {% if findings.get('cost_tco') %}
+    <h2 class="sub-header">Total Cost of Ownership (3-Year)</h2>
+    <div class="box box-amber keep-together">
+      <div class="section-content">{{ findings['cost_tco'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+
+    {% if findings.get('cost_drivers') %}
+    <h2 class="sub-header">Cost Drivers</h2>
+    <div class="section-content">{{ findings['cost_drivers'] | markdown | safe }}</div>
+    {% endif %}
+
+    {% if findings.get('cost_optimization') %}
+    <h2 class="sub-header">Optimisation Opportunities</h2>
+    <div class="section-content">{{ findings['cost_optimization'] | markdown | safe }}</div>
+    {% endif %}
+
+    {% if findings.get('cost_roi') %}
+    <h2 class="sub-header">ROI Analysis</h2>
+    <div class="box box-green2 keep-together">
+      <div class="section-content">{{ findings['cost_roi'] | markdown | safe }}</div>
+    </div>
+    {% endif %}
+
+  {% endif %}
+</div>
+
+{# ================================================================
+   SECTION 5: Implementation Roadmap
+   ================================================================ #}
+<div class="new-page" id="section-5">
+  <h1 class="section-header">5. Implementation Roadmap</h1>
+
+  {% set roadmap = findings.get('project_plan') %}
+  {% if roadmap %}
+    <div class="section-content">{{ roadmap | markdown | safe }}</div>
+  {% else %}
+    <p class="empty">Implementation roadmap pending. Complete Step 4 (Consultation) to generate.</p>
+  {% endif %}
+
+  <h2 class="sub-header" style="margin-top:16pt;">Recommended Next Steps</h2>
+  <div class="box box-blue">
+    <ol style="margin:0; padding-left:16pt;">
+      <li>Present findings to key stakeholders and obtain budget approval.</li>
+      <li>Establish a cross-functional project team (IT, operations, business).</li>
+      <li>Define pilot scope, success criteria, and timeline.</li>
+      <li>Begin data assessment and infrastructure readiness evaluation.</li>
+      <li>Initiate procurement and vendor selection process.</li>
+    </ol>
+  </div>
+</div>
+
+{# ================================================================
+   SECTION 6: SWOT Analysis
+   ================================================================ #}
+<div class="new-page" id="section-6">
+  <h1 class="section-header">6. SWOT Analysis</h1>
+
+  {% set has_swot = swot.strengths or swot.weaknesses or swot.opportunities or swot.threats %}
+  {% if not has_swot %}
+    <p class="empty">SWOT analysis pending. Complete Step 4 (Consultation) to generate.</p>
+  {% else %}
+  <div class="swot-grid">
+    <div class="swot-cell swot-s">
+      <h3>Strengths</h3>
+      {% if swot.strengths %}
+        <div class="section-content">{{ swot.strengths | markdown | safe }}</div>
+      {% else %}
+        <p class="empty">—</p>
+      {% endif %}
+    </div>
+    <div class="swot-cell swot-w">
+      <h3>Weaknesses</h3>
+      {% if swot.weaknesses %}
+        <div class="section-content">{{ swot.weaknesses | markdown | safe }}</div>
+      {% else %}
+        <p class="empty">—</p>
+      {% endif %}
+    </div>
+    <div class="swot-cell swot-o">
+      <h3>Opportunities</h3>
+      {% if swot.opportunities %}
+        <div class="section-content">{{ swot.opportunities | markdown | safe }}</div>
+      {% else %}
+        <p class="empty">—</p>
+      {% endif %}
+    </div>
+    <div class="swot-cell swot-t">
+      <h3>Threats</h3>
+      {% if swot.threats %}
+        <div class="section-content">{{ swot.threats | markdown | safe }}</div>
+      {% else %}
+        <p class="empty">—</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if swot.implications %}
+  <h2 class="sub-header">Strategic Implications</h2>
+  <div class="section-content">{{ swot.implications | markdown | safe }}</div>
+  {% endif %}
+
+  {% endif %}
+</div>
+
+{# ================================================================
+   SECTION 7: Technical Transition Briefing
+   ================================================================ #}
+<div class="new-page" id="section-7">
+  <h1 class="section-header">7. Technical Transition Briefing</h1>
+
+  {% if not tech.raw %}
+    <div class="box box-amber">
+      <p><strong>Technical Transition Briefing Not Yet Generated</strong></p>
+      <p>To generate this section, go to Step 6 (Export &amp; Handover) in the application and click "Generate Technical Briefing".</p>
+      <p>This document prepares the handover from Business Understanding to the technical implementation team.</p>
+    </div>
+  {% else %}
+
+    {% if tech.use_case_profile %}
+    <h2 class="sub-header">Use Case Profile</h2>
+    <div class="section-content">{{ tech.use_case_profile | markdown | safe }}</div>
+    {% endif %}
+
+    {% if tech.enablers or tech.blockers %}
+    <h2 class="sub-header">Enablers &amp; Blockers</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8pt; margin:6pt 0;">
+      {% if tech.enablers %}
+      <div class="swot-cell swot-s">
+        <h3>Enablers</h3>
+        <div class="section-content">{{ tech.enablers | markdown | safe }}</div>
+      </div>
+      {% endif %}
+      {% if tech.blockers %}
+      <div class="swot-cell swot-w">
+        <h3>Blockers</h3>
+        <div class="section-content">{{ tech.blockers | markdown | safe }}</div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if tech.hypotheses %}
+    <h2 class="sub-header">Hypotheses</h2>
+    <div class="section-content">{{ tech.hypotheses | markdown | safe }}</div>
+    {% endif %}
+
+    {% if tech.investigation_questions %}
+    <h2 class="sub-header">Investigation Questions</h2>
+    <div class="section-content">{{ tech.investigation_questions | markdown | safe }}</div>
+    {% endif %}
+
+    {% if tech.first_steps %}
+    <h2 class="sub-header">First Steps</h2>
+    <div class="section-content">{{ tech.first_steps | markdown | safe }}</div>
+    {% endif %}
+
+    {% if tech.open_items %}
+    <h2 class="sub-header">Open Items</h2>
+    <div class="section-content">{{ tech.open_items | markdown | safe }}</div>
+    {% endif %}
+
+    {# Fallback: render everything if subsection extraction yielded nothing #}
+    {% set any_sub = tech.use_case_profile or tech.enablers or tech.blockers or tech.hypotheses or tech.investigation_questions or tech.first_steps or tech.open_items %}
+    {% if not any_sub %}
+      <div class="section-content">{{ tech.raw | markdown | safe }}</div>
+    {% endif %}
+
+  {% endif %}
+</div>
+
+{# ================================================================
+   SECTION 8: Glossary
+   ================================================================ #}
+<div class="new-page" id="section-8">
+  <h1 class="section-header">8. Glossary of Terms</h1>
+  <p>Key terms and frameworks used throughout this consultation report:</p>
+  <table class="glossary-table">
+    {% for term, definition in glossary %}
+    <tr>
+      <td class="glossary-term">{{ term }}</td>
+      <td class="glossary-def">{{ definition }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+{# ================================================================
+   APPENDIX DIVIDER
+   ================================================================ #}
+<div class="new-page appendix-divider">
+  <h1>Appendices</h1>
+  <p>Supporting documentation and session records</p>
+</div>
+
+{# ================================================================
+   APPENDIX A: Company Profile & Maturity
+   ================================================================ #}
+<div class="new-page" id="appendix-a">
+  <h1 class="section-header-appendix">Appendix A: Company Profile &amp; Maturity Assessment</h1>
+
+  {% if company_infos %}
+    {% for info in company_infos %}
+    <div class="box box-gray keep-together" style="margin-bottom:10pt;">
+      <div class="box-label">
+        {% if info.info_type == 'file' %}File: {{ info.file_name or 'Uploaded document' }}
+        {% elif info.info_type == 'web_crawl' %}Web source: {{ info.source_url or 'URL' }}
+        {% else %}Text input{% endif %}
+      </div>
+      {% if info.content %}
+        <div class="section-content" style="font-size:8.5pt; max-height:300pt; overflow:hidden;">{{ info.content | markdown | safe }}</div>
+      {% else %}
+        <p class="empty">No content extracted.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty">No company information was uploaded for this session.</p>
+  {% endif %}
+
+  {% if maturity %}
+  <h2 class="sub-header" style="margin-top:16pt;">Digital Maturity Assessment Detail</h2>
+  {% set dim_labels = [
+    ('overall',             'Overall Maturity Score'),
+    ('resources',           'Resources &amp; Technology'),
+    ('information_systems', 'Information Systems'),
+    ('culture',             'Culture &amp; Leadership'),
+    ('org_structure',       'Organisational Structure'),
+  ] %}
+  {% for key, label in dim_labels %}
+    {% if maturity[key] is not none %}
+    <div class="maturity-row keep-together">
+      <span class="maturity-label" style="font-size:9pt;">{{ label | safe }}</span>
+      <div class="maturity-bar-wrap">
+        <div class="maturity-bar-fill" style="width:{{ maturity[key ~ '_pct'] }}%; background-position:{{ 100 - maturity[key ~ '_pct'] }}% 0;"></div>
+      </div>
+      <span class="maturity-score">{{ "%.1f" | format(maturity[key]) }}/6</span>
+    </div>
+    {% endif %}
+  {% endfor %}
+
+  <table style="width:100%; border-collapse:collapse; font-size:8.5pt; margin-top:12pt;">
+    <tr><th style="width:20pt;">Level</th><th>Name</th><th>Description</th></tr>
+    <tr><td style="text-align:center;">1</td><td>Computerisation</td><td>IT is used for individual tasks; no integration between systems.</td></tr>
+    <tr><td style="text-align:center;">2</td><td>Connectivity</td><td>Systems are connected; basic data exchange possible.</td></tr>
+    <tr><td style="text-align:center;">3</td><td>Visibility</td><td>Real-time visibility across processes via sensors and data.</td></tr>
+    <tr><td style="text-align:center;">4</td><td>Transparency</td><td>Understanding of why events occur; root cause analysis.</td></tr>
+    <tr><td style="text-align:center;">5</td><td>Predictability</td><td>Simulation and scenario modelling to anticipate outcomes.</td></tr>
+    <tr><td style="text-align:center;">6</td><td>Adaptability</td><td>Self-optimising systems that adapt autonomously.</td></tr>
+  </table>
+  {% endif %}
+</div>
+
+{# ================================================================
+   APPENDIX B: Brainstorming Session
+   ================================================================ #}
+<div class="new-page" id="appendix-b">
+  <h1 class="section-header-appendix">Appendix B: Brainstorming Session (6-3-5 Method)</h1>
+
+  {% if participants %}
+  <p><strong>Participants:</strong>
+    {% for p in participants %}{{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+  </p>
+  {% endif %}
+
+  {% if ranked_ideas %}
+  <p style="margin-bottom:8pt;">Showing top {{ ranked_ideas | length }} ideas ranked by votes:</p>
+  <table class="ideas-table">
+    <tr>
+      <th class="ideas-rank">#</th>
+      <th>Idea</th>
+      <th class="ideas-score">Votes</th>
+    </tr>
+    {% for idea in ranked_ideas %}
+    <tr>
+      <td class="ideas-rank">{{ loop.index }}</td>
+      <td>{{ idea.content }}</td>
+      <td class="ideas-score">{{ idea.score }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+    <p class="empty">No brainstorming ideas recorded for this session.</p>
+  {% endif %}
+</div>
+
+{# ================================================================
+   APPENDIX C: Prioritization Results
+   ================================================================ #}
+<div class="new-page" id="appendix-c">
+  <h1 class="section-header-appendix">Appendix C: Idea Prioritization Results</h1>
+
+  {% if ranked_ideas %}
+  <table class="ideas-table">
+    <tr>
+      <th class="ideas-rank">Rank</th>
+      <th>Idea</th>
+      <th class="ideas-score">Points</th>
+    </tr>
+    {% for idea in ranked_ideas %}
+    <tr>
+      <td class="ideas-rank">{{ loop.index }}</td>
+      <td>{{ idea.content }}</td>
+      <td class="ideas-score" style="font-weight:{% if loop.index == 1 %}bold{% else %}normal{% endif %}; color:{% if loop.index == 1 %}#1a365d{% else %}#6b7280{% endif %};">
+        {{ idea.score }}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+    <p class="empty">No prioritization data recorded for this session.</p>
+  {% endif %}
+</div>
+
+{# ================================================================
+   APPENDIX D: Consultation Transcript
+   ================================================================ #}
+<div class="new-page" id="appendix-d">
+  <h1 class="section-header-appendix">Appendix D: Consultation Transcript</h1>
+
+  {% if consultation_messages %}
+    {% for msg in consultation_messages %}
+    <div class="chat-message {{ 'chat-user' if msg.role == 'user' else 'chat-assistant' }}">
+      <div class="chat-role">{{ 'Participant' if msg.role == 'user' else 'AI Consultant' }}</div>
+      <div class="section-content">{{ msg.content | markdown | safe }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty">No consultation transcript available.</p>
+  {% endif %}
+</div>
+
+{# ================================================================
+   APPENDIX E: Business Case Transcript
+   ================================================================ #}
+<div class="new-page" id="appendix-e">
+  <h1 class="section-header-appendix">Appendix E: Business Case Transcript</h1>
+
+  {% if business_case_messages %}
+    {% for msg in business_case_messages %}
+    <div class="chat-message {{ 'chat-user' if msg.role == 'user' else 'chat-assistant' }}">
+      <div class="chat-role">{{ 'Participant' if msg.role == 'user' else 'AI Consultant' }}</div>
+      <div class="section-content">{{ msg.content | markdown | safe }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty">No business case transcript available.</p>
+  {% endif %}
+</div>
+
+{# ================================================================
+   APPENDIX F: Cost Estimation Transcript
+   ================================================================ #}
+<div class="new-page" id="appendix-f">
+  <h1 class="section-header-appendix">Appendix F: Cost Estimation Transcript</h1>
+
+  {% if cost_estimation_messages %}
+    {% for msg in cost_estimation_messages %}
+    <div class="chat-message {{ 'chat-user' if msg.role == 'user' else 'chat-assistant' }}">
+      <div class="chat-role">{{ 'Participant' if msg.role == 'user' else 'AI Consultant' }}</div>
+      <div class="section-content">{{ msg.content | markdown | safe }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty">No cost estimation transcript available.</p>
+  {% endif %}
+</div>
+
+
+{# ================================================================
+   APPENDIX G: Technology Inquiry Canvas
+   ================================================================ #}
+<div class="new-page" id="appendix-g">
+  <h1 class="section-header-appendix">Appendix G: Technology Inquiry Canvas</h1>
+  <p style="font-size:8.5pt; color:#6b7280; margin-bottom:10pt;">
+    Session findings mapped to the Technology Inquiry Canvas (TIC) framework — structured along
+    <em>Use Cases &amp; Problems</em> vs. <em>Options &amp; Solutions</em> and
+    <em>Collect</em> vs. <em>Connect</em>.
+  </p>
+
+  {# ---- Column axis headers ---- #}
+  <div style="display:grid; grid-template-columns: 32pt 1fr 1fr; gap:0; margin-left:0;">
+    <div></div>
+    <div class="tic-axis-col">Use Cases &amp; Problems</div>
+    <div class="tic-axis-col">Options &amp; Solutions</div>
+  </div>
+
+  {# ---- Row axis + 2×2 grid ---- #}
+  <div style="display:grid; grid-template-columns: 32pt 1fr 1fr; gap:0;">
+
+    {# Row axis labels (vertical) #}
+    <div style="display:grid; grid-template-rows: 1fr 1fr; border-right: 1.5pt solid #1a365d;">
+      <div class="tic-axis-row"><span>Collect</span></div>
+      <div class="tic-axis-row"><span>Connect</span></div>
+    </div>
+
+    {# 2×2 quad grid with diamond overlay — wrapped in plain position:relative div so WeasyPrint correctly contains the absolute diamond #}
+    <div style="position:relative; grid-column: span 2;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; border: 1.5pt solid #1a365d;">
+
+      {# Top-left: Collect / Use Cases & Problems #}
+      <div class="tic-cell tic-cell-tl">
+        <div class="tic-cell-label">Potential Use Cases &amp; Requirements</div>
+        {% if ranked_ideas %}
+          {% for idea in ranked_ideas[:4] %}
+          <p class="tic-item">▸ {{ idea.content | truncate(75, True, '…') }}</p>
+          {% endfor %}
+        {% endif %}
+        {% if findings.get('business_objectives') %}
+          <p class="tic-item" style="margin-top:5pt; color:#6b7280; font-style:italic;">
+            {{ findings['business_objectives'] | truncate(120, True, '…') }}
+          </p>
+        {% endif %}
+        {% if not ranked_ideas and not findings.get('business_objectives') %}
+          <p class="empty">Complete Steps 2–3 to collect use cases.</p>
+        {% endif %}
+      </div>
+
+      {# Top-right: Collect / Options & Solutions #}
+      <div class="tic-cell tic-cell-tr">
+        <div class="tic-cell-label">Possible Solutions &amp; Knowledge Base</div>
+        {% if findings.get('ai_goals') %}
+          <div class="section-content" style="font-size:8.5pt;">
+            {{ findings['ai_goals'] | truncate(280, True, '…') }}
+          </div>
+        {% endif %}
+        {% if findings.get('situation_assessment') %}
+          <p class="tic-item" style="margin-top:5pt; color:#6b7280; font-style:italic;">
+            {{ findings['situation_assessment'] | truncate(100, True, '…') }}
+          </p>
+        {% endif %}
+        {% if not findings.get('ai_goals') and not findings.get('situation_assessment') %}
+          <p class="empty">Complete Step 4 to collect solution options.</p>
+        {% endif %}
+      </div>
+
+      {# Bottom-left: Connect / Use Cases & Problems — Enriched Use Case #}
+      <div class="tic-cell tic-cell-bl">
+        <div class="tic-cell-label">Enriched Use Case</div>
+        {% if top_idea %}
+          <p style="font-weight:bold; font-size:9pt; color:#1a365d; margin:0 0 5pt;">
+            {{ top_idea | truncate(90, True, '…') }}
+          </p>
+        {% endif %}
+        {% if findings.get('business_case_classification') %}
+          <div class="section-content" style="font-size:8.5pt;">
+            {{ findings['business_case_classification'] | truncate(220, True, '…') }}
+          </div>
+        {% elif findings.get('business_objectives') %}
+          <div class="section-content" style="font-size:8.5pt;">
+            {{ findings['business_objectives'] | truncate(200, True, '…') }}
+          </div>
+        {% endif %}
+        {% if not top_idea and not findings.get('business_case_classification') %}
+          <p class="empty">Complete Steps 4–5a to enrich the use case.</p>
+        {% endif %}
+      </div>
+
+      {# Bottom-right: Connect / Options & Solutions — Application-specific Knowledge #}
+      <div class="tic-cell tic-cell-br">
+        <div class="tic-cell-label">Application-specific Knowledge</div>
+        {% if findings.get('project_plan') %}
+          <div class="section-content" style="font-size:8.5pt;">
+            {{ findings['project_plan'] | truncate(220, True, '…') }}
+          </div>
+        {% elif findings.get('business_case_pitch') %}
+          <p class="tic-item" style="font-style:italic;">
+            {{ findings['business_case_pitch'] | truncate(200, True, '…') }}
+          </p>
+        {% endif %}
+        {% if tech.first_steps %}
+          <p class="tic-item" style="margin-top:5pt; color:#6b7280;">
+            {{ tech.first_steps | truncate(100, True, '…') }}
+          </p>
+        {% endif %}
+        {% if not findings.get('project_plan') and not findings.get('business_case_pitch') and not tech.first_steps %}
+          <p class="empty">Complete Step 4 to build application knowledge.</p>
+        {% endif %}
+      </div>
+
+    </div>{# end 2×2 grid #}
+
+    {# Center diamond overlay — positioned relative to the wrapper div above #}
+    <div class="tic-diamond-wrap">
+      <div class="tic-diamond-shape"></div>
+      <div class="tic-diamond-label tic-diamond-label-top">▲ Cluster</div>
+      <div class="tic-diamond-label tic-diamond-label-bottom">▼ Prioritize</div>
+    </div>
+
+    </div>{# end position:relative wrapper #}
+  </div>{# end row axis + grid #}
+
+  {# Selected use case callout #}
+  {% if top_idea %}
+  <div class="box box-blue keep-together" style="margin-top:10pt;">
+    <div class="box-label">Selected &amp; Prioritised Use Case</div>
+    <p style="margin:0; font-size:9pt; font-weight:bold; color:#1a365d;">{{ top_idea }}</p>
+    {% if ranked_ideas | length > 1 %}
+      <p style="margin:4pt 0 0; font-size:8pt; color:#6b7280;">
+        Ranked #1 from {{ ranked_ideas | length }} ideas
+        {% if ranked_ideas[0].score > 0 %}with {{ ranked_ideas[0].score }} vote{{ 's' if ranked_ideas[0].score != 1 }}{% endif %}.
+      </p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <p style="font-size:7pt; color:#9ca3af; margin-top:8pt; text-align:right;">
+    Framework: Schneider, D. (2025). Technology Inquiry Canvas (TIC). DOI: 10.5281/zenodo.14760079. CC BY-SA 4.0.
+  </p>
+</div>
+
+</body>
+</html>

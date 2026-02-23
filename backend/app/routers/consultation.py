@@ -384,6 +384,8 @@ STEP_FINDING_TYPES = {
         "cost_tco", "cost_drivers", "cost_optimization", "cost_roi",
         # Export findings that depend on Step 5/6
         "swot_analysis", "technical_briefing",
+        # Derived summary persisted for equivalence with PDF
+        "management_recommendation",
     ],
     6: [
         # Step 6 findings only
@@ -391,6 +393,8 @@ STEP_FINDING_TYPES = {
         "cost_tco", "cost_drivers", "cost_optimization", "cost_roi",
         # Export findings that depend on Step 6
         "technical_briefing",
+        # Derived summary persisted for equivalence with PDF
+        "management_recommendation",
     ],
 }
 
@@ -652,7 +656,8 @@ def get_all_findings(
             "classification": findings_dict.get("business_case_classification"),
             "calculation": findings_dict.get("business_case_calculation"),
             "validation_questions": findings_dict.get("business_case_validation"),
-            "management_pitch": findings_dict.get("business_case_pitch")
+            "management_pitch": findings_dict.get("business_case_pitch"),
+            "management_recommendation": findings_dict.get("management_recommendation"),
         },
         "costs": {
             "complexity": findings_dict.get("cost_complexity"),

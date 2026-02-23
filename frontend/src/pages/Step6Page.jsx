@@ -20,6 +20,7 @@ const TABS = [
   { id: 'costs', icon: 'currency', color: 'red' },
   { id: 'swot', icon: 'grid', color: 'amber' },
   { id: 'briefing', icon: 'document', color: 'indigo' },
+  { id: 'tic', icon: 'canvas', color: 'teal' },
   { id: 'ideas', icon: 'lightbulb', color: 'yellow' },
   { id: 'prioritization', icon: 'star', color: 'purple' },
   { id: 'transcripts', icon: 'chat', color: 'gray' },
@@ -212,6 +213,7 @@ const Step6Page = () => {
   const hasBriefing = !!allFindings?.analysis?.technical_briefing?.text;
   const hasIdeas = allFindings?.brainstorming?.total_ideas > 0;
   const hasPrioritization = allFindings?.prioritization?.total_votes > 0;
+  const hasTic = hasIdeas || hasPrioritization || hasCrispDm || hasBusinessCase;
   const hasTranscripts = allFindings?.transcripts?.consultation?.length > 0 || allFindings?.transcripts?.business_case?.length > 0 || allFindings?.transcripts?.cost_estimation?.length > 0;
 
   if (loading) {
@@ -235,6 +237,7 @@ const Step6Page = () => {
       lightbulb: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />,
       star: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />,
       chat: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />,
+      canvas: <><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></>,
     };
     return icons[iconName] || icons.document;
   };
@@ -247,6 +250,7 @@ const Step6Page = () => {
       case 'costs': return hasCosts;
       case 'swot': return hasSwot;
       case 'briefing': return hasBriefing;
+      case 'tic': return hasTic;
       case 'ideas': return hasIdeas;
       case 'prioritization': return hasPrioritization;
       case 'transcripts': return hasTranscripts;
@@ -287,6 +291,8 @@ const Step6Page = () => {
             error={briefingError}
           />
         );
+      case 'tic':
+        return <TicCanvasTab findings={allFindings} t={t} />;
       case 'ideas':
         return <IdeasTab findings={allFindings} t={t} />;
       case 'prioritization':
@@ -346,6 +352,7 @@ const Step6Page = () => {
                   emerald: isActive ? 'border-emerald-500 text-emerald-600' : '',
                   yellow: isActive ? 'border-yellow-500 text-yellow-600' : '',
                   gray: isActive ? 'border-gray-500 text-gray-600' : '',
+                  teal: isActive ? 'border-teal-500 text-teal-600' : '',
                 };
                 return (
                   <button
@@ -754,6 +761,200 @@ const BriefingTab = ({ findings, t, onNavigate, onGenerate, loading, error }) =>
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// Helper: extract a named section from markdown text (mirrors _extract_section in pdf_generator.py)
+const extractSection = (text, name) => {
+  if (!text) return '';
+  const pattern = new RegExp(`(?:^|\\n)#{1,3}\\s*${name}\\s*\\n([\\s\\S]*?)(?=\\n#{1,3}\\s|$)`, 'i');
+  const m = text.match(pattern);
+  return m ? m[1].trim() : '';
+};
+
+const truncate = (text, maxLen) => {
+  if (!text) return '';
+  return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
+};
+
+const TicCanvasTab = ({ findings, t }) => {
+  // Build scored ideas list — same logic as pdf_generator.py _collect_data()
+  const ideaScores = {};
+  findings?.prioritization?.results?.forEach(vote => {
+    if (!vote.idea_id || !vote.idea_content) return;
+    if (!ideaScores[vote.idea_id]) {
+      ideaScores[vote.idea_id] = { content: vote.idea_content, score: 0 };
+    }
+    ideaScores[vote.idea_id].score += vote.score || 0;
+  });
+  const rankedIdeas = Object.values(ideaScores).sort((a, b) => b.score - a.score);
+
+  // Fallback top idea if no prioritization
+  const topIdea = rankedIdeas[0]?.content
+    || findings?.brainstorming?.sheets?.[0]?.ideas?.[0]?.content
+    || null;
+
+  // Findings — identical keys as PDF template
+  const businessObjectives = findings?.crisp_dm?.business_objectives?.text;
+  const aiGoals            = findings?.crisp_dm?.ai_goals?.text;
+  const situationAssessment = findings?.crisp_dm?.situation_assessment?.text;
+  const bcClassification   = findings?.business_case?.classification?.text;
+  const bcPitch            = findings?.business_case?.management_pitch?.text;
+  const projectPlan        = findings?.crisp_dm?.project_plan?.text;
+  const firstSteps         = extractSection(findings?.analysis?.technical_briefing?.text || '', 'First Steps');
+
+  const hasAnyData = topIdea || businessObjectives || aiGoals || bcClassification || projectPlan;
+
+  if (!hasAnyData) {
+    return <EmptyState message={t('step6.incomplete.tic')} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500 italic">
+        {t('step6.tic.subtitle')}
+      </p>
+
+      {/* Column axis headers */}
+      <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr', gap: 0 }}>
+        <div />
+        <div className="bg-blue-900 text-white text-center text-xs font-bold py-2 px-3 border-r border-blue-700">
+          Use Cases &amp; Problems
+        </div>
+        <div className="bg-blue-900 text-white text-center text-xs font-bold py-2 px-3">
+          Options &amp; Solutions
+        </div>
+      </div>
+
+      {/* Row axis + 2×2 grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr', gap: 0 }}>
+
+        {/* Row labels — vertical text */}
+        <div style={{ display: 'flex', flexDirection: 'column', borderRight: '2px solid #1e3a8a' }}>
+          <div className="flex-1 bg-blue-900 flex items-center justify-center"
+               style={{ borderBottom: '1px solid #1d4ed8', minHeight: '120px' }}>
+            <span className="text-white text-xs font-bold whitespace-nowrap"
+                  style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.05em' }}>
+              Collect
+            </span>
+          </div>
+          <div className="flex-1 bg-blue-900 flex items-center justify-center"
+               style={{ minHeight: '120px' }}>
+            <span className="text-white text-xs font-bold whitespace-nowrap"
+                  style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.05em' }}>
+              Connect
+            </span>
+          </div>
+        </div>
+
+        {/* 2×2 grid with diamond overlay — col-span-2 */}
+        <div className="relative" style={{ gridColumn: 'span 2', border: '2px solid #1e3a8a' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto' }}>
+
+            {/* Top-left: Collect / Use Cases & Problems */}
+            <div className="p-3 bg-blue-50 border-r border-b border-blue-200" style={{ minHeight: '130px' }}>
+              <div className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-2">
+                Potential Use Cases &amp; Requirements
+              </div>
+              {rankedIdeas.slice(0, 4).map((idea, i) => (
+                <p key={i} className="text-xs text-gray-700 mb-1">▸ {truncate(idea.content, 75)}</p>
+              ))}
+              {businessObjectives && (
+                <p className="text-xs text-gray-500 italic mt-2">{truncate(businessObjectives, 120)}</p>
+              )}
+              {rankedIdeas.length === 0 && !businessObjectives && (
+                <p className="text-xs text-gray-400 italic">{t('step6.tic.emptyUseCases')}</p>
+              )}
+            </div>
+
+            {/* Top-right: Collect / Options & Solutions */}
+            <div className="p-3 bg-blue-50 border-b border-blue-200" style={{ minHeight: '130px' }}>
+              <div className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-2">
+                Possible Solutions &amp; Knowledge Base
+              </div>
+              {aiGoals && (
+                <p className="text-xs text-gray-700 mb-2">{truncate(aiGoals, 280)}</p>
+              )}
+              {situationAssessment && (
+                <p className="text-xs text-gray-500 italic">{truncate(situationAssessment, 100)}</p>
+              )}
+              {!aiGoals && !situationAssessment && (
+                <p className="text-xs text-gray-400 italic">{t('step6.tic.emptySolutions')}</p>
+              )}
+            </div>
+
+            {/* Bottom-left: Connect / Use Cases & Problems — Enriched Use Case */}
+            <div className="p-3 bg-indigo-50 border-r border-blue-200" style={{ minHeight: '130px' }}>
+              <div className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-2">
+                Enriched Use Case
+              </div>
+              {topIdea && (
+                <p className="text-sm font-bold text-blue-900 mb-2">{truncate(topIdea, 90)}</p>
+              )}
+              {bcClassification ? (
+                <p className="text-xs text-gray-700">{truncate(bcClassification, 220)}</p>
+              ) : businessObjectives ? (
+                <p className="text-xs text-gray-700">{truncate(businessObjectives, 200)}</p>
+              ) : null}
+              {!topIdea && !bcClassification && (
+                <p className="text-xs text-gray-400 italic">{t('step6.tic.emptyEnriched')}</p>
+              )}
+            </div>
+
+            {/* Bottom-right: Connect / Options & Solutions — Application-specific Knowledge */}
+            <div className="p-3 bg-indigo-50" style={{ minHeight: '130px' }}>
+              <div className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-2">
+                Application-specific Knowledge
+              </div>
+              {projectPlan ? (
+                <p className="text-xs text-gray-700 mb-2">{truncate(projectPlan, 220)}</p>
+              ) : bcPitch ? (
+                <p className="text-xs text-gray-700 italic mb-2">{truncate(bcPitch, 200)}</p>
+              ) : null}
+              {firstSteps && (
+                <p className="text-xs text-gray-500 mt-2">{truncate(firstSteps, 100)}</p>
+              )}
+              {!projectPlan && !bcPitch && !firstSteps && (
+                <p className="text-xs text-gray-400 italic">{t('step6.tic.emptyKnowledge')}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Center diamond — Cluster / Prioritize */}
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div className="relative" style={{ width: '76px', height: '76px' }}>
+              {/* Diamond shape */}
+              <div className="absolute inset-0 bg-white border-2 border-blue-900"
+                   style={{ transform: 'rotate(45deg)' }} />
+              {/* Labels — positioned outside the rotation */}
+              <div className="absolute w-full text-center text-xs font-bold text-blue-900 leading-none"
+                   style={{ top: '6px' }}>
+                ▲ Cluster
+              </div>
+              <div className="absolute w-full text-center text-xs font-bold text-blue-900 leading-none"
+                   style={{ bottom: '6px' }}>
+                ▼ Prioritize
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Selected & Prioritised Use Case callout */}
+      {topIdea && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-1">
+            {t('step6.tic.selectedUseCase')}
+          </div>
+          <p className="text-sm font-semibold text-blue-900">{topIdea}</p>
+        </div>
+      )}
+
+      {/* Citation */}
+      <p className="text-xs text-gray-400 text-center">
+        Framework: Schneider, D. (2025). Technology Inquiry Canvas (TIC). DOI: 10.5281/zenodo.14760079. CC BY-SA 4.0.
+      </p>
     </div>
   );
 };

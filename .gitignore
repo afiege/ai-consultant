@@ -92,11 +92,8 @@ htmlcov/
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
 
-# Evaluation — test run data and runner scripts (generated, not tracked)
-evaluation/matrix_runs/
-evaluation/test_runs/
-evaluation/results/
-evaluation/run_benchmark_matrix.py
+# Evaluation — not tracked in git
+evaluation/
 
 # Claude Code settings (optional - remove if you want to share settings)
 .claude/
@@ -114,3 +111,5 @@ REQUIREMENTS.md
 Aufgabenstellung_DA_Fiege_sign.pdf
 consultation-report-*.pdf
 lib.bib
+Technology Inquiry Canvas Material.pdf
+Technology Inquiry Canvas Material.pptx

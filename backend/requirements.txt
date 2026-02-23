@@ -12,7 +12,11 @@ websockets>=12.0
 # File Processing
 PyPDF2>=3.0.1
 python-docx>=1.1.0
-reportlab>=4.0.9
+
+# PDF generation
+weasyprint>=62.0
+jinja2>=3.1.0
+markdown>=3.6
 
 # Web Scraping
 beautifulsoup4>=4.12.3

@@ -654,14 +654,19 @@ Respond only with these 4 categories, brief and concise."""
             # Parse the response
             def extract_value(text, key):
                 import re
+                # Normalize bold section headers to plain form before parsing:
+                #   **SECTION:** → SECTION:   and   **SECTION**: → SECTION:
+                text = re.sub(r'\*\*(\w[\w_/\- ]+):\*\*', r'\1:', text, flags=re.UNICODE)
+                text = re.sub(r'\*\*(\w[\w_/\- ]+)\*\*\s*:', r'\1:', text, flags=re.UNICODE)
+                # Stop at next plain SECTION: boundary (word chars + colon)
                 patterns = [
-                    rf"{key}:\s*(.+?)(?=\n[A-Z_]+:|$)",
+                    rf"{key}:\s*(.+?)(?=\n\w[\w_/\- ]+:|$)",
                     rf"{key}:\s*(.+?)(?=\n|$)"
                 ]
                 for pattern in patterns:
-                    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+                    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL | re.UNICODE)
                     if match:
-                        value = match.group(1).strip()
+                        value = re.sub(r'^\*+\s*', '', match.group(1).strip())  # strip stray ** markers
                         if value.lower() not in ["not yet discussed", "noch nicht besprochen", ""]:
                             return value
                 return None
@@ -1075,9 +1080,10 @@ When multiple people contribute:
             return None
 
         header_patterns = [
-            rf'^#{{2,3}}\s*(\d+\.\s*)?{re.escape(section_name)}[^\n]*$',
-            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}\*\*[:\s]*$',
-            rf'^(\d+\.\s*)?{re.escape(section_name)}[:\s]*$',
+            rf'^#{{2,3}}\s*\*{{0,2}}(\d+\.\s*)?{re.escape(section_name)}\*{{0,2}}[^\n]*$',  # ## SECTION or ## **SECTION**
+            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}\*\*[:\s]*$',                         # **SECTION**: (colon outside bold)
+            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}:\*\*\s*$',                           # **SECTION:** (colon inside bold)
+            rf'^(\d+\.\s*)?{re.escape(section_name)}[:\s]*$',                                 # SECTION: (plain)
         ]
 
         lines = text.split('\n')

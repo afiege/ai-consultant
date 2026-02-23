@@ -392,12 +392,7 @@
       "continueButton": "Continue to Consultation (Step 4)"
     },
     "errors": {
-      "loadFailed": "Failed to load data. Please try again.",
-      "clusterFailed": "Failed to generate clusters. Please try again.",
-      "voteFailed": "Failed to submit votes. Please try again.",
-      "selectFailed": "Failed to select cluster. Please try again.",
-      "allocateAllPoints": "Please allocate all {{total}} points. You have {{remaining}} remaining.",
-      "noParticipant": "No participant found. Please go back to Step 2 and join the session first."
+      "assessFailed": "Failed to assess ideas. Please try again."
     },
     "fallbackClustering": {
       "title": "Simplified Grouping",
@@ -491,9 +486,6 @@
       "analyzeHint": "Analyze ideas to see them on an Impact vs Effort matrix and find the best opportunities.",
       "analyzeButton": "Analyze Ideas",
       "apiKeyRequired": "API key required for analysis"
-    },
-    "errors": {
-      "assessFailed": "Failed to assess ideas. Please try again."
     },
     "results": {
       "votesRecorded": "Your votes have been recorded! Here are the current results:",
@@ -791,7 +783,8 @@
       "ideas": "Ideas",
       "prioritization": "Prioritization",
       "transcripts": "Transcripts",
-      "export": "Export"
+      "export": "Export",
+      "tic": "Canvas"
     },
     "explanation": {
       "title": "DMME Methodology: From Business to Technical Understanding",
@@ -828,7 +821,8 @@
       "costs": "No cost estimation. Complete Step 5b.",
       "ideas": "No brainstorming ideas collected. Complete Step 2.",
       "prioritization": "No prioritization votes. Complete Step 3.",
-      "transcripts": "No conversation transcripts yet. Complete the consultation steps."
+      "transcripts": "No conversation transcripts yet. Complete the consultation steps.",
+      "tic": "No session data yet. Complete Steps 2–5 to populate the canvas."
     },
     "maturity": {
       "resources": "Resources",
@@ -907,6 +901,14 @@
       "downloadPDF": "Download Complete PDF Report",
       "generating": "Generating PDF...",
       "pdfNote": "The PDF includes all findings, the Technical Briefing, and full conversation transcripts."
+    },
+    "tic": {
+      "subtitle": "Session findings mapped to the Technology Inquiry Canvas (TIC) framework — structured along Use Cases & Problems vs. Options & Solutions and Collect vs. Connect.",
+      "selectedUseCase": "Selected & Prioritised Use Case",
+      "emptyUseCases": "Complete Steps 2–3 to collect use cases.",
+      "emptySolutions": "Complete Step 4 to collect solution options.",
+      "emptyEnriched": "Complete Steps 4–5a to enrich the use case.",
+      "emptyKnowledge": "Complete Step 4 to build application knowledge."
     }
   },
   "export": {

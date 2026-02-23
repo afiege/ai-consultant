@@ -392,12 +392,7 @@
       "continueButton": "Weiter zur Beratung (Schritt 4)"
     },
     "errors": {
-      "loadFailed": "Laden der Daten fehlgeschlagen. Bitte versuchen Sie es erneut.",
-      "clusterFailed": "Cluster-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut.",
-      "voteFailed": "Abstimmung fehlgeschlagen. Bitte versuchen Sie es erneut.",
-      "selectFailed": "Cluster-Auswahl fehlgeschlagen. Bitte versuchen Sie es erneut.",
-      "allocateAllPoints": "Bitte vergeben Sie alle {{total}} Punkte. Sie haben noch {{remaining}} übrig.",
-      "noParticipant": "Kein Teilnehmer gefunden. Bitte gehen Sie zurück zu Schritt 2 und treten Sie zuerst der Sitzung bei."
+      "assessFailed": "Ideenbewertung fehlgeschlagen. Bitte erneut versuchen."
     },
     "fallbackClustering": {
       "title": "Vereinfachte Gruppierung",
@@ -491,9 +486,6 @@
       "analyzeHint": "Analysieren Sie Ideen, um sie in einer Impact vs. Aufwand-Matrix zu sehen und die besten Chancen zu finden.",
       "analyzeButton": "Ideen analysieren",
       "apiKeyRequired": "API-Schlüssel für Analyse erforderlich"
-    },
-    "errors": {
-      "assessFailed": "Ideenbewertung fehlgeschlagen. Bitte erneut versuchen."
     },
     "results": {
       "votesRecorded": "Ihre Stimmen wurden aufgezeichnet! Hier sind die aktuellen Ergebnisse:",
@@ -791,7 +783,8 @@
       "ideas": "Ideen",
       "prioritization": "Priorisierung",
       "transcripts": "Protokolle",
-      "export": "Export"
+      "export": "Export",
+      "tic": "Canvas"
     },
     "explanation": {
       "title": "DMME-Methodik: Vom Business zum Technical Understanding",
@@ -828,7 +821,8 @@
       "costs": "Keine Kostenschätzung. Schließen Sie Schritt 5b ab.",
       "ideas": "Keine Brainstorming-Ideen gesammelt. Schließen Sie Schritt 2 ab.",
       "prioritization": "Keine Priorisierungsstimmen. Schließen Sie Schritt 3 ab.",
-      "transcripts": "Noch keine Gesprächsprotokolle. Schließen Sie die Beratungsschritte ab."
+      "transcripts": "Noch keine Gesprächsprotokolle. Schließen Sie die Beratungsschritte ab.",
+      "tic": "Noch keine Sitzungsdaten. Schließen Sie die Schritte 2–5 ab, um den Canvas zu befüllen."
     },
     "maturity": {
       "resources": "Ressourcen",
@@ -907,6 +901,14 @@
       "downloadPDF": "Vollständigen PDF-Bericht herunterladen",
       "generating": "PDF wird erstellt...",
       "pdfNote": "Das PDF enthält alle Erkenntnisse, das Technical Briefing und vollständige Gesprächsprotokolle."
+    },
+    "tic": {
+      "subtitle": "Sitzungsergebnisse auf dem Technology Inquiry Canvas (TIC) Framework — strukturiert entlang Anwendungsfälle & Probleme vs. Optionen & Lösungen und Sammeln vs. Verbinden.",
+      "selectedUseCase": "Ausgewählter & priorisierter Anwendungsfall",
+      "emptyUseCases": "Schritte 2–3 abschließen, um Anwendungsfälle zu sammeln.",
+      "emptySolutions": "Schritt 4 abschließen, um Lösungsoptionen zu sammeln.",
+      "emptyEnriched": "Schritte 4–5a abschließen, um den Anwendungsfall anzureichern.",
+      "emptyKnowledge": "Schritt 4 abschließen, um Anwendungswissen aufzubauen."
     }
   },
   "export": {
