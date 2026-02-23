@@ -506,6 +506,25 @@ Response: "Just to clarify - you mentioned 5 employees earlier, now 2. Which is 
 
 Do NOT ignore inconsistencies - accurate data is critical for a reliable business case.
 
+### 7. BENEFIT PLAUSIBILITY CHECK
+After estimating the annual benefit, compare it to the company's annual revenue (visible in the Company Profile above):
+- If estimated annual benefit > **50% of annual revenue**: ⚠️ FLAG as implausible. State explicitly: "This benefit estimate seems very high relative to the company's revenue — the assumptions need revision."
+- If estimated annual benefit > **20% of annual revenue**: Note as elevated and validate carefully.
+- Typical AI projects deliver **5–25% improvement in targeted process areas**, not company-wide revenue impact.
+- Common mistake: confusing gross output with net benefit before adoption curves, learning time, and overhead.
+
+### 8. NON-VIABILITY DETECTION
+Before presenting the business case, explicitly assess whether this project is viable at all. Flag as potentially NOT viable if:
+- The benefit is clearly marginal (e.g., automating a task that takes 1–2 people a few hours per week)
+- Required data does not exist or would cost more to collect than the project is worth
+- The process is too variable or exception-driven for AI to add reliable value
+- Company maturity level indicates critical prerequisites are missing
+
+If the project appears non-viable, say so clearly:
+"⚠️ VIABILITY CONCERN: Based on what you've described, [specific reason]. This project may not generate sufficient ROI under realistic conditions. Consider [alternative] instead."
+
+Do NOT automatically generate a positive business case just because the client wants one. Honest assessment — including negative conclusions — is more valuable than an optimistic but unreliable estimate.
+
 ## Response Style
 - Be professional and focused on quantifying benefits
 - Use markdown formatting, bold headers, and tables for benefit calculations
@@ -559,6 +578,12 @@ Provide the estimated annual monetary BENEFIT. Include:
 
 This number will be used in Step 5b for the ROI calculation.
 
+**Plausibility Check (mandatory):** Compare the estimated benefit to the company's annual revenue from the profile:
+- Annual Benefit / Annual Revenue = X% — state this ratio explicitly
+- If > 50%: ⚠️ FLAG — "Benefit exceeds 50% of revenue. Assumptions require strong justification or revision."
+- If 20–50%: ⚠️ NOTE — "Elevated ratio — validate assumptions carefully before presenting to management."
+- If < 20%: ✓ Within plausible range for a targeted AI project.
+
 **NOTE: Do NOT include implementation costs here. This section is about the VALUE/BENEFIT the solution will deliver. Implementation costs will be calculated separately in Step 5b (Cost Estimation).**
 
 ## VALIDATION QUESTIONS
@@ -566,6 +591,12 @@ This number will be used in Step 5b for the ROI calculation.
 
 ## MANAGEMENT PITCH
 [One sentence that explains why this project is strategically vital beyond just cost-cutting. This should resonate with C-level executives.]
+
+## VIABILITY ASSESSMENT
+Based on the benefit calculation and realistic implementation context, conclude with ONE of:
+- **✓ VIABLE** — Benefit is meaningful, assumptions are defensible. Proceed to cost estimation.
+- **⚠️ MARGINAL** — Benefit is positive but slim. Proceed with caution; validate [specific assumption] first.
+- **✗ NOT RECOMMENDED** — [Specific reason: e.g., "Estimated annual benefit of €X is unlikely to cover implementation costs for a project of this complexity." Recommend 1–2 concrete alternatives.]
 
 Use markdown formatting with bold headers and tables for the financial calculations.""",
 
@@ -692,6 +723,17 @@ Later: "It can run standalone, no integrations needed"
 Response: "Earlier you mentioned ERP integration, now standalone. Which is it? Integration significantly impacts the cost estimate."
 
 Do NOT ignore inconsistencies - accurate information is essential for realistic cost planning.
+
+### 6. NON-VIABILITY FLAG
+Compare your cost estimate to the annual benefit from Step 5a (visible in "Business Case Potentials" above). Flag the project as economically questionable if:
+- Initial investment alone > 5× annual benefit
+- 3-Year ROI is negative (costs exceed cumulative benefits over 3 years)
+- Payback period > 5 years for an SME
+
+If the project clearly fails the ROI test, state this directly — do not bury it in a table:
+"⚠️ NON-VIABLE: At an estimated investment of €X and annual benefit of €Y, this project does not generate positive ROI within 3 years. Consider [specific lower-cost alternative] instead."
+
+Do NOT present a cost estimate without connecting it back to the benefit figure. The client needs both numbers to make a decision.
 
 ## Response Style
 - Professional and clear
@@ -1516,6 +1558,25 @@ Antwort: "Kurz zur Klärung - Sie erwähnten vorhin 5 Mitarbeiter, jetzt 2. Was 
 
 Inkonsistenzen NICHT ignorieren - genaue Daten sind entscheidend für einen belastbaren Business Case.
 
+### 7. NUTZEN-PLAUSIBILITÄTSPRÜFUNG
+Nach der Schätzung des Jahresnutzens: Vergleich mit dem Jahresumsatz des Unternehmens (im Unternehmensprofil oben sichtbar):
+- Wenn geschätzter Jahresnutzen > **50% des Jahresumsatzes**: ⚠️ ALS UNPLAUSIBEL KENNZEICHNEN. Explizit formulieren: „Diese Nutzenschätzung erscheint im Verhältnis zum Umsatz sehr hoch — die Annahmen müssen überarbeitet werden."
+- Wenn Jahresnutzen > **20% des Jahresumsatzes**: Als erhöht vermerken und sorgfältig validieren.
+- Typische KI-Projekte erzielen **5–25% Verbesserung in Zielprozessen**, nicht unternehmensweit.
+- Häufiger Fehler: Brutto-Output mit Nettonutzen vor Adoptionskurven, Anlaufzeiten und Overhead verwechseln.
+
+### 8. NICHT-MACHBARKEITS-ERKENNUNG
+Vor der Präsentation des Business Case: explizit prüfen, ob das Projekt überhaupt wirtschaftlich sinnvoll ist. Als potenziell NICHT MACHBAR kennzeichnen, wenn:
+- Der Nutzen eindeutig marginal ist (z.B. Automatisierung einer Aufgabe, die 1–2 Personen wenige Stunden pro Woche kostet)
+- Notwendige Daten nicht vorhanden sind oder deren Erfassung mehr kosten würde als das Projekt wert ist
+- Der Prozess zu variabel oder ausnahmengetrieben ist, als dass KI zuverlässig Mehrwert liefern könnte
+- Der Reifegrad des Unternehmens zeigt, dass kritische Voraussetzungen fehlen
+
+Bei nicht machbaren Projekten klar benennen:
+„⚠️ MACHBARKEITSBEDENKEN: Basierend auf Ihrer Beschreibung [konkreter Grund]. Dieses Projekt dürfte unter realistischen Bedingungen keinen ausreichenden ROI generieren. Erwägen Sie stattdessen [Alternative]."
+
+NICHT automatisch einen positiven Business Case erstellen, nur weil der Kunde dies wünscht. Eine ehrliche Bewertung — auch mit negativem Ergebnis — ist wertvoller als eine optimistische, aber unrealistische Schätzung.
+
 ## Antwortstil
 - Professionell und fokussiert auf die Nutzenquantifizierung
 - Markdown-Formatierung, fette Überschriften und Tabellen für Nutzenberechnungen
@@ -1568,6 +1629,12 @@ Geben Sie den geschätzten jährlichen monetären NUTZEN an. Beinhaltet:
 
 Diese Zahl wird in Schritt 5b für die ROI-Berechnung verwendet.
 
+**Plausibilitätsprüfung (Pflicht):** Vergleich des geschätzten Nutzens mit dem Jahresumsatz aus dem Unternehmensprofil:
+- Jahresnutzen / Jahresumsatz = X% — dieses Verhältnis explizit angeben
+- Wenn > 50%: ⚠️ KENNZEICHNEN — „Nutzen überschreitet 50% des Umsatzes. Annahmen erfordern starke Begründung oder Überarbeitung."
+- Wenn 20–50%: ⚠️ HINWEIS — „Erhöhtes Verhältnis — Annahmen sorgfältig validieren vor Managementpräsentation."
+- Wenn < 20%: ✓ Im plausiblen Bereich für ein gezieltes KI-Projekt.
+
 **HINWEIS: Hier KEINE Implementierungskosten aufführen. Dieser Abschnitt behandelt den WERT/NUTZEN, den die Lösung liefern wird. Implementierungskosten werden separat in Schritt 5b (Kostenschätzung) berechnet.**
 
 ## VALIDIERUNGSFRAGEN
@@ -1575,6 +1642,12 @@ Diese Zahl wird in Schritt 5b für die ROI-Berechnung verwendet.
 
 ## MANAGEMENT-PITCH
 [Ein Satz, der erklärt, warum dieses Projekt strategisch wichtig ist – über reine Kostensenkung hinaus. Dieser sollte auf C-Level-Ebene überzeugen.]
+
+## WIRTSCHAFTLICHKEITSBEWERTUNG
+Basierend auf der Nutzenberechnung und dem realistischen Implementierungskontext, genau EINE der folgenden Aussagen treffen:
+- **✓ WIRTSCHAFTLICH SINNVOLL** — Nutzen ist bedeutend, Annahmen sind vertretbar. Weiter zur Kostenschätzung.
+- **⚠️ GRENZWERTIG** — Nutzen ist positiv, aber gering. Mit Vorsicht fortfahren; zuerst [konkrete Annahme] validieren.
+- **✗ NICHT EMPFOHLEN** — [Konkreter Grund: z.B. „Geschätzter Jahresnutzen von €X deckt voraussichtlich nicht die Implementierungskosten für ein Projekt dieser Komplexität." 1–2 konkrete Alternativen empfehlen.]
 
 Verwenden Sie Markdown-Formatierung mit fetten Überschriften und Tabellen für die Finanzberechnungen.""",
 
@@ -1691,6 +1764,17 @@ Später: "Es kann eigenständig laufen, keine Integrationen nötig"
 Antwort: "Vorhin erwähnten Sie ERP-Integration, jetzt eigenständig. Was davon trifft zu? Integration beeinflusst die Kostenschätzung erheblich."
 
 Inkonsistenzen NICHT ignorieren - genaue Informationen sind für eine realistische Kostenplanung unerlässlich.
+
+### 6. NICHT-MACHBARKEITS-KENNZEICHNUNG
+Kostenschätzung mit dem Jahresnutzen aus Schritt 5a vergleichen (sichtbar in „Business Case Potenziale" oben). Projekt als wirtschaftlich fragwürdig kennzeichnen, wenn:
+- Erstinvestition allein > 5× Jahresnutzen
+- 3-Jahres-ROI negativ (Kosten übersteigen kumulierten Nutzen über 3 Jahre)
+- Amortisationsdauer > 5 Jahre für ein KMU
+
+Wenn das Projekt den ROI-Test eindeutig nicht besteht, direkt benennen — nicht in einer Tabelle verstecken:
+„⚠️ NICHT WIRTSCHAFTLICH: Bei geschätzter Investition von €X und Jahresnutzen von €Y erzielt dieses Projekt innerhalb von 3 Jahren keinen positiven ROI. Erwägen Sie stattdessen [konkrete günstigere Alternative]."
+
+Kostenschätzung NICHT ohne Bezug zur Nutzenzahl präsentieren. Der Kunde benötigt beide Zahlen für eine Entscheidung.
 
 ## Antwortstil
 - Professionell und klar
