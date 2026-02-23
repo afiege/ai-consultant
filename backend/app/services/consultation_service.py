@@ -586,8 +586,11 @@ class ConsultationService:
 
         ai_goals = (
             self._extract_section(summary, "AI/DATA MINING GOALS") or
-            self._extract_section(summary, "KI/DATA-MINING-ZIELE") or
             self._extract_section(summary, "AI/DATA-MINING GOALS") or
+            self._extract_section(summary, "KI-/DATA-MINING-ZIELE") or   # exact DE prompt header
+            self._extract_section(summary, "KI/DATA-MINING-ZIELE") or    # variant without leading hyphen
+            self._extract_section(summary, "KI-ZIELE") or
+            self._extract_section(summary, "AI GOALS") or
             self._extract_section(summary, "BUSINESS CASE")
         )
         self._save_finding(db_session.id, "ai_goals", ai_goals)
@@ -1146,7 +1149,16 @@ When multiple people contribute:
             return None
 
         end_pos = len(lines)
-        next_section_pattern = r'^(#{2,3}\s+(\d+\.\s*)?[A-Z]|\*\*(\d+\.\s*)?[A-Z]|[A-Z]{2,}[:\s]*$)'
+        # Match next section headers — but NOT inline bold like "**Stufe 2 – Text**: ..."
+        # Bold is only a header if the line ends immediately after the closing ** (optionally with : or spaces)
+        next_section_pattern = (
+            r'^('
+            r'#{2,3}\s+(?:\d+\.\s*)?[A-Z]'                   # ## SECTION or ### 1. SECTION
+            r'|\*\*#{1,3}\s+(?:\d+\.\s*)?[A-Z]'              # **## SECTION (bold wraps hash)
+            r'|\*\*(?:\d+\.\s*)?[A-Z][^*\n]*\*\*\s*:?\s*$'  # **SECTION NAME** or **SECTION NAME**: (full line)
+            r'|[A-Z]{3,}[A-Z\s\-()]*[:\s]*$'                 # PLAIN ALLCAPS (3+ uppercase letters, end of line)
+            r')'
+        )
         for i in range(start_line_end, len(lines)):
             line = lines[i].strip()
             if line and re.match(next_section_pattern, line):

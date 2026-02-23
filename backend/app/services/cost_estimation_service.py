@@ -518,11 +518,16 @@ class CostEstimationService:
             self._extract_section(summary, "PROJEKTKOMPLEXITÄT")
         )
         if not complexity:
+            header_lines = [
+                l.strip() for l in summary.split('\n')
+                if l.strip().startswith('#') or l.strip().startswith('**')
+            ][:20]
             logger.warning(
                 "Cost estimation COMPLEXITY section missing for session %s. "
-                "LLM response headers: %s",
+                "Headers found: %s | First 800 chars: %s",
                 session_uuid,
-                [l.strip() for l in summary.split('\n') if l.strip().startswith('#')][:15]
+                header_lines,
+                summary[:800] if summary else "(empty)"
             )
         self._save_finding(db_session.id, "cost_complexity", complexity)
 
@@ -546,7 +551,12 @@ class CostEstimationService:
 
         tco = (
             self._extract_section(summary, "3-YEAR TOTAL COST OF OWNERSHIP") or
-            self._extract_section(summary, "3-JAHRES-GESAMTBETRIEBSKOSTEN")
+            self._extract_section(summary, "3-YEAR TCO") or
+            self._extract_section(summary, "TOTAL COST OF OWNERSHIP") or
+            self._extract_section(summary, "3-JAHRES-GESAMTBETRIEBSKOSTEN") or
+            self._extract_section(summary, "3-JAHRES GESAMTBETRIEBSKOSTEN") or   # space instead of hyphen
+            self._extract_section(summary, "GESAMTBETRIEBSKOSTEN") or
+            self._extract_section(summary, "TCO")
         )
         self._save_finding(db_session.id, "cost_tco", tco)
 
@@ -1051,7 +1061,16 @@ class CostEstimationService:
             return None
 
         end_pos = len(lines)
-        next_section_pattern = r'^(#{2,3}\s+(\d+\.\s*)?[A-Z]|\*\*(\d+\.\s*)?[A-Z]|[A-Z]{2,}[:\s]*$)'
+        # Match next section headers — but NOT inline bold like "**Stufe 2 – Text**: ..."
+        # Bold is only a header if the line ends immediately after the closing ** (optionally with : or spaces)
+        next_section_pattern = (
+            r'^('
+            r'#{2,3}\s+(?:\d+\.\s*)?[A-Z]'                   # ## SECTION or ### 1. SECTION
+            r'|\*\*#{1,3}\s+(?:\d+\.\s*)?[A-Z]'              # **## SECTION (bold wraps hash)
+            r'|\*\*(?:\d+\.\s*)?[A-Z][^*\n]*\*\*\s*:?\s*$'  # **SECTION NAME** or **SECTION NAME**: (full line)
+            r'|[A-Z]{3,}[A-Z\s\-()]*[:\s]*$'                 # PLAIN ALLCAPS (3+ uppercase letters, end of line)
+            r')'
+        )
         for i in range(start_line_end, len(lines)):
             line = lines[i].strip()
             if line and re.match(next_section_pattern, line):
