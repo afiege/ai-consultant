@@ -505,7 +505,7 @@ class CostEstimationService:
         messages.append({"role": "user", "content": extraction_prompt})
 
         # Use higher max_tokens for potentially lengthy cost breakdown
-        response = self._call_llm_extraction(messages, max_tokens=2500)
+        response = self._call_llm_extraction(messages, max_tokens=6000)
 
         summary = extract_content(response)
 
