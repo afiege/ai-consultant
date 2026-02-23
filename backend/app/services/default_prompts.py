@@ -355,11 +355,11 @@ Structure your summary:
 - Required data inputs and expected outputs]
 
 ## PROJECT PLAN
-[Outline the implementation roadmap:
-- Main project phases (3-5 phases)
-- Key milestones and decision points
-- Required resources and skills
-- Estimated timeline]
+[Outline the implementation roadmap using SPECIFIC details from the conversation — concrete weeks/months, named systems, machines, or teams where mentioned. Do NOT use generic phase names like "Requirements Gathering" or "Implementation".
+- Phase names tied to THIS project (e.g. "Camera installation on Line 3 — Week 6")
+- Concrete milestones with timeframes (e.g. "Pilot go-live: Month 4")
+- Named resources or systems from the conversation
+- Overall timeline in weeks or months]
 
 ## OPEN RISKS / BLOCKERS
 List any show-stopper concerns that surfaced during the conversation — even if still unresolved:
@@ -1673,11 +1673,11 @@ Struktur der Zusammenfassung:
 - Benötigte Eingabedaten und erwartete Ergebnisse]
 
 ## PROJEKTPLAN
-[Skizzieren Sie den Umsetzungsplan:
-- Hauptprojektphasen (3-5 Phasen)
-- Wichtige Meilensteine und Entscheidungspunkte
-- Benötigte Ressourcen und Kompetenzen
-- Voraussichtlicher Zeitrahmen]
+[Skizzieren Sie den Umsetzungsplan mit KONKRETEN Details aus dem Gespräch — echte Wochen/Monate, genannte Systeme, Maschinen oder Teams. KEINE generischen Phasenbezeichnungen wie "Anforderungserfassung" oder "Implementierung".
+- Phasennamen, die zu DIESEM Projekt passen (z. B. "Kamerainstallation an Linie 3 — Woche 6")
+- Konkrete Meilensteine mit Zeitrahmen (z. B. "Pilot-Go-Live: Monat 4")
+- Genannte Ressourcen oder Systeme aus dem Gespräch
+- Gesamtlaufzeit in Wochen oder Monaten]
 
 ## OFFENE RISIKEN / BLOCKER
 Listen Sie alle im Gespräch genannten kritischen Bedenken auf — auch wenn noch ungelöst:

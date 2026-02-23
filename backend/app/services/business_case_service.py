@@ -822,6 +822,7 @@ class BusinessCaseService:
 
         header_patterns = [
             rf'^#{{2,3}}\s*\*{{0,2}}(\d+\.\s*)?{re.escape(section_name)}\*{{0,2}}[^\n]*$',  # ## SECTION or ## **SECTION**
+            rf'^\*\*#{{2,3}}\s*(\d+\.\s*)?{re.escape(section_name)}[^\n]*$',                  # **## SECTION** (bold wraps hash — used in prompt examples)
             rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}\*\*[:\s]*$',                         # **SECTION**: (colon outside bold)
             rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}:\*\*\s*$',                           # **SECTION:** (colon inside bold)
             rf'^(\d+\.\s*)?{re.escape(section_name)}[:\s]*$',                                 # SECTION: (plain)
