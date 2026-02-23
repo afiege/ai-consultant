@@ -9,7 +9,7 @@ import httpx
 from typing import Optional, List
 from litellm import completion
 
-from ..utils.security import SafeLogFilter
+from ..utils.security import SafeLogFilter, validate_api_base
 
 logger = logging.getLogger(__name__)
 logger.addFilter(SafeLogFilter())
@@ -163,6 +163,12 @@ async def fetch_provider_models(request: FetchModelsRequest):
             message="API key is required to fetch models"
         )
 
+    # Validate api_base against allowlist to prevent SSRF
+    try:
+        validate_api_base(request.api_base)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
     # Find fallback models from hardcoded list
     fallback_models = []
     for provider in LLM_PROVIDERS:
@@ -285,6 +291,15 @@ def test_llm_connection(request: LLMTestRequest):
         return LLMTestResponse(
             success=False,
             message="API key is required"
+        )
+
+    # Validate api_base against allowlist to prevent SSRF
+    try:
+        validate_api_base(request.api_base)
+    except ValueError as e:
+        return LLMTestResponse(
+            success=False,
+            message=str(e)
         )
 
     try:

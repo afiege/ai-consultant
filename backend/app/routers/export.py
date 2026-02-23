@@ -17,6 +17,7 @@ from ..services.pdf_generator import PDFReportGenerator
 from ..services.default_prompts import get_prompt
 from ..services.session_settings import get_llm_settings, get_temperature_config
 from ..config import settings
+from ..utils.security import validate_api_base
 
 router = APIRouter()
 
@@ -78,7 +79,7 @@ def generate_pdf_report(
         logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate PDF: {str(e)}"
+            detail="Failed to generate PDF report. Please try again."
         )
 
 
@@ -222,6 +223,12 @@ def generate_transition_briefing(
     model = request.model or session_model
     api_base = request.api_base or session_api_base
 
+    # Validate api_base against allowlist to prevent SSRF
+    try:
+        validate_api_base(api_base)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
     # Build the context for the prompt
     context = _build_transition_context(db, db_session)
 
@@ -267,9 +274,10 @@ def generate_transition_briefing(
         }
 
     except Exception as e:
+        logger.error(f"Failed to generate transition briefing: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate transition briefing: {str(e)}"
+            detail="Failed to generate transition briefing. Please try again."
         )
 
 
@@ -440,6 +448,12 @@ def generate_swot_analysis(
     model = request.model or session_model
     api_base = request.api_base or session_api_base
 
+    # Validate api_base against allowlist to prevent SSRF
+    try:
+        validate_api_base(api_base)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
     # Build the context (reuse the transition context builder)
     context = _build_transition_context(db, db_session)
 
@@ -485,9 +499,10 @@ def generate_swot_analysis(
         }
 
     except Exception as e:
+        logger.error(f"Failed to generate SWOT analysis: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate SWOT analysis: {str(e)}"
+            detail="Failed to generate SWOT analysis. Please try again."
         )
 
 
@@ -738,9 +753,10 @@ def extract_cross_references(
         }
 
     except Exception as e:
+        logger.error(f"Failed to extract cross-references: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to extract cross-references: {str(e)}"
+            detail="Failed to extract cross-references. Please try again."
         )
 
 

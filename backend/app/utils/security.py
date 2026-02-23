@@ -2,7 +2,7 @@
 
 import re
 import logging
-from typing import Tuple
+from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -232,6 +232,64 @@ def install_safe_log_filter(logger_name: str = None):
     """
     target_logger = logging.getLogger(logger_name)
     target_logger.addFilter(SafeLogFilter())
+
+
+# Allowlist of permitted api_base URL prefixes (case-insensitive prefix match)
+ALLOWED_API_BASE_PREFIXES = [
+    # Academic / research providers
+    "https://chat-ai.academiccloud.de",   # SAIA / AcademicCloud
+    "https://llm.scads.ai",               # ScaDS.AI
+    # Commercial LLM providers
+    "https://api.mistral.ai",             # Mistral
+    "https://dashscope-intl.aliyuncs.com",  # DashScope (Alibaba)
+    "https://integrate.api.nvidia.com",   # NVIDIA NIM
+    "https://openrouter.ai",              # OpenRouter
+    "https://generativelanguage.googleapis.com",  # Google AI Studio
+    "https://api.openai.com",             # OpenAI
+    "https://openai.azure.com",           # Azure OpenAI (non-resource URL)
+    "https://api.anthropic.com",          # Anthropic
+    # Local development
+    "http://localhost",
+    "http://127.0.0.1",
+]
+
+# Wildcard prefix for Azure resource-specific URLs: https://<resource>.openai.azure.com
+_AZURE_WILDCARD_SUFFIX = ".openai.azure.com"
+
+
+def validate_api_base(api_base: Optional[str]) -> None:
+    """
+    Validate that api_base is an allowed provider URL to prevent SSRF.
+
+    Args:
+        api_base: The API base URL to validate, or None
+
+    Raises:
+        ValueError: If api_base is set but does not match any allowed provider prefix
+    """
+    if api_base is None:
+        return
+
+    api_base_lower = api_base.lower()
+
+    # Check static prefixes (case-insensitive)
+    for prefix in ALLOWED_API_BASE_PREFIXES:
+        if api_base_lower.startswith(prefix.lower()):
+            return
+
+    # Check Azure wildcard: https://<anything>.openai.azure.com
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(api_base_lower)
+        if (
+            parsed.scheme == "https"
+            and parsed.netloc.endswith(_AZURE_WILDCARD_SUFFIX)
+        ):
+            return
+    except Exception:
+        pass
+
+    raise ValueError("api_base URL is not in the list of allowed providers")
 
 
 def redact_api_key(api_key: str, visible_chars: int = 4) -> str:

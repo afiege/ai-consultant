@@ -9,6 +9,7 @@ from ..utils.llm import apply_model_params
 
 from ..models import Session as SessionModel, CompanyInfo
 from ..schemas.company_profile import CompanyProfile, CompanyProfileResponse
+from ..utils.security import sanitize_user_input, validate_api_base
 
 logger = logging.getLogger(__name__)
 
@@ -194,9 +195,15 @@ def extract_company_profile(
 
     raw_info = "\n\n---\n\n".join(raw_parts)
 
+    # Sanitize combined raw info to remove control characters and limit whitespace
+    raw_info = sanitize_user_input(raw_info, max_length=20000)
+
     # Limit total size to avoid token issues (keep ~8000 chars)
     if len(raw_info) > 8000:
         raw_info = raw_info[:8000] + "\n\n[... truncated for length ...]"
+
+    # Validate api_base against allowlist to prevent SSRF
+    validate_api_base(api_base)
 
     # Build messages
     lang = language if language in ["en", "de"] else "en"
