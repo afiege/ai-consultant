@@ -3,7 +3,7 @@
 from typing import List, Optional, Dict, Generator
 from sqlalchemy.orm import Session
 
-from ..utils.llm import LLMCaller, strip_think_tokens
+from ..utils.llm import LLMCaller, strip_think_tokens, extract_content
 from ..utils.security import validate_and_sanitize_message
 
 from ..models import (
@@ -494,7 +494,7 @@ class BusinessCaseService:
         # Use higher max_tokens for potentially lengthy business case
         response = self._call_llm_extraction(messages, max_tokens=2500)
 
-        summary = response.choices[0].message.content
+        summary = extract_content(response)
 
         # Extract and save business case findings
         classification = (
@@ -520,6 +520,13 @@ class BusinessCaseService:
             self._extract_section(summary, "MANAGEMENT-PITCH")
         )
         self._save_finding(db_session.id, "business_case_pitch", pitch)
+
+        if not any([classification, calculation, validation, pitch]):
+            logger.warning(
+                "Business case extraction produced no structured sections for session %s. "
+                "LLM response (first 500 chars): %s",
+                session_uuid, summary[:500] if summary else "(empty)"
+            )
 
         self.db.commit()
 
@@ -677,8 +684,12 @@ class BusinessCaseService:
 
     def _save_finding(self, session_id: int, factor_type: str, text: str):
         """Save or update a finding."""
-        if not text or text.strip() == "":
+        if not text:
             return
+        stripped = text.strip()
+        if not stripped or stripped.upper() in ("NULL", "N/A", "NONE", ""):
+            return
+        text = stripped
 
         existing = self.db.query(ConsultationFinding).filter(
             ConsultationFinding.session_id == session_id,
@@ -695,14 +706,47 @@ class BusinessCaseService:
             ))
 
     def _extract_section(self, text: str, section_name: str) -> Optional[str]:
-        """Extract a section from formatted text."""
+        """Extract a section from formatted text.
+
+        Handles multiple header styles:
+        - ## SECTION_NAME  or  ### 1. SECTION_NAME  (markdown headers)
+        - **SECTION_NAME** or **1. SECTION_NAME**   (bold)
+        - SECTION_NAME:    or  1. SECTION_NAME      (plain)
+        """
         import re
 
-        # Try to find section with ## header
-        pattern = rf"##\s*{section_name}[^\n]*\n(.*?)(?=##|$)"
-        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        if not text or not section_name:
+            return None
 
-        if match:
-            return match.group(1).strip()
+        header_patterns = [
+            rf'^#{{2,3}}\s*(\d+\.\s*)?{re.escape(section_name)}[^\n]*$',
+            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}\*\*[:\s]*$',
+            rf'^(\d+\.\s*)?{re.escape(section_name)}[:\s]*$',
+        ]
 
-        return None
+        lines = text.split('\n')
+        start_pos = None
+        start_line_end = None
+
+        for i, line in enumerate(lines):
+            for pattern in header_patterns:
+                if re.match(pattern, line.strip(), re.IGNORECASE):
+                    start_pos = i
+                    start_line_end = i + 1
+                    break
+            if start_pos is not None:
+                break
+
+        if start_pos is None:
+            return None
+
+        end_pos = len(lines)
+        next_section_pattern = r'^(#{2,3}\s+(\d+\.\s*)?[A-Z]|\*\*(\d+\.\s*)?[A-Z]|[A-Z]{2,}[:\s]*$)'
+        for i in range(start_line_end, len(lines)):
+            line = lines[i].strip()
+            if line and re.match(next_section_pattern, line):
+                end_pos = i
+                break
+
+        content = '\n'.join(lines[start_line_end:end_pos]).strip()
+        return content if content else None
