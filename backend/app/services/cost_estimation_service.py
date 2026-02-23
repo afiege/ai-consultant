@@ -1,6 +1,7 @@
 """Service for AI-powered cost estimation in Step 5b using LiteLLM (multi-provider)."""
 
-from typing import List, Optional, Dict, Generator
+import re
+from typing import List, Optional, Dict, Generator, Tuple
 from sqlalchemy.orm import Session
 import logging
 
@@ -566,6 +567,17 @@ class CostEstimationService:
 
         self.db.commit()
 
+        # Re-extract the Step 5a annual benefit and validate ROI arithmetic.
+        step5a = self.db.query(ConsultationFinding).filter(
+            ConsultationFinding.session_id == db_session.id,
+            ConsultationFinding.factor_type == "business_case_calculation",
+        ).first()
+        potentials_for_validation = {
+            "calculation": step5a.finding_text if step5a else ""
+        }
+        annual_benefit_float, _ = self._extract_annual_benefit_from_5a(potentials_for_validation)
+        self._validate_and_correct_roi(db_session.id, annual_benefit_float)
+
         return {
             "summary": summary,
             "findings": self.get_findings(session_uuid)
@@ -722,13 +734,17 @@ class CostEstimationService:
         potentials = context.get("potentials", {})
         potentials_parts = []
         if potentials.get("classification"):
-            potentials_parts.append(f"**Classification:** {potentials['classification'][:500]}")
+            potentials_parts.append(f"**Classification:** {potentials['classification']}")
         if potentials.get("calculation"):
-            potentials_parts.append(f"**Estimated Benefits:** {potentials['calculation'][:500]}")
+            potentials_parts.append(f"**Estimated Benefits:** {potentials['calculation']}")
         if potentials.get("management_pitch"):
             potentials_parts.append(f"**Strategic Value:** {potentials['management_pitch']}")
 
         potentials_summary = "\n\n".join(potentials_parts) if potentials_parts else "Not yet analyzed in Step 5a."
+
+        # Extract annual benefit figure programmatically from Step 5a so the
+        # LLM has an unambiguous anchor for the ROI table.
+        _benefit_float, annual_benefit_eur = self._extract_annual_benefit_from_5a(potentials)
 
         # Get prompt template
         template = get_prompt(
@@ -745,7 +761,8 @@ class CostEstimationService:
             situation_assessment=situation_assessment,
             ai_goals=ai_goals,
             project_plan=project_plan,
-            potentials_summary=potentials_summary
+            potentials_summary=potentials_summary,
+            annual_benefit_eur=annual_benefit_eur,
         )
 
     def _get_conversation_history(self, session_id: int) -> List[Dict]:
@@ -782,6 +799,209 @@ class CostEstimationService:
                 factor_type=factor_type,
                 finding_text=text.strip()
             ))
+
+    # ------------------------------------------------------------------
+    # Benefit extraction & ROI validation helpers
+    # ------------------------------------------------------------------
+
+    def _parse_eur_value(self, text: str) -> Optional[float]:
+        """Parse a euro amount string into a float.
+
+        Handles EN (1,000.00) and DE (1.000,00) thousand-separator styles,
+        bold markdown, negative signs, and k/M suffixes.
+        """
+        if not text:
+            return None
+        clean = re.sub(r'[*_€\s]', '', text)
+        negative = clean.startswith('−') or clean.startswith('-')
+        clean = clean.lstrip('−-')
+        multiplier = 1
+        if clean.lower().endswith('k'):
+            multiplier = 1_000
+            clean = clean[:-1]
+        elif clean.lower().endswith('m'):
+            multiplier = 1_000_000
+            clean = clean[:-1]
+        m = re.search(r'[\d][,\.\d]*', clean)
+        if not m:
+            return None
+        num = m.group()
+        # Remove thousand separators (comma/dot followed by exactly 3 digits)
+        num = re.sub(r'[,\.](?=\d{3}(?:[^\d]|$))', '', num)
+        num = num.replace(',', '.')  # normalise remaining decimal separator
+        try:
+            value = float(num) * multiplier
+            return -value if negative else value
+        except ValueError:
+            return None
+
+    def _extract_annual_benefit_from_5a(
+        self, potentials: dict
+    ) -> Tuple[Optional[float], str]:
+        """Extract the moderate annual benefit figure from the Step 5a text.
+
+        Returns (float_value, display_string).  When extraction fails the
+        display string falls back to a human-readable note so the prompt
+        still renders cleanly.
+        """
+        calculation = potentials.get("calculation", "")
+        if not calculation:
+            return None, "Not available — Step 5a not yet completed."
+
+        patterns = [
+            r'Total Annual Benefit[^€\n]*€\s*([\d][,\.\d]*(?:[kKmM])?)',
+            r'Gesamter Jahresnutzen[^€\n]*€\s*([\d][,\.\d]*(?:[kKmM])?)',
+            r'Annual Benefit[^€\n]*moderate[^€\n]*€\s*([\d][,\.\d]*(?:[kKmM])?)',
+            r'Jahresnutzen[^€\n]*moderat[^€\n]*€\s*([\d][,\.\d]*(?:[kKmM])?)',
+        ]
+        for pattern in patterns:
+            m = re.search(pattern, calculation, re.IGNORECASE)
+            if m:
+                value = self._parse_eur_value(m.group(1))
+                if value and value > 0:
+                    if value >= 1_000_000:
+                        display = f"€{value / 1_000_000:.2f}M"
+                    else:
+                        display = f"€{value:,.0f}"
+                    return value, display
+
+        return None, "Not extracted — see calculation above."
+
+    def _parse_roi_table_value(self, roi_text: str, keywords: list) -> Optional[float]:
+        """Find a row in the ROI markdown table by keywords and return its euro value."""
+        for line in roi_text.split('\n'):
+            if '|' not in line:
+                continue
+            lower = line.lower()
+            if any(kw in lower for kw in keywords):
+                cols = [c.strip() for c in line.split('|')]
+                for col in reversed(cols):
+                    if col and col not in ('', '-', '—'):
+                        val = self._parse_eur_value(col)
+                        if val is not None:
+                            return val
+        return None
+
+    def _parse_roi_payback(self, roi_text: str) -> Optional[float]:
+        """Extract the payback period in years from the ROI table."""
+        for line in roi_text.split('\n'):
+            if '|' not in line:
+                continue
+            lower = line.lower()
+            if 'payback' in lower or 'amortisation' in lower:
+                m = re.search(r'(\d+\.?\d*)\s*year', line, re.IGNORECASE)
+                if m:
+                    return float(m.group(1))
+        return None
+
+    def _parse_roi_percent(self, roi_text: str) -> Optional[float]:
+        """Extract the 3-year ROI percentage from the ROI table.
+
+        Handles comma-formatted large values like 2,015% as well as −84%.
+        """
+        for line in roi_text.split('\n'):
+            if '|' not in line:
+                continue
+            lower = line.lower()
+            if ('3-year roi' in lower or '3-jahres-roi' in lower
+                    or ('roi' in lower and '3' in lower)):
+                m = re.search(r'(-?[\d][,\.\d]*)\s*%', line)
+                if m:
+                    return self._parse_eur_value(m.group(1))
+        return None
+
+    def _validate_and_correct_roi(
+        self, session_id: int, annual_benefit: Optional[float]
+    ) -> None:
+        """Re-compute ROI arithmetic from extracted findings.
+
+        If the LLM's payback period or 3-year ROI differ materially (>15 %)
+        from the values computed here, a correction block is appended to the
+        cost_roi finding so the report always shows accurate numbers.
+        """
+        if annual_benefit is None:
+            return
+
+        roi_finding = self.db.query(ConsultationFinding).filter(
+            ConsultationFinding.session_id == session_id,
+            ConsultationFinding.factor_type == "cost_roi",
+        ).first()
+        if not roi_finding or not roi_finding.finding_text:
+            return
+
+        roi_text = roi_finding.finding_text
+
+        annual_recurring = self._parse_roi_table_value(
+            roi_text, ['annual recurring', 'recurring costs', 'laufende kosten']
+        )
+        initial_investment = self._parse_roi_table_value(
+            roi_text, ['initial investment', 'erstinvestition']
+        )
+
+        if annual_recurring is None or initial_investment is None:
+            logger.debug(
+                "ROI validation skipped for session %s: could not parse "
+                "recurring costs or initial investment from table.",
+                session_id,
+            )
+            return
+
+        net_annual = annual_benefit - annual_recurring
+
+        if net_annual <= 0:
+            computed_payback = None
+            payback_str = "Never (net annual benefit is negative)"
+        else:
+            computed_payback = round(initial_investment / net_annual, 2)
+            payback_str = f"{computed_payback:.2f} years"
+
+        computed_roi = round(
+            (3 * net_annual - initial_investment) / initial_investment * 100, 1
+        ) if initial_investment else None
+
+        # Determine whether correction is needed
+        needs_correction = False
+
+        if net_annual <= 0:
+            text_lower = roi_text.lower()
+            if not any(w in text_lower for w in ('never', 'nie', 'non-viable', 'nicht rentabel')):
+                needs_correction = True
+        else:
+            llm_payback = self._parse_roi_payback(roi_text)
+            llm_roi = self._parse_roi_percent(roi_text)
+            if (llm_payback is not None and computed_payback is not None
+                    and abs(llm_payback - computed_payback) / max(computed_payback, 0.01) > 0.15):
+                needs_correction = True
+            if (llm_roi is not None and computed_roi is not None
+                    and abs(llm_roi - computed_roi) > 15):
+                needs_correction = True
+
+        if not needs_correction:
+            return
+
+        correction = (
+            "\n\n---\n"
+            "⚠️ **Arithmetic correction (auto-validated from extracted figures):**\n\n"
+            f"| Metric | Corrected Value |\n"
+            f"|--------|-----------------|\n"
+            f"| Annual Benefit | €{annual_benefit:,.0f} |\n"
+            f"| Annual Recurring + Maintenance | €{annual_recurring:,.0f} |\n"
+            f"| Net Annual Benefit | €{net_annual:,.0f} |\n"
+            f"| Initial Investment | €{initial_investment:,.0f} |\n"
+            f"| **Simple Payback Period** | **{payback_str}** |\n"
+        )
+        if computed_roi is not None:
+            correction += f"| **3-Year ROI** | **{computed_roi:.1f}%** |\n"
+
+        roi_finding.finding_text = roi_finding.finding_text + correction
+        self.db.commit()
+        logger.info(
+            "ROI arithmetic corrected for session %s "
+            "(benefit=%.0f, recurring=%.0f, initial=%.0f, "
+            "payback=%s, roi_3yr=%s)",
+            session_id, annual_benefit, annual_recurring, initial_investment,
+            payback_str, f"{computed_roi:.1f}%" if computed_roi else "n/a",
+        )
 
     def _extract_section(self, text: str, section_name: str) -> Optional[str]:
         """Extract a section from formatted text.

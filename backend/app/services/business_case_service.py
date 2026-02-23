@@ -13,7 +13,8 @@ from ..models import (
     CompanyInfo,
     Idea,
     IdeaSheet,
-    Prioritization
+    Prioritization,
+    MaturityAssessment,
 )
 from .default_prompts import get_prompt
 from .company_profile_service import get_profile_as_context
@@ -452,7 +453,10 @@ class BusinessCaseService:
                 "business_case_classification",
                 "business_case_calculation",
                 "business_case_validation",
-                "business_case_pitch"
+                "business_case_pitch",
+                "business_case_assumptions",
+                "business_case_viability",
+                "business_case_complexity_indicator",
             ])
         ).all()
 
@@ -460,14 +464,20 @@ class BusinessCaseService:
             "classification": None,
             "calculation": None,
             "validation_questions": None,
-            "management_pitch": None
+            "management_pitch": None,
+            "assumptions": None,
+            "viability": None,
+            "complexity_indicator": None,
         }
 
         type_mapping = {
             "business_case_classification": "classification",
             "business_case_calculation": "calculation",
             "business_case_validation": "validation_questions",
-            "business_case_pitch": "management_pitch"
+            "business_case_pitch": "management_pitch",
+            "business_case_assumptions": "assumptions",
+            "business_case_viability": "viability",
+            "business_case_complexity_indicator": "complexity_indicator",
         }
 
         for f in findings:
@@ -520,6 +530,24 @@ class BusinessCaseService:
             self._extract_section(summary, "MANAGEMENT-PITCH")
         )
         self._save_finding(db_session.id, "business_case_pitch", pitch)
+
+        assumptions = (
+            self._extract_section(summary, "KEY ASSUMPTIONS") or
+            self._extract_section(summary, "WICHTIGE ANNAHMEN")
+        )
+        self._save_finding(db_session.id, "business_case_assumptions", assumptions)
+
+        viability = (
+            self._extract_section(summary, "VIABILITY ASSESSMENT") or
+            self._extract_section(summary, "WIRTSCHAFTLICHKEITSBEWERTUNG")
+        )
+        self._save_finding(db_session.id, "business_case_viability", viability)
+
+        complexity_indicator = (
+            self._extract_section(summary, "COMPLEXITY INDICATOR") or
+            self._extract_section(summary, "KOMPLEXITÄTSINDIKATOR")
+        )
+        self._save_finding(db_session.id, "business_case_complexity_indicator", complexity_indicator)
 
         if not any([classification, calculation, validation, pitch]):
             logger.warning(
@@ -597,7 +625,8 @@ class BusinessCaseService:
                 "business_objectives",
                 "situation_assessment",
                 "ai_goals",
-                "project_plan"
+                "project_plan",
+                "technical_briefing",
             ])
         ).all()
 
@@ -606,10 +635,22 @@ class BusinessCaseService:
             "business_objectives": "",
             "situation_assessment": "",
             "ai_goals": "",
-            "project_plan": ""
+            "project_plan": "",
+            "technical_briefing": "",
         }
         for f in step4_findings:
             crisp_dm[f.factor_type] = f.finding_text
+
+        # Get maturity assessment score for benefit discount calculation
+        maturity_row = self.db.query(MaturityAssessment).filter(
+            MaturityAssessment.session_id == db_session.id
+        ).first()
+        maturity = None
+        if maturity_row and maturity_row.overall_score:
+            maturity = {
+                "overall": maturity_row.overall_score,
+                "level": maturity_row.maturity_level or "",
+            }
 
         return {
             "company_name": db_session.company_name or "the company",
@@ -617,7 +658,8 @@ class BusinessCaseService:
             "company_profile_text": company_profile_text if has_structured_profile else None,
             "ideas": all_ideas,
             "top_idea": all_ideas[0] if all_ideas else None,
-            "crisp_dm": crisp_dm
+            "crisp_dm": crisp_dm,
+            "maturity": maturity,
         }
 
     def _build_system_prompt(self, context: Dict) -> str:
@@ -653,6 +695,50 @@ class BusinessCaseService:
         ai_goals = crisp_dm.get("ai_goals", "Not yet defined.")
         project_plan = crisp_dm.get("project_plan", "Not yet planned.")
 
+        # Compute maturity context for benefit discount guidance
+        maturity = context.get("maturity")
+        if maturity and maturity.get("overall"):
+            score = maturity["overall"]
+            level_desc = maturity.get("level", "")
+            if score <= 2.5:
+                discount_pct = "30–40%"
+                readiness = "Limited data infrastructure and automation readiness — benefits will take longer to materialise"
+            elif score <= 3.5:
+                discount_pct = "15–20%"
+                readiness = "Partial digital foundation — gaps remain in data quality and process discipline"
+            else:
+                discount_pct = "0–10%"
+                readiness = "Solid digital foundation — good conditions for benefit realisation"
+            maturity_context = (
+                f"**Score: {score:.1f}/6** — {level_desc}\n"
+                f"**Benefit realisation risk:** {readiness}\n"
+                f"**Discount to apply to moderate estimate:** {discount_pct}"
+            )
+        else:
+            maturity_context = "Not yet assessed — assume moderate realisation risk (apply 15–20% discount to be conservative)."
+
+        # Extract blockers/enablers from technical briefing (if it was generated)
+        tb_text = crisp_dm.get("technical_briefing", "")
+        if tb_text:
+            # Try to extract the Enablers and Blockers section
+            m = re.search(
+                r'(?:IDENTIFIED ENABLERS AND BLOCKERS|IDENTIFIZIERTE ENABLER UND BLOCKER)(.*?)'
+                r'(?=###\s*\d|###\s*[A-Z\u00C0-\u024F]|\Z)',
+                tb_text, re.IGNORECASE | re.DOTALL
+            )
+            technical_blockers = m.group(1).strip()[:1800] if m else tb_text[:1800]
+        else:
+            if self.language == "de":
+                technical_blockers = (
+                    "Technical Briefing noch nicht erstellt — "
+                    "Risiken auf Basis von Situationsanalyse und KI-Zielen oben bewerten."
+                )
+            else:
+                technical_blockers = (
+                    "Technical briefing not yet generated — "
+                    "assess risks based on Situation Assessment and AI Goals above."
+                )
+
         # Get prompt template
         template = get_prompt(
             "business_case_system",
@@ -667,7 +753,9 @@ class BusinessCaseService:
             business_objectives=business_objectives,
             situation_assessment=situation_assessment,
             ai_goals=ai_goals,
-            project_plan=project_plan
+            project_plan=project_plan,
+            maturity_context=maturity_context,
+            technical_blockers=technical_blockers,
         )
 
     def _get_conversation_history(self, session_id: int) -> List[Dict]:

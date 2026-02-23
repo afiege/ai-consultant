@@ -527,6 +527,7 @@ class ConsultationService:
             "situation_assessment": None,
             "ai_goals": None,
             "project_plan": None,
+            "open_risks": None,
             # Legacy fields for backward compatibility
             "project": None,
             "risks": None,
@@ -597,6 +598,14 @@ class ConsultationService:
             self._extract_section(summary, "IMPLEMENTATION STEPS")
         )
         self._save_finding(db_session.id, "project_plan", project_plan)
+
+        open_risks = (
+            self._extract_section(summary, "OPEN RISKS / BLOCKERS") or
+            self._extract_section(summary, "OPEN RISKS") or
+            self._extract_section(summary, "OFFENE RISIKEN / BLOCKER") or
+            self._extract_section(summary, "OFFENE RISIKEN")
+        )
+        self._save_finding(db_session.id, "open_risks", open_risks)
 
         if not any([company_profile, business_obj, situation, ai_goals, project_plan]):
             logger.warning(
@@ -885,10 +894,24 @@ When multiple people contribute:
             self.custom_prompts
         )
 
+        # Get detailed maturity guidance text from MATURITY_GUIDANCE dict
+        maturity_guidance_text = ""
+        if maturity and maturity.get("overall_score"):
+            level_int = max(1, min(6, round(maturity["overall_score"])))
+            lang_guidance = MATURITY_GUIDANCE.get(self.language, MATURITY_GUIDANCE["en"])
+            guidance = lang_guidance.get(level_int)
+            if guidance:
+                level_name, guidance_text = guidance
+                if self.language == "de":
+                    maturity_guidance_text = f"**Hinweise für Level {level_int} — {level_name}:** {guidance_text}"
+                else:
+                    maturity_guidance_text = f"**Guidance for Level {level_int} — {level_name}:** {guidance_text}"
+
         return template.format(
             company_name=context.get('company_name', 'Unknown'),
             company_info_text=company_info_text,
             maturity_section=maturity_section,
+            maturity_guidance_text=maturity_guidance_text,
             focus_idea=focus_idea,
             top_ideas_text=top_ideas_text
         )
@@ -954,34 +977,49 @@ When multiple people contribute:
         return message_list
 
     def _summarize_old_messages(self, messages: List[Dict]) -> str:
-        """Create a brief summary of older messages to preserve context."""
+        """Create a fact-preserving LLM summary of older messages to prevent context loss."""
         if not messages:
             return ""
 
-        # Extract key facts mentioned in older messages
-        key_points = []
+        # Format transcript for the LLM
+        lines = []
         for msg in messages:
+            role_label = "Client" if msg["role"] == "user" else "Consultant"
             content = msg.get("content", "")
-            # Look for important information patterns
-            if msg["role"] == "user":
-                # User provided information
-                if len(content) > 20:
-                    # Truncate long messages but keep the essence
-                    key_points.append(f"Client mentioned: {content[:200]}...")
-            elif msg["role"] == "assistant":
-                # AI asked about or discussed
-                if "?" in content:
-                    # Was asking a question - the answer should be in subsequent user message
-                    pass
-                elif len(content) > 50:
-                    # AI shared insights
-                    key_points.append(f"Discussed: {content[:150]}...")
+            # Skip system messages and very short exchanges
+            if msg["role"] == "system" or len(content) < 10:
+                continue
+            lines.append(f"{role_label}: {content}")
 
-        # Limit to most important points
-        if len(key_points) > 5:
-            key_points = key_points[:5]
+        if not lines:
+            return ""
 
-        return "\n".join(key_points) if key_points else ""
+        transcript = "\n".join(lines)
+
+        if self.language == "de":
+            prompt = (
+                "Fasse das folgende Beratungsgespräch in maximal 6-8 Sätzen zusammen. "
+                "Bewahre dabei ALLE Zahlen, Mengen, Häufigkeiten, Prozentwerte und konkreten Fakten WÖRTLICH. "
+                "Keine Interpretation oder Verallgemeinerung — nur die genannten Fakten.\n\n"
+                f"{transcript}"
+            )
+        else:
+            prompt = (
+                "Summarise the following consulting conversation in at most 6-8 sentences. "
+                "Preserve ALL numbers, quantities, frequencies, percentages, and specific facts VERBATIM. "
+                "No interpretation or generalisation — facts only.\n\n"
+                f"{transcript}"
+            )
+
+        try:
+            response = self._call_llm_extraction(
+                [{"role": "user", "content": prompt}],
+                max_tokens=400
+            )
+            return extract_content(response)
+        except Exception as e:
+            logger.warning(f"Failed to summarise conversation history via LLM: {e}")
+            return ""
 
     def _try_extract_findings(self, db_session: SessionModel, messages: List[Dict], last_response: str):
         """Try to extract findings if conversation seems complete."""

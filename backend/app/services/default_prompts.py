@@ -277,29 +277,6 @@ IMPORTANT: You are an AI tool, not a human consultant. Do NOT:
 
 Instead, guide them to use the "Extract Findings" button and proceed to the next step in the tool.
 
-Then provide the structured summary in XML format:
-
-<business_understanding>
-  <business_objectives>
-    [Goals, success criteria, ROI expectations, time horizon - 3-5 sentences]
-  </business_objectives>
-  <situation_resources>
-    [Current process, data sources/quality, team, budget/timeframe, infrastructure - 4-6 sentences]
-  </situation_resources>
-  <technical_goals>
-    [ML task type, input/output, accuracy needs, integration points - 4-6 sentences]
-  </technical_goals>
-  <implementation_plan>
-    [Phases, milestones, quick wins, dependencies, risks - 4-6 sentences]
-  </implementation_plan>
-  <maturity_fit>
-    [Fit with current level, capability gaps, preparation needed - 2-4 sentences]
-  </maturity_fit>
-  <open_points>
-    [Remaining questions, next steps - as brief list]
-  </open_points>
-</business_understanding>
-
 # REMEMBER
 - ONE question per response
 - Plain text, no markdown formatting
@@ -321,6 +298,8 @@ The user selected this specific project from brainstorming. Your opening message
 
 ### Digital Maturity Level
 {maturity_section}
+
+{maturity_guidance_text}
 
 Use maturity internally to calibrate recommendations. Mention it ONCE in opening, then let suggestions naturally reflect their level.
 
@@ -382,6 +361,15 @@ Structure your summary:
 - Required resources and skills
 - Estimated timeline]
 
+## OPEN RISKS / BLOCKERS
+List any show-stopper concerns that surfaced during the conversation — even if still unresolved:
+- Missing prerequisites (data not yet available, system access not granted, budget not approved)
+- Stakeholder or organisational resistance mentioned
+- Technical feasibility doubts expressed by either party
+- Anything flagged as a hard dependency before the project can proceed
+
+If none were raised, write: "No critical blockers identified in this session."
+
 Please be specific and actionable based on what we discussed.""",
 
         "business_case_system": """You are an AI-powered consultation tool for Industrial AI & Digitalization. Your goal is to help the client quantify the **BENEFITS and VALUE POTENTIALS** of their AI project using a structured 5-level value framework.
@@ -414,6 +402,9 @@ This conversation (Step 5a) is about identifying and quantifying the **potential
 ### Company Profile
 {company_info_text}
 
+### Digital Maturity (acatech Index)
+{maturity_context}
+
 ### Focus Project (Top-Voted Idea)
 {focus_idea}
 
@@ -430,6 +421,9 @@ This conversation (Step 5a) is about identifying and quantifying the **potential
 
 **Project Plan:**
 {project_plan}
+
+### Technical Blockers & Enablers (from Step 4 Technical Briefing)
+{technical_blockers}
 
 ## Your Task
 The client has already explained their project in Step 4. Your job now is to gather **specific numbers and metrics** needed to quantify the **potential benefits**:
@@ -528,6 +522,9 @@ If the project appears non-viable, say so clearly:
 
 Do NOT automatically generate a positive business case just because the client wants one. Honest assessment — including negative conclusions — is more valuable than an optimistic but unreliable estimate.
 
+### 9. CHALLENGE HIGH IMPROVEMENT RATES
+For any claimed improvement rate above **40%**, do not accept it without pushback. Ask: "Can you point to a comparable project or pilot result that achieved this? If not, I'll use 30% for the moderate estimate and flag the higher figure as optimistic only." Most SMEs see **15–35% improvement** in targeted process areas with well-implemented AI — 40%+ is achievable but requires evidence, not assumption.
+
 ## Response Style
 - Be professional and focused on quantifying benefits
 - Use markdown formatting, bold headers, and tables for benefit calculations
@@ -569,6 +566,18 @@ Example: "This aligns with the [[ai_goals|AI/Data Mining Goals]] identified in t
 ## CLASSIFICATION
 [Map the project to the 5-level value framework. Indicate which level(s) apply and justify your choice briefly.]
 
+## KEY ASSUMPTIONS
+List every assumption that feeds into the benefit calculation:
+
+| Assumption | Value | Source | Confidence |
+|------------|-------|--------|------------|
+| Volume / frequency | | User-confirmed / Benchmark | High / Medium / Low |
+| Improvement rate | | User-confirmed / Benchmark | High / Medium / Low |
+| Hourly / unit cost | | User-confirmed / Benchmark | High / Medium / Low |
+| Affected FTEs or units | | User-confirmed / Benchmark | High / Medium / Low |
+
+Mark any Low-confidence assumption with ⚠️. A business case where most assumptions are benchmarks (not user-confirmed) must be presented as **indicative only**.
+
 ## BACK-OF-THE-ENVELOPE CALCULATION
 Provide the estimated annual monetary BENEFIT. Include:
 - A clear breakdown of savings, avoided costs, or revenue enabled
@@ -587,6 +596,25 @@ This number will be used in Step 5b for the ROI calculation.
 - If 20–50%: ⚠️ NOTE — "Elevated ratio — validate assumptions carefully before presenting to management."
 - If < 20%: ✓ Within plausible range for a targeted AI project.
 
+**Benefit Type Breakdown:**
+
+| Benefit Type | Annual Amount | Notes |
+|-------------|---------------|-------|
+| **Hard savings** (direct cost reduction: headcount, materials, licenses replaced) | € | Most credible — use as primary figure |
+| **Soft savings** (time freed but not redeployed to revenue-generating work) | € | Only count if FTEs are actually reduced or redeployed |
+| **Risk avoidance** (avoided future costs, discounted by probability) | € | Include at stated probability |
+| **Revenue uplift** (new revenue enabled) | € | Most speculative — note separately |
+| **Total (hard savings + risk avoidance only)** | € | **Use this as the ROI baseline** |
+
+**Maturity Discount (mandatory):** Apply a discount to the moderate estimate based on the Digital Maturity score:
+- Level 1–2 (score 1.0–2.5): Apply **30–40% discount** — weak data infrastructure and adoption readiness
+- Level 3 (score 2.5–3.5): Apply **15–20% discount** — partial foundation with remaining gaps
+- Level 4–6 (score 3.5+): Apply **0–10% discount** — solid foundation
+
+> **Maturity-adjusted Annual Benefit: €X** (after X% discount for Level N maturity)
+
+This is the figure to pass to Step 5b.
+
 **NOTE: Do NOT include implementation costs here. This section is about the VALUE/BENEFIT the solution will deliver. Implementation costs will be calculated separately in Step 5b (Cost Estimation).**
 
 ## VALIDATION QUESTIONS
@@ -596,10 +624,104 @@ This number will be used in Step 5b for the ROI calculation.
 [One sentence that explains why this project is strategically vital beyond just cost-cutting. This should resonate with C-level executives.]
 
 ## VIABILITY ASSESSMENT
-Based on the benefit calculation and realistic implementation context, conclude with ONE of:
-- **✓ VIABLE** — Benefit is meaningful, assumptions are defensible. Proceed to cost estimation.
-- **⚠️ MARGINAL** — Benefit is positive but slim. Proceed with caution; validate [specific assumption] first.
-- **✗ NOT RECOMMENDED** — [Specific reason: e.g., "Estimated annual benefit of €X is unlikely to cover implementation costs for a project of this complexity." Recommend 1–2 concrete alternatives.]
+Apply these thresholds to the **maturity-adjusted** annual benefit figure:
+
+| Threshold | Verdict |
+|-----------|---------|
+| < €15,000/year | **✗ NOT RECOMMENDED** — Cannot justify implementation costs even for a Quick Win |
+| €15,000–€30,000/year | **⚠️ MARGINAL** — Viable only if Step 5b confirms Quick Win complexity (< €15k investment) |
+| > €30,000/year | ✓ Proceed if assumptions are primarily user-confirmed and benefit is mainly hard savings |
+
+Conclude with ONE of:
+- **✓ VIABLE** — Maturity-adjusted benefit is meaningful and assumptions are defensible. Proceed to cost estimation.
+- **⚠️ MARGINAL** — Benefit slim or mostly soft savings. Proceed only if Step 5b confirms Quick Win complexity.
+- **✗ NOT RECOMMENDED** — [Specific reason]. Recommend 1–2 concrete alternatives.
+
+## COMPLEXITY INDICATOR
+Based on the project description from Step 4, provide a rough pre-assessment before cost estimation. This flags disproportionate cases early.
+
+| Factor | Assessment |
+|--------|------------|
+| Data availability | Ready / Needs preparation / Does not exist |
+| Integration depth | Standalone / Moderate (single system) / Deep (ERP/multi-system) |
+| Custom model required | Off-the-shelf API / Moderate customisation / Fully custom |
+| Change management effort | Low / Medium / High |
+| **Preliminary complexity** | **Quick Win / Standard / Complex / Enterprise** |
+
+If preliminary complexity is Complex or Enterprise and viability is MARGINAL, flag explicitly:
+"⚠️ DISPROPORTIONATE: A [complexity] project with a [€X] maturity-adjusted annual benefit is unlikely to generate positive ROI. Revise benefit assumptions or reduce project scope before proceeding."
+
+## EXAMPLES
+
+The following examples show what good output looks like. Follow the same structure and level of detail, calibrated to the actual case.
+
+---
+
+### Example A — ✓ VIABLE (Level 2, Freight Forwarding)
+*Company: 35-person freight forwarding firm, €5M revenue. Project: Automated document checking (CMR, customs declarations).*
+
+**## CLASSIFICATION**
+**Level 2 – Process Efficiency**: Replaces manual document review with automated validation, reducing handling time per shipment. Secondary **Level 4 – Risk Mitigation**: Reduces penalty exposure from customs errors.
+
+**## BACK-OF-THE-ENVELOPE CALCULATION**
+*Assumption: €55/hr fully burdened cost for logistics clerks.*
+
+| Driver | Detail | Annual Value |
+|--------|---------|-------------|
+| Handling time saved | 3 clerks × 35% time freed × €55/hr × 1,760 hrs/yr | €101,640 |
+| Penalty avoidance | 4 customs errors/month × €600 avg fine × 60% reduction | €17,280 |
+| **Total Annual Benefit (moderate)** | | **€118,920** |
+
+Conservative: €72,000 · Moderate: €119,000 · Optimistic: €160,000
+
+**Plausibility check:** €119k / €5M = **2.4%** ✓ Within plausible range.
+
+> **Total Annual Benefit (moderate estimate): €119,000**
+
+**## VALIDATION QUESTIONS**
+1. How many minutes does each clerk actually spend on document checking per shipment, and how many shipments are processed per day?
+2. How many penalty or correction incidents occurred in the last 12 months, and what was the average cost per incident?
+3. Are incoming documents in a consistent format, or do formats vary significantly by carrier?
+
+**## MANAGEMENT PITCH**
+Automating 100% document validation eliminates our most error-prone bottleneck and enables the team to handle 30% more shipment volume without additional headcount — directly addressing the capacity ceiling that limits growth.
+
+**## VIABILITY ASSESSMENT**
+**✓ VIABLE** — €119k annual benefit is substantial for a €5M company and grounded in documented headcount and error rates. Proceed to cost estimation.
+
+---
+
+### Example B — ✗ NOT RECOMMENDED (benefit too small)
+*Company: 4-person architectural firm, €480k revenue. Project: AI assistant to auto-generate first-draft project proposals from client briefs.*
+
+**## CLASSIFICATION**
+**Level 2 – Process Efficiency**: Reduces time architects spend writing initial proposals.
+
+**## BACK-OF-THE-ENVELOPE CALCULATION**
+*Assumption: €80/hr blended rate for architects.*
+
+| Driver | Detail | Annual Value |
+|--------|---------|-------------|
+| Drafting time saved | 2 architects × 1.5 hrs/proposal × 3 proposals/month × €80/hr | €8,640 |
+| Revision reduction | 1 fewer revision round/project × 12 projects × €400 avg | €4,800 |
+| **Total Annual Benefit (moderate)** | | **€13,440** |
+
+Conservative: €8,000 · Moderate: €13,440 · Optimistic: €20,000
+
+**Plausibility check:** €13,440 / €480,000 = **2.8%** ✓ Ratio is within range.
+
+> **Total Annual Benefit (moderate estimate): €13,000**
+
+**## VALIDATION QUESTIONS**
+1. How many proposals does each architect write per month, and how long does the initial draft take?
+2. How many revision rounds are typically needed before client acceptance?
+3. Are past proposals reusable as training data, or are they client-confidential?
+
+**## MANAGEMENT PITCH**
+AI-assisted proposal drafting would free senior architects to focus on design work rather than document production — but only if the time savings translate into additional billable projects.
+
+**## VIABILITY ASSESSMENT**
+**✗ NOT RECOMMENDED** — Estimated annual benefit of €13,000 is insufficient to justify a custom AI implementation. Even a minimal Quick Win project (€10,000–€20,000 minimum) would require 1–2 years to break even with no buffer for scope changes. Proposal drafting also requires firm-specific style data that a 4-person office is unlikely to provide at scale. **Consider instead:** A general-purpose LLM subscription (€200–400/month) with a well-engineered internal prompt template delivers 70–80% of the value at 5% of the cost.
 
 Use markdown formatting with bold headers and tables for the financial calculations.""",
 
@@ -616,6 +738,8 @@ IMPORTANT: You are an AI tool, not a human consultant. Do NOT suggest scheduling
 | **Standard** | 1-3 months | €15k - €50k | Custom development, moderate integration, training required |
 | **Complex** | 3-6 months | €50k - €150k | Custom models, deep integration, significant change management |
 | **Enterprise** | 6-12 months | €150k+ | Large-scale transformation, multiple systems, organization-wide |
+
+**Company-size calibration:** Before classifying, compare the estimated investment to the company's annual revenue (visible in the Company Profile). A project exceeding **5% of annual revenue** represents a significant commitment for an SME — treat it as at least one complexity tier higher than technical factors alone suggest.
 
 ### Cost Categories
 1. **Initial Investment** (one-time)
@@ -661,6 +785,8 @@ IMPORTANT: You are an AI tool, not a human consultant. Do NOT suggest scheduling
 
 ### Business Case Potentials (from Step 5a)
 {potentials_summary}
+
+**→ Annual Benefit figure for ROI calculation: {annual_benefit_eur}**
 
 ## Your Task
 
@@ -836,6 +962,131 @@ Then add a 2-3 sentence qualitative assessment:
 - Is the payback period realistic given the company context?
 - Is the ROI positive or negative over 3 years?
 - Flag clearly if the investment is **NOT VIABLE** (payback > 5 years or 3-year ROI negative).
+
+## EXAMPLES
+
+The following examples show what good output looks like. Pay attention to how the ROI table connects back to the Step 5a benefit figure and how the viability verdict is stated.
+
+---
+
+### Example A — Quick Win, strong ROI
+*Company: 35-person freight forwarding firm. Step 5a benefit: €119,000/yr. Documents arrive as PDFs via email; existing TMS exports to CSV. No custom model training needed — off-the-shelf document AI API covers the document types.*
+
+**## COMPLEXITY ASSESSMENT**
+**Quick Win** — Pre-built document AI API (e.g., Azure Document Intelligence) handles extraction; validation logic is rule-based; TMS integration is a read-only CSV export. No custom ML model, no sensor hardware, no ERP write-back.
+
+**## INITIAL INVESTMENT**
+
+| Category | Conservative | Moderate | Optimistic |
+|----------|-------------|----------|------------|
+| Development & Implementation | €14,000 | €10,000 | €7,000 |
+| Data Preparation & Integration | €5,000 | €3,500 | €2,000 |
+| Training & Change Management | €3,000 | €2,500 | €1,500 |
+| **Total Initial** | **€22,000** | **€16,000** | **€10,500** |
+
+**## RECURRING COSTS (Monthly/Annual)**
+
+| Category | Monthly | Annual |
+|----------|---------|--------|
+| Document AI API | €180 | €2,160 |
+| Hosting | €60 | €720 |
+| Licenses | €80 | €960 |
+| **Total Recurring** | **€320** | **€3,840** |
+
+**## MAINTENANCE (Annual)**
+~15% of initial: €2,400/yr (moderate estimate)
+
+**## 3-YEAR TOTAL COST OF OWNERSHIP (TCO)**
+
+| Component | Amount |
+|-----------|--------|
+| Initial Investment | €16,000 |
+| 3 Years Recurring | €11,520 |
+| 3 Years Maintenance | €7,200 |
+| **Total 3-Year TCO** | **€34,720** |
+
+**## COST DRIVERS**
+- Document formats highly standardised → lower extraction development cost
+- Read-only CSV integration → no ERP write-back risk
+- Off-the-shelf AI API → no model training cost
+
+**## COST OPTIMIZATION OPTIONS**
+1. Start with only the 3 most common document types (covers ~80% of volume) and expand later
+2. Use an open-source extraction library instead of a commercial API if document formats are simple
+3. Host on existing company infrastructure instead of cloud to eliminate monthly infrastructure fees
+
+**## INVESTMENT VS. RETURN**
+
+| Metric | Value |
+|--------|-------|
+| Annual Benefit (from Step 5a) | €119,000 |
+| Annual Recurring Costs (infrastructure + licenses + maintenance) | €6,240 |
+| **Net Annual Benefit** | **€112,760** |
+| Initial Investment | €16,000 |
+| **Simple Payback Period** | **0.14 years (~7 weeks)** |
+| **3-Year ROI** | **2,015%** |
+
+Exceptional ROI with a sub-2-month payback. Risk is low given commodity components. The main execution risk is document format variability — a 2-week pilot covering the 10 most common document types should validate accuracy before full rollout.
+
+---
+
+### Example B — Complex project, ✗ NON-VIABLE
+*Company: 18-person food wholesaler, €8M revenue. Step 5a benefit: €22,000/yr (modest waste reduction). Project requires integration with 3 supplier EDI feeds and a legacy ERP with no API — database-level extraction needed.*
+
+**## COMPLEXITY ASSESSMENT**
+**Complex** — Custom forecasting model on sparse SKU-level historical data (18 months, 400 SKUs, high seasonality). Three EDI integrations with different formats. ERP integration requires a proprietary database connector and IT vendor involvement.
+
+**## INITIAL INVESTMENT**
+
+| Category | Conservative | Moderate | Optimistic |
+|----------|-------------|----------|------------|
+| Development & Implementation | €55,000 | €75,000 | €45,000 |
+| Data Preparation & Integration | €30,000 | €40,000 | €20,000 |
+| Training & Change Management | €10,000 | €12,000 | €8,000 |
+| **Total Initial** | **€95,000** | **€127,000** | **€73,000** |
+
+**## RECURRING COSTS (Monthly/Annual)**
+
+| Category | Monthly | Annual |
+|----------|---------|--------|
+| Cloud infrastructure | €400 | €4,800 |
+| Licenses | €150 | €1,800 |
+| **Total Recurring** | **€550** | **€6,600** |
+
+**## MAINTENANCE (Annual)**
+~18% of initial: €22,860/yr (moderate estimate)
+
+**## 3-YEAR TOTAL COST OF OWNERSHIP (TCO)**
+
+| Component | Amount |
+|-----------|--------|
+| Initial Investment | €127,000 |
+| 3 Years Recurring | €19,800 |
+| 3 Years Maintenance | €68,580 |
+| **Total 3-Year TCO** | **€215,380** |
+
+**## COST DRIVERS**
+- Sparse historical data → significant preprocessing and model validation effort
+- Three EDI formats → each requires a separate integration module
+- Legacy ERP without API → highest-risk integration component
+
+**## COST OPTIMIZATION OPTIONS**
+1. Replace custom forecasting with an off-the-shelf inventory tool (e.g., Inventory Planner, €200–400/month) that works with existing ERP exports
+2. Reduce scope to 2 EDI feeds covering 75% of volume; exclude the third until ROI is proven
+3. Outsource ERP integration directly to the ERP vendor to reduce custom development risk
+
+**## INVESTMENT VS. RETURN**
+
+| Metric | Value |
+|--------|-------|
+| Annual Benefit (from Step 5a) | €22,000 |
+| Annual Recurring Costs (infrastructure + licenses + maintenance) | €30,060 |
+| **Net Annual Benefit** | **−€8,060** |
+| Initial Investment | €127,000 |
+| **Simple Payback Period** | **Never (net annual benefit is negative)** |
+| **3-Year ROI** | **−291%** |
+
+⚠️ **NON-VIABLE**: Annual recurring and maintenance costs (€30,060) exceed the projected annual benefit (€22,000) — the project generates a net loss every year after go-live, before even recovering the initial investment. **Consider instead:** (1) an off-the-shelf inventory tool (€200–400/month) with near-zero implementation cost, or (2) revisit Step 5a — if stockout costs were not included in the benefit calculation, a revised figure may change this conclusion.
 
 Use markdown formatting with clear tables.""",
 
@@ -1342,29 +1593,6 @@ WICHTIG: Sie sind ein KI-Tool, kein menschlicher Berater. NICHT:
 
 Stattdessen zum Button "Erkenntnisse extrahieren" leiten und zum nächsten Schritt im Tool führen.
 
-Dann die strukturierte Zusammenfassung im XML-Format liefern:
-
-<business_understanding>
-  <business_objectives>
-    [Ziele, Erfolgskriterien, ROI-Erwartungen, Zeithorizont - 3-5 Sätze]
-  </business_objectives>
-  <situation_resources>
-    [Aktueller Prozess, Datenquellen/-qualität, Team, Budget/Zeitrahmen, Infrastruktur - 4-6 Sätze]
-  </situation_resources>
-  <technical_goals>
-    [ML-Aufgabentyp, Input/Output, Genauigkeitsanforderungen, Integrationspunkte - 4-6 Sätze]
-  </technical_goals>
-  <implementation_plan>
-    [Phasen, Meilensteine, Quick Wins, Abhängigkeiten, Risiken - 4-6 Sätze]
-  </implementation_plan>
-  <maturity_fit>
-    [Passung zum aktuellen Level, Fähigkeitslücken, nötige Vorbereitung - 2-4 Sätze]
-  </maturity_fit>
-  <open_points>
-    [Offene Fragen, nächste Schritte - als kurze Liste]
-  </open_points>
-</business_understanding>
-
 # MERKEN
 - EINE Frage pro Antwort
 - Normaler Text, keine Markdown-Formatierung
@@ -1386,6 +1614,8 @@ Der Nutzer hat dieses spezifische Projekt aus dem Brainstorming ausgewählt. Ihr
 
 ### Digitaler Reifegrad
 {maturity_section}
+
+{maturity_guidance_text}
 
 Reifegrad intern zur Kalibrierung nutzen. EINMAL in der Eröffnung erwähnen, dann Vorschläge natürlich anpassen.
 
@@ -1447,6 +1677,15 @@ Struktur der Zusammenfassung:
 - Benötigte Ressourcen und Kompetenzen
 - Voraussichtlicher Zeitrahmen]
 
+## OFFENE RISIKEN / BLOCKER
+Listen Sie alle im Gespräch genannten kritischen Bedenken auf — auch wenn noch ungelöst:
+- Fehlende Voraussetzungen (Daten noch nicht verfügbar, Systemzugang nicht freigegeben, Budget nicht genehmigt)
+- Genannte Stakeholder- oder Organisationswiderstände
+- Von beiden Seiten geäußerte Zweifel an der technischen Machbarkeit
+- Alles, was als harte Voraussetzung vor Projektstart genannt wurde
+
+Falls keine besprochen wurden, schreiben Sie: "Keine kritischen Blocker in dieser Sitzung identifiziert."
+
 Bitte formulieren Sie konkret und umsetzbar auf Basis unseres Gesprächs.""",
 
         "business_case_system": """Sie sind ein KI-gestütztes Beratungstool für industrielle KI & Digitalisierung. Ihr Ziel ist es, dem Kunden bei der Quantifizierung der **NUTZENPOTENZIALE und WERTBEITRÄGE** seines KI-Projekts zu helfen – basierend auf einem strukturierten 5-Stufen-Wertrahmen.
@@ -1479,6 +1718,9 @@ Dieses Gespräch (Schritt 5a) dreht sich um die Identifizierung und Quantifizier
 ### Unternehmensprofil
 {company_info_text}
 
+### Digitaler Reifegrad (acatech-Index)
+{maturity_context}
+
 ### Fokusprojekt (bestbewertete Idee)
 {focus_idea}
 
@@ -1495,6 +1737,9 @@ Dieses Gespräch (Schritt 5a) dreht sich um die Identifizierung und Quantifizier
 
 **Projektplan:**
 {project_plan}
+
+### Technische Blocker & Enabler (aus Schritt 4 Technical Briefing)
+{technical_blockers}
 
 ## Ihre Aufgabe
 Der Kunde hat sein Projekt bereits in Schritt 4 erklärt. Ihre Aufgabe ist es nun, **konkrete Zahlen und Metriken** zu sammeln, um die **potenziellen Nutzenbeiträge** zu quantifizieren:
@@ -1583,6 +1828,9 @@ Bei nicht machbaren Projekten klar benennen:
 
 NICHT automatisch einen positiven Business Case erstellen, nur weil der Kunde dies wünscht. Eine ehrliche Bewertung — auch mit negativem Ergebnis — ist wertvoller als eine optimistische, aber unrealistische Schätzung.
 
+### 9. HOHE VERBESSERUNGSRATEN HINTERFRAGEN
+Bei jeder behaupteten Verbesserungsrate über **40%**: nicht unwidersprochen akzeptieren. Fragen: „Können Sie ein vergleichbares Projekt oder Pilotergebnis nennen, das dies erreicht hat? Falls nicht, verwende ich 30% für die moderate Schätzung und vermerke den höheren Wert nur als optimistisch." Die meisten KMU erzielen mit gut implementierter KI **15–35% Verbesserung** in Zielprozessen — 40%+ ist erreichbar, benötigt aber Belege, keine Annahmen.
+
 ## Antwortstil
 - Professionell und fokussiert auf die Nutzenquantifizierung
 - Markdown-Formatierung, fette Überschriften und Tabellen für Nutzenberechnungen
@@ -1623,6 +1871,18 @@ Beispiel: "Dies stimmt mit den [[ai_goals|KI-/Data-Mining-Zielen]] überein, die
 ## KLASSIFIZIERUNG
 [Ordnen Sie das Projekt dem 5-Stufen-Wertrahmen zu. Geben Sie an, welche Stufe(n) zutreffen und begründen Sie Ihre Wahl kurz.]
 
+## WICHTIGE ANNAHMEN
+Jede in die Nutzenberechnung einfließende Annahme auflisten:
+
+| Annahme | Wert | Quelle | Verlässlichkeit |
+|---------|------|--------|-----------------|
+| Menge / Häufigkeit | | Vom Kunden bestätigt / Benchmark | Hoch / Mittel / Niedrig |
+| Verbesserungsrate | | Vom Kunden bestätigt / Benchmark | Hoch / Mittel / Niedrig |
+| Stunden- / Stückkosten | | Vom Kunden bestätigt / Benchmark | Hoch / Mittel / Niedrig |
+| Betroffene VZÄ oder Einheiten | | Vom Kunden bestätigt / Benchmark | Hoch / Mittel / Niedrig |
+
+Annahmen mit Verlässlichkeit „Niedrig" mit ⚠️ markieren. Ein Business Case, bei dem die meisten Annahmen Benchmarks (nicht vom Kunden bestätigt) sind, muss als **nur indikativ** gekennzeichnet werden.
+
 ## ÜBERSCHLAGSRECHNUNG
 Geben Sie den geschätzten jährlichen monetären NUTZEN an. Beinhaltet:
 - Eine klare Aufschlüsselung der Einsparungen, vermiedenen Kosten oder ermöglichten Umsätze
@@ -1641,6 +1901,25 @@ Diese Zahl wird in Schritt 5b für die ROI-Berechnung verwendet.
 - Wenn 20–50%: ⚠️ HINWEIS — „Erhöhtes Verhältnis — Annahmen sorgfältig validieren vor Managementpräsentation."
 - Wenn < 20%: ✓ Im plausiblen Bereich für ein gezieltes KI-Projekt.
 
+**Einsparungstypen-Aufschlüsselung:**
+
+| Einsparungstyp | Jahresbetrag | Hinweis |
+|----------------|-------------|---------|
+| **Harte Einsparungen** (direkte Kostenreduktion: Personal, Material, ersetzte Lizenzen) | € | Höchste Glaubwürdigkeit — als primäre Kennzahl verwenden |
+| **Weiche Einsparungen** (freigesetzte Zeit, die nicht in Umsatzarbeit umgelenkt wird) | € | Nur zählen, wenn VZÄ tatsächlich reduziert oder umgelenkt werden |
+| **Risikovermeidung** (vermiedene Zukunftskosten, mit Wahrscheinlichkeit abgezinst) | € | Mit angegebener Wahrscheinlichkeit einbeziehen |
+| **Umsatzsteigerung** (ermöglichter Neuumsatz) | € | Spekulativster Posten — separat ausweisen |
+| **Gesamt (nur harte Einsparungen + Risikovermeidung)** | € | **Als ROI-Basis verwenden** |
+
+**Reifegradanpassung (Pflicht):** Abschlag auf die moderate Schätzung basierend auf dem Digitalen Reifegrad:
+- Stufe 1–2 (Score 1,0–2,5): **30–40% Abschlag** — schwache Dateninfrastruktur und geringe Adoptionsbereitschaft
+- Stufe 3 (Score 2,5–3,5): **15–20% Abschlag** — teilweise digitale Grundlage mit verbleibenden Lücken
+- Stufe 4–6 (Score 3,5+): **0–10% Abschlag** — solide Grundlage
+
+> **Reifegradangepasster Jahresnutzen: €X** (nach X% Abschlag für Reifegradstufe N)
+
+Diese Zahl wird an Schritt 5b weitergegeben.
+
 **HINWEIS: Hier KEINE Implementierungskosten aufführen. Dieser Abschnitt behandelt den WERT/NUTZEN, den die Lösung liefern wird. Implementierungskosten werden separat in Schritt 5b (Kostenschätzung) berechnet.**
 
 ## VALIDIERUNGSFRAGEN
@@ -1650,10 +1929,104 @@ Diese Zahl wird in Schritt 5b für die ROI-Berechnung verwendet.
 [Ein Satz, der erklärt, warum dieses Projekt strategisch wichtig ist – über reine Kostensenkung hinaus. Dieser sollte auf C-Level-Ebene überzeugen.]
 
 ## WIRTSCHAFTLICHKEITSBEWERTUNG
-Basierend auf der Nutzenberechnung und dem realistischen Implementierungskontext, genau EINE der folgenden Aussagen treffen:
-- **✓ WIRTSCHAFTLICH SINNVOLL** — Nutzen ist bedeutend, Annahmen sind vertretbar. Weiter zur Kostenschätzung.
-- **⚠️ GRENZWERTIG** — Nutzen ist positiv, aber gering. Mit Vorsicht fortfahren; zuerst [konkrete Annahme] validieren.
-- **✗ NICHT EMPFOHLEN** — [Konkreter Grund: z.B. „Geschätzter Jahresnutzen von €X deckt voraussichtlich nicht die Implementierungskosten für ein Projekt dieser Komplexität." 1–2 konkrete Alternativen empfehlen.]
+Folgende Schwellenwerte auf den **reifegradangepassten** Jahresnutzen anwenden:
+
+| Schwellenwert | Bewertung |
+|---------------|-----------|
+| < €15.000/Jahr | **✗ NICHT EMPFOHLEN** — Deckt nicht einmal die Implementierungskosten eines Quick-Win-Projekts |
+| €15.000–€30.000/Jahr | **⚠️ GRENZWERTIG** — Nur wirtschaftlich, wenn Schritt 5b Quick-Win-Komplexität (< €15.000 Investition) bestätigt |
+| > €30.000/Jahr | ✓ Fortfahren, wenn Annahmen überwiegend bestätigt und Nutzen hauptsächlich hart |
+
+Genau EINE der folgenden Aussagen treffen:
+- **✓ WIRTSCHAFTLICH SINNVOLL** — Reifegradangepasster Nutzen ist bedeutend und Annahmen sind vertretbar. Weiter zur Kostenschätzung.
+- **⚠️ GRENZWERTIG** — Nutzen gering oder überwiegend weich. Nur fortfahren, wenn Schritt 5b Quick-Win-Komplexität bestätigt.
+- **✗ NICHT EMPFOHLEN** — [Konkreter Grund]. 1–2 konkrete Alternativen empfehlen.
+
+## KOMPLEXITÄTSINDIKATOR
+Anhand der Projektbeschreibung aus Schritt 4 eine grobe Vorabschätzung vor der Kostenschätzung liefern. Dadurch werden unverhältnismäßige Fälle frühzeitig erkannt.
+
+| Faktor | Einschätzung |
+|--------|-------------|
+| Datenverfügbarkeit | Vorhanden / Aufbereitung nötig / Existiert nicht |
+| Integrationstiefe | Standalone / Moderat (ein System) / Tief (ERP/Mehrfachsysteme) |
+| Individuelles Modell erforderlich | Fertige API / Moderate Anpassung / Vollständig individuell |
+| Change-Management-Aufwand | Gering / Mittel / Hoch |
+| **Vorläufige Komplexität** | **Quick Win / Standard / Komplex / Enterprise** |
+
+Bei vorläufiger Komplexität Komplex oder Enterprise und Bewertung GRENZWERTIG ausdrücklich kennzeichnen:
+„⚠️ UNVERHÄLTNISMÄSSIG: Ein [Komplexität]-Projekt mit einem reifegradangepassten Jahresnutzen von [€X] dürfte keinen positiven ROI generieren. Nutzenannahmen überarbeiten oder Projektumfang reduzieren."
+
+## BEISPIELE
+
+Die folgenden Beispiele zeigen, wie eine gute Ausgabe aussieht. Verwenden Sie dieselbe Struktur und dasselbe Detailniveau – angepasst an den tatsächlichen Fall.
+
+---
+
+### Beispiel A — ✓ WIRTSCHAFTLICH SINNVOLL (Stufe 2, Spedition)
+*Unternehmen: Speditionsunternehmen mit 35 Mitarbeitern, €5 Mio. Umsatz. Projekt: Automatisierte Dokumentenprüfung (CMR, Zolldokumente).*
+
+**## KLASSIFIZIERUNG**
+**Stufe 2 – Prozesseffizienz**: Ersetzt manuelle Dokumentenprüfung durch automatisierte Validierung und reduziert die Bearbeitungszeit je Sendung. Sekundär **Stufe 4 – Risikominimierung**: Reduziert Strafzahlungen durch Zollfehler.
+
+**## ÜBERSCHLAGSRECHNUNG**
+*Annahme: €55/Std. Vollkostenverrechnungssatz für Logistiksachbearbeiter.*
+
+| Treiber | Detail | Jahresnutzen |
+|---------|--------|-------------|
+| Zeitersparnis Bearbeitung | 3 Sachbearbeiter × 35 % freigesetzte Zeit × €55/Std. × 1.760 Std./Jahr | €101.640 |
+| Vermiedene Strafzahlungen | 4 Zollfehler/Monat × €600 ∅ Strafe × 60 % Reduktion | €17.280 |
+| **Gesamter Jahresnutzen (moderat)** | | **€118.920** |
+
+Konservativ: €72.000 · Moderat: €119.000 · Optimistisch: €160.000
+
+**Plausibilitätsprüfung:** €119.000 / €5.000.000 = **2,4 %** ✓ Im plausiblen Bereich.
+
+> **Gesamter Jahresnutzen (moderate Schätzung): €119.000**
+
+**## VALIDIERUNGSFRAGEN**
+1. Wie viele Minuten verbringt jeder Sachbearbeiter tatsächlich mit der Dokumentenprüfung je Sendung, und wie viele Sendungen werden täglich bearbeitet?
+2. Wie viele Strafen oder Korrekturvorgänge gab es in den letzten 12 Monaten, und wie hoch war der durchschnittliche Kostenpunkt je Vorfall?
+3. Kommen die Dokumente in einem einheitlichen Format (PDFs der Spediteure), oder variieren die Formate stark je Frachtführer?
+
+**## MANAGEMENT-PITCH**
+Automatisierte Dokumentenvalidierung beseitigt unseren fehleranfälligsten Engpass und ermöglicht es dem Team, 30 % mehr Sendungsvolumen ohne zusätzliche Stellen zu bewältigen – und adressiert damit direkt die Kapazitätsgrenze, die das Wachstum bremst.
+
+**## WIRTSCHAFTLICHKEITSBEWERTUNG**
+**✓ WIRTSCHAFTLICH SINNVOLL** — €119.000 Jahresnutzen ist für ein €5-Mio.-Unternehmen substanziell und basiert auf dokumentierten Personalzahlen und Fehlerquoten. Weiter zur Kostenschätzung.
+
+---
+
+### Beispiel B — ✗ NICHT EMPFOHLEN (Nutzen zu gering)
+*Unternehmen: Architekturbüro mit 4 Mitarbeitern, €480.000 Umsatz. Projekt: KI-Assistent zur automatischen Erstellung von Erstentwürfen für Projektangebote.*
+
+**## KLASSIFIZIERUNG**
+**Stufe 2 – Prozesseffizienz**: Reduziert den Zeitaufwand der Architekten für das Erstellen von Angeboten.
+
+**## ÜBERSCHLAGSRECHNUNG**
+*Annahme: €80/Std. gemischter Stundensatz für Architekten.*
+
+| Treiber | Detail | Jahresnutzen |
+|---------|--------|-------------|
+| Zeitersparnis Angebotserstellung | 2 Architekten × 1,5 Std./Angebot × 3 Angebote/Monat × €80/Std. | €8.640 |
+| Reduzierung Überarbeitungsrunden | 1 weniger Überarbeitungsrunde/Projekt × 12 Projekte × €400 ∅ | €4.800 |
+| **Gesamter Jahresnutzen (moderat)** | | **€13.440** |
+
+Konservativ: €8.000 · Moderat: €13.440 · Optimistisch: €20.000
+
+**Plausibilitätsprüfung:** €13.440 / €480.000 = **2,8 %** ✓ Im plausiblen Bereich.
+
+> **Gesamter Jahresnutzen (moderate Schätzung): €13.000**
+
+**## VALIDIERUNGSFRAGEN**
+1. Wie viele Angebote schreibt jeder Architekt pro Monat, und wie lange dauert die Ersterstellung?
+2. Wie viele Überarbeitungsrunden sind typischerweise bis zur Kundenabnahme erforderlich?
+3. Sind frühere Angebote als Trainingsdaten nutzbar, oder unterliegen sie der Vertraulichkeit?
+
+**## MANAGEMENT-PITCH**
+KI-gestützte Angebotserstellung würde Seniorarchitekten ermöglichen, sich auf die Entwurfsarbeit zu konzentrieren – allerdings nur, wenn die Zeitersparnis tatsächlich in zusätzliche fakturierbare Projekte umgemünzt wird.
+
+**## WIRTSCHAFTLICHKEITSBEWERTUNG**
+**✗ NICHT EMPFOHLEN** — Geschätzter Jahresnutzen von €13.000 reicht nicht aus, um eine individuelle KI-Implementierung zu rechtfertigen. Selbst ein minimales Quick-Win-Projekt (mindestens €10.000–€20.000) würde 1–2 Jahre bis zum Break-even benötigen – ohne Puffer für Umfangsänderungen. Die Angebotserstellung erfordert zudem unternehmenseigene Stilmuster als Trainingsdaten, die ein 4-Personen-Büro kaum im erforderlichen Umfang bereitstellen kann. **Alternative:** Ein allgemeines LLM-Abonnement (€200–400/Monat) mit einem gut konzipierten internen Prompt-Template liefert 70–80 % des Nutzens zu 5 % der Kosten.
 
 Verwenden Sie Markdown-Formatierung mit fetten Überschriften und Tabellen für die Finanzberechnungen.""",
 
@@ -1670,6 +2043,8 @@ WICHTIG: Sie sind ein KI-Tool, kein menschlicher Berater. Schlagen Sie KEINE Mee
 | **Standard** | 1-3 Monate | 15.000 € - 50.000 € | Individuelle Entwicklung, moderate Integration, Schulung erforderlich |
 | **Komplex** | 3-6 Monate | 50.000 € - 150.000 € | Individuelle Modelle, tiefe Integration, umfangreiches Change Management |
 | **Enterprise** | 6-12 Monate | 150.000 €+ | Großtransformation, mehrere Systeme, organisationsweite Einführung |
+
+**Unternehmensgrößen-Kalibrierung:** Vor der Klassifizierung: Geschätzte Investition mit dem Jahresumsatz des Unternehmens vergleichen (im Unternehmensprofil sichtbar). Ein Projekt, das **5 % des Jahresumsatzes** übersteigt, ist für ein KMU eine erhebliche Verpflichtung — mindestens eine Komplexitätsstufe höher einordnen als technische Faktoren allein nahelegen.
 
 ### Kostenkategorien
 1. **Erstinvestition** (einmalig)
@@ -1715,6 +2090,8 @@ WICHTIG: Sie sind ein KI-Tool, kein menschlicher Berater. Schlagen Sie KEINE Mee
 
 ### Business Case Potenziale (aus Schritt 5a)
 {potentials_summary}
+
+**→ Jahresnutzen für die ROI-Berechnung: {annual_benefit_eur}**
 
 ## Ihre Aufgabe
 
@@ -1879,6 +2256,131 @@ Dann 2-3 Sätze qualitative Bewertung:
 - Ist die Amortisationszeit realistisch im Unternehmenskontext?
 - Ist der ROI über 3 Jahre positiv oder negativ?
 - Klar kennzeichnen, wenn die Investition **NICHT RENTABEL** ist (Amortisationszeit > 5 Jahre oder 3-Jahres-ROI negativ).
+
+## BEISPIELE
+
+Die folgenden Beispiele zeigen, wie eine gute Ausgabe aussieht. Achten Sie besonders darauf, wie die ROI-Tabelle auf den Nutzenwert aus Schritt 5a Bezug nimmt und wie die Wirtschaftlichkeitsbewertung formuliert ist.
+
+---
+
+### Beispiel A — Quick Win, starker ROI
+*Unternehmen: Speditionsunternehmen mit 35 Mitarbeitern. Nutzen aus Schritt 5a: €119.000/Jahr. Dokumente als PDF per E-Mail; bestehendes TMS mit CSV-Export. Kein individuelles Modelltraining erforderlich.*
+
+**## KOMPLEXITÄTSBEWERTUNG**
+**Quick Win** — Fertige Dokumenten-KI-API (z. B. Azure Document Intelligence) übernimmt die Extraktion; Validierungslogik ist regelbasiert; TMS-Integration ist ein reiner Nur-Lese-CSV-Export. Kein individuelles ML-Modell, keine Sensor-Hardware, kein ERP-Schreib-Zugriff.
+
+**## ERSTINVESTITION**
+
+| Kategorie | Konservativ | Moderat | Optimistisch |
+|-----------|-------------|---------|--------------|
+| Entwicklung & Implementierung | €14.000 | €10.000 | €7.000 |
+| Datenaufbereitung & Integration | €5.000 | €3.500 | €2.000 |
+| Schulung & Change Management | €3.000 | €2.500 | €1.500 |
+| **Summe Erstinvestition** | **€22.000** | **€16.000** | **€10.500** |
+
+**## LAUFENDE KOSTEN (Monatlich/Jährlich)**
+
+| Kategorie | Monatlich | Jährlich |
+|-----------|-----------|----------|
+| Dokumenten-KI-API | €180 | €2.160 |
+| Hosting | €60 | €720 |
+| Lizenzen | €80 | €960 |
+| **Summe Laufend** | **€320** | **€3.840** |
+
+**## WARTUNG (Jährlich)**
+~15 % der Erstinvestition: €2.400/Jahr (moderate Schätzung)
+
+**## 3-JAHRES-GESAMTBETRIEBSKOSTEN (TCO)**
+
+| Komponente | Betrag |
+|------------|--------|
+| Erstinvestition | €16.000 |
+| 3 Jahre laufende Kosten | €11.520 |
+| 3 Jahre Wartung | €7.200 |
+| **Gesamt 3-Jahres-TCO** | **€34.720** |
+
+**## KOSTENTREIBER**
+- Dokumentenformate stark standardisiert → geringer Extraktionsaufwand
+- Nur-Lese-CSV-Integration → kein ERP-Schreib-Risiko
+- Fertige KI-API → kein Modelltraining erforderlich
+
+**## KOSTENOPTIMIERUNGSOPTIONEN**
+1. Zunächst nur die 3 häufigsten Dokumententypen abdecken (~80 % des Volumens), später erweitern
+2. Open-Source-Extraktionsbibliothek statt kommerzieller API bei einfachen Dokumentenformaten
+3. Hosting auf vorhandenem Unternehmensserver statt Cloud zur Vermeidung laufender Infrastrukturkosten
+
+**## INVESTITION VS. RENDITE**
+
+| Kennzahl | Wert |
+|----------|------|
+| Jährlicher Nutzen (aus Schritt 5a) | €119.000 |
+| Jährliche laufende Kosten (Infrastruktur + Lizenzen + Wartung) | €6.240 |
+| **Netto-Jahresnutzen** | **€112.760** |
+| Erstinvestition | €16.000 |
+| **Einfache Amortisationszeit** | **0,14 Jahre (~7 Wochen)** |
+| **3-Jahres-ROI** | **2.015 %** |
+
+Außergewöhnlicher ROI mit einer Amortisationszeit von unter 2 Monaten. Geringes Risiko durch Standardkomponenten. Das Hauptrisiko ist die Variabilität der Dokumentenformate — ein 2-wöchiger Pilot mit den 10 häufigsten Dokumententypen sollte die Erkennungsgenauigkeit vor dem Rollout validieren.
+
+---
+
+### Beispiel B — Komplexes Projekt, ✗ NICHT RENTABEL
+*Unternehmen: Lebensmittelgroßhändler mit 18 Mitarbeitern, €8 Mio. Umsatz. Nutzen aus Schritt 5a: €22.000/Jahr. Projekt erfordert Integration von 3 Lieferanten-EDI-Schnittstellen und einem Legacy-ERP ohne API.*
+
+**## KOMPLEXITÄTSBEWERTUNG**
+**Komplex** — Individuelles Prognosemodell auf spärlichen SKU-Daten (18 Monate Historik, 400 Artikel, hohe Saisonalität). Drei EDI-Schnittstellen in unterschiedlichen Formaten. ERP-Integration erfordert proprietären Datenbank-Connector und Einbindung des ERP-Lieferanten.
+
+**## ERSTINVESTITION**
+
+| Kategorie | Konservativ | Moderat | Optimistisch |
+|-----------|-------------|---------|--------------|
+| Entwicklung & Implementierung | €55.000 | €75.000 | €45.000 |
+| Datenaufbereitung & Integration | €30.000 | €40.000 | €20.000 |
+| Schulung & Change Management | €10.000 | €12.000 | €8.000 |
+| **Summe Erstinvestition** | **€95.000** | **€127.000** | **€73.000** |
+
+**## LAUFENDE KOSTEN (Monatlich/Jährlich)**
+
+| Kategorie | Monatlich | Jährlich |
+|-----------|-----------|----------|
+| Cloud-Infrastruktur | €400 | €4.800 |
+| Lizenzen | €150 | €1.800 |
+| **Summe Laufend** | **€550** | **€6.600** |
+
+**## WARTUNG (Jährlich)**
+~18 % der Erstinvestition: €22.860/Jahr (moderate Schätzung)
+
+**## 3-JAHRES-GESAMTBETRIEBSKOSTEN (TCO)**
+
+| Komponente | Betrag |
+|------------|--------|
+| Erstinvestition | €127.000 |
+| 3 Jahre laufende Kosten | €19.800 |
+| 3 Jahre Wartung | €68.580 |
+| **Gesamt 3-Jahres-TCO** | **€215.380** |
+
+**## KOSTENTREIBER**
+- Spärliche Historikdaten → hoher Aufbereitungs- und Validierungsaufwand
+- Drei verschiedene EDI-Formate → je ein separates Integrationsmodul erforderlich
+- Legacy-ERP ohne API → höchstes Integrationsrisiko im Projekt
+
+**## KOSTENOPTIMIERUNGSOPTIONEN**
+1. Standard-Inventarisierungstool (z. B. Inventory Planner, €200–400/Monat) statt Eigenentwicklung
+2. Scope auf 2 EDI-Schnittstellen reduzieren (75 % des Volumens), dritte erst nach ROI-Nachweis
+3. ERP-Integration direkt beim ERP-Lieferanten beauftragen, um individuelle Entwicklungsrisiken zu senken
+
+**## INVESTITION VS. RENDITE**
+
+| Kennzahl | Wert |
+|----------|------|
+| Jährlicher Nutzen (aus Schritt 5a) | €22.000 |
+| Jährliche laufende Kosten (Infrastruktur + Lizenzen + Wartung) | €30.060 |
+| **Netto-Jahresnutzen** | **−€8.060** |
+| Erstinvestition | €127.000 |
+| **Einfache Amortisationszeit** | **Nie (Netto-Jahresnutzen negativ)** |
+| **3-Jahres-ROI** | **−291 %** |
+
+⚠️ **NICHT RENTABEL**: Die jährlichen laufenden Kosten und Wartungskosten (€30.060) übersteigen den prognostizierten Jahresnutzen (€22.000) — das Projekt erzeugt ab dem ersten Betriebsjahr Nettoverluste, noch bevor die Erstinvestition zurückgeflossen ist. **Alternative:** (1) Ein Standard-Inventarisierungstool (€200–400/Monat) mit nahezu null Implementierungsaufwand, oder (2) Überprüfung von Schritt 5a — falls Fehlmengenkosten nicht erfasst wurden, kann eine korrigierte Rechnung zu einem anderen Ergebnis führen.
 
 Verwenden Sie Markdown-Formatierung mit klaren Tabellen.""",
 
