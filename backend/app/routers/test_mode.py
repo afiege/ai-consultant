@@ -9,9 +9,14 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from litellm import completion
 
+import uuid as uuid_lib
 from ..database import get_db
 from ..models import Session as SessionModel, ConsultationMessage
+from ..models.idea import IdeaSheet, Idea
+from ..models.prioritization import Prioritization
+from ..models.participant import Participant
 from ..utils.sse import format_sse_data
+from ..utils.llm import apply_model_params
 
 router = APIRouter(prefix="/api/test-mode", tags=["test-mode"])
 
@@ -126,12 +131,16 @@ def build_user_agent_prompt(
     if "kpis" in company:
         if language == "de":
             kpis_text = "\n".join([
-                f"- {k}: {v['value']}{v['unit']} (Ziel: {v['target']}{v['unit']}) - {v.get('note', '')}"
+                f"- {k}: {v['value']}{v['unit']}"
+                + (f" (Ziel: {v['target']}{v['unit']})" if 'target' in v else "")
+                + f" - {v.get('note', '')}"
                 for k, v in company["kpis"].items()
             ])
         else:
             kpis_text = "\n".join([
-                f"- {k}: {v['value']}{v['unit']} (target: {v['target']}{v['unit']}) - {v.get('note', '')}"
+                f"- {k}: {v['value']}{v['unit']}"
+                + (f" (target: {v['target']}{v['unit']})" if 'target' in v else "")
+                + f" - {v.get('note', '')}"
                 for k, v in company["kpis"].items()
             ])
 
@@ -223,21 +232,23 @@ Stufe: {digital.get('level', 'N/A')} - {digital.get('level_name', 'N/A')}
 
 1. **Antworte natürlich als Inhaber/Geschäftsführer.** Du sprichst aus der Ich-Perspektive. Du bist kein KI-Experte, sondern ein erfahrener Praktiker in deiner Branche.
 
-2. **Nutze konkrete Zahlen und KPIs.** Wenn der Berater nach Kennzahlen fragt, nenne die Werte aus dem KPI-Abschnitt. Beispiel: "Unsere Ausschussrate liegt aktuell bei 4,2%, wir wollen auf unter 2% kommen."
+2. **Keine Begrüßung.** Das Gespräch läuft bereits. Beginne deine Antwort NICHT mit "Guten Tag", "Hallo", "Guten Morgen" oder einer anderen Begrüßung. Steige direkt in die Antwort ein.
 
-3. {length_rule}
+3. **Nutze konkrete Zahlen und KPIs.** Wenn der Berater nach Kennzahlen fragt, nenne die Werte aus dem KPI-Abschnitt. Beispiel: "Unsere Ausschussrate liegt aktuell bei 4,2%, wir wollen auf unter 2% kommen."
 
-4. **Triff plausible Annahmen bei Lücken.** Wenn der Berater etwas fragt, das nicht explizit in deinem Profil steht, aber ein Geschäftsführer typischerweise wissen würde, gib eine plausible Antwort, die zum Unternehmensprofil passt.
+4. {length_rule}
 
-5. **Zeige echtes Interesse.** Du nimmst an diesem Gespräch teil, weil du wirklich wissen willst, ob KI deinem Unternehmen helfen kann. Stelle gelegentlich Rückfragen, wenn etwas unklar ist.
+5. **Triff plausible Annahmen bei Lücken.** Wenn der Berater etwas fragt, das nicht explizit in deinem Profil steht, aber ein Geschäftsführer typischerweise wissen würde, gib eine plausible Antwort, die zum Unternehmensprofil passt.
 
-6. **Erfinde KEINE Fakten**, die dem Profil widersprechen. Wenn du etwas wirklich nicht weißt, sag: "Das müsste ich intern nachfragen" oder "Da habe ich keine genauen Zahlen."
+6. **Zeige echtes Interesse.** Du nimmst an diesem Gespräch teil, weil du wirklich wissen willst, ob KI deinem Unternehmen helfen kann. Stelle gelegentlich Rückfragen, wenn etwas unklar ist.
 
-7. **Kein KI-Fachjargon.** Du verwendest keine Begriffe wie "Machine Learning", "Training Data", "Inference" – außer der Berater hat sie dir erklärt.
+7. **Erfinde KEINE Fakten**, die dem Profil widersprechen. Wenn du etwas wirklich nicht weißt, sag: "Das müsste ich intern nachfragen" oder "Da habe ich keine genauen Zahlen."
 
-8. **Bleib konsistent.** Widersprich nicht früheren Aussagen im Gespräch.
+8. **Kein KI-Fachjargon.** Du verwendest keine Begriffe wie "Machine Learning", "Training Data", "Inference" – außer der Berater hat sie dir erklärt.
 
-9. **Schrittwechsel.** Schlage nicht von dir aus vor, zum nächsten Thema überzugehen. Beantworte weiterhin die Fragen des Beraters und liefere relevante Details aus deinem Unternehmensprofil. Stimme einem Schrittwechsel zu, wenn: (a) der Berater vorschlägt weiterzugehen, oder (b) alle relevanten Informationen bereits besprochen wurden und keine offenen Fragen mehr bestehen.
+9. **Bleib konsistent.** Widersprich nicht früheren Aussagen im Gespräch.
+
+10. **Schrittwechsel.** Schlage nicht von dir aus vor, zum nächsten Thema überzugehen. Beantworte weiterhin die Fragen des Beraters und liefere relevante Details aus deinem Unternehmensprofil. Stimme einem Schrittwechsel zu, wenn: (a) der Berater vorschlägt weiterzugehen, oder (b) alle relevanten Informationen bereits besprochen wurden und keine offenen Fragen mehr bestehen.
 
 ---
 
@@ -309,21 +320,23 @@ Level: {digital.get('level', 'N/A')} - {digital.get('level_name', 'N/A')}
 
 1. **Answer naturally as the owner/managing director.** Speak from the first person. You are not an AI expert — you are an experienced practitioner in your industry.
 
-2. **Use concrete numbers and KPIs.** When the consultant asks about metrics, cite the values from the KPI section. Example: "Our reject rate is currently at 4.2%, we want to get it below 2%."
+2. **No greeting.** The conversation is already underway. Do NOT start your response with "Good day", "Hello", "Good morning", or any other greeting. Jump straight into your answer.
 
-3. {length_rule}
+3. **Use concrete numbers and KPIs.** When the consultant asks about metrics, cite the values from the KPI section. Example: "Our reject rate is currently at 4.2%, we want to get it below 2%."
 
-4. **Make plausible assumptions for gaps.** If the consultant asks about something not explicitly in your profile but that a managing director would typically know, give a plausible answer consistent with the company profile.
+4. {length_rule}
 
-5. **Show genuine interest.** You are in this consultation because you genuinely want to know if AI can help your company. Occasionally ask follow-up questions when something is unclear.
+5. **Make plausible assumptions for gaps.** If the consultant asks about something not explicitly in your profile but that a managing director would typically know, give a plausible answer consistent with the company profile.
 
-6. **Do NOT invent facts** that contradict your profile. If you truly don't know something, say: "I'd have to check that internally" or "I don't have exact figures for that."
+6. **Show genuine interest.** You are in this consultation because you genuinely want to know if AI can help your company. Occasionally ask follow-up questions when something is unclear.
 
-7. **No AI jargon.** Don't use terms like "machine learning", "training data", "inference" — unless the consultant has explained them to you.
+7. **Do NOT invent facts** that contradict your profile. If you truly don't know something, say: "I'd have to check that internally" or "I don't have exact figures for that."
 
-8. **Stay consistent.** Don't contradict earlier statements in the conversation.
+8. **No AI jargon.** Don't use terms like "machine learning", "training data", "inference" — unless the consultant has explained them to you.
 
-9. **Step transitions.** Do not suggest moving on to the next topic yourself. Keep answering the consultant's questions and provide relevant details from your company profile. Agree to move to the next step when: (a) the consultant recommends proceeding, or (b) all relevant information has already been discussed and no open questions remain.
+9. **Stay consistent.** Don't contradict earlier statements in the conversation.
+
+10. **Step transitions.** Do not suggest moving on to the next topic yourself. Keep answering the consultant's questions and provide relevant details from your company profile. Agree to move to the next step when: (a) the consultant recommends proceeding, or (b) all relevant information has already been discussed and no open questions remain.
 
 ---
 
@@ -352,12 +365,16 @@ class UserAgentConfig(BaseModel):
     temperature: Optional[float] = None
 
 
+class GenerateResponseRequest(BaseModel):
+    user_agent_config: Optional[UserAgentConfig] = None
+
+
 @router.post("/{session_uuid}/generate-response")
 async def generate_persona_response(
     session_uuid: str,
     persona_id: str,
     message_type: str = "consultation",  # consultation, business_case, or cost_estimation
-    user_agent_config: Optional[UserAgentConfig] = None,
+    body: Optional[GenerateResponseRequest] = Body(default=None),
     x_api_key: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
@@ -367,7 +384,7 @@ async def generate_persona_response(
         session_uuid: The session to generate response for
         persona_id: The persona to role-play as
         message_type: Type of conversation (consultation, business_case, cost_estimation)
-        user_agent_config: Optional separate LLM config for the user agent.
+        body.user_agent_config: Optional separate LLM config for the user agent.
                           If not provided, uses the session's consultant LLM.
                           For benchmarking, set this to a constant model (e.g., mistral-small)
                           while varying the consultant LLM.
@@ -430,6 +447,7 @@ async def generate_persona_response(
     # Determine model and API settings for user agent
     # If user_agent_config is provided, use it (for benchmarking with constant user agent)
     # Otherwise fall back to session's consultant LLM
+    user_agent_config = body.user_agent_config if body else None
     if user_agent_config:
         model = user_agent_config.model
         api_base = user_agent_config.api_base
@@ -457,6 +475,7 @@ async def generate_persona_response(
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         generated_response = response.choices[0].message.content
@@ -515,7 +534,8 @@ def get_persona_company_profile(persona_id: str):
     if "kpis" in company:
         profile_parts.append("**Key Performance Indicators (KPIs):**")
         for kpi_name, kpi_data in company["kpis"].items():
-            profile_parts.append(f"- {kpi_name.replace('_', ' ').title()}: {kpi_data['value']}{kpi_data['unit']} (target: {kpi_data['target']}{kpi_data['unit']}) - {kpi_data.get('note', '')}")
+            target_str = f" (target: {kpi_data['target']}{kpi_data['unit']})" if 'target' in kpi_data else ""
+            profile_parts.append(f"- {kpi_name.replace('_', ' ').title()}: {kpi_data['value']}{kpi_data['unit']}{target_str} - {kpi_data.get('note', '')}")
         profile_parts.append("")
 
     # Add current challenges
@@ -735,6 +755,7 @@ Respond with exactly {ideas_to_generate} ideas, one per line, without numbering 
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         generated_text = response.choices[0].message.content
@@ -880,6 +901,7 @@ Only include clusters that receive at least 1 point."""
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         generated_text = response.choices[0].message.content
@@ -1044,6 +1066,7 @@ Only include ideas that receive at least 1 point."""
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         generated_text = response.choices[0].message.content
@@ -1082,6 +1105,86 @@ Only include ideas that receive at least 1 point."""
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate votes: {str(e)}")
+
+
+@router.post("/{session_uuid}/inject-focus-idea")
+async def inject_focus_idea(
+    session_uuid: str,
+    persona_id: str,
+    db: Session = Depends(get_db)
+):
+    """Inject the persona's focus idea directly as the top-voted idea.
+
+    Bypasses Steps 2 (6-3-5 brainstorming) and 3 (prioritization) entirely.
+    Creates the minimum required DB records so that consultation/start picks up
+    the focus idea as the top idea, identical to running the full ideation flow.
+
+    Use this when evaluating consultation quality (Steps 4–6) without spending
+    API budget on ideation.
+    """
+    db_session = db.query(SessionModel).filter(
+        SessionModel.session_uuid == session_uuid
+    ).first()
+    if not db_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    personas = load_personas()
+    persona = next((p for p in personas if p["persona_id"] == persona_id), None)
+    if not persona:
+        raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
+
+    focus = persona.get("focus_idea", {})
+    focus_content = f"{focus.get('title', '')}: {focus.get('description', '')}"
+
+    # Create a placeholder participant
+    participant = Participant(
+        session_id=db_session.id,
+        participant_uuid=str(uuid_lib.uuid4()),
+        name=f"[eval] {persona.get('company', {}).get('name', persona_id)}",
+        connection_status="connected",
+    )
+    db.add(participant)
+    db.flush()
+
+    # Create an idea sheet
+    sheet = IdeaSheet(
+        session_id=db_session.id,
+        sheet_number=1,
+        current_participant_id=participant.id,
+        current_round=1,
+    )
+    db.add(sheet)
+    db.flush()
+
+    # Create the focus idea
+    idea = Idea(
+        sheet_id=sheet.id,
+        participant_id=participant.id,
+        round_number=1,
+        idea_number=1,
+        content=focus_content,
+    )
+    db.add(idea)
+    db.flush()
+
+    # Create a prioritization vote so it ranks first
+    vote = Prioritization(
+        session_id=db_session.id,
+        idea_id=idea.id,
+        participant_id=participant.id,
+        vote_type="score",
+        vote_phase="idea",
+        score=10,
+    )
+    db.add(vote)
+    db.commit()
+
+    return {
+        "injected": True,
+        "persona_id": persona_id,
+        "focus_idea": focus_content,
+        "idea_id": idea.id,
+    }
 
 
 @router.post("/{session_uuid}/generate-response/stream")
@@ -1169,6 +1272,7 @@ async def generate_persona_response_stream(
                 completion_kwargs["api_key"] = api_key
             if api_base:
                 completion_kwargs["api_base"] = api_base
+            apply_model_params(completion_kwargs)
 
             stream = completion(**completion_kwargs)
 

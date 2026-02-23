@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel
 from litellm import completion
+from ..utils.llm import apply_model_params
 
 from ..database import get_db
 
@@ -251,6 +252,7 @@ def generate_transition_briefing(
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         briefing_content = response.choices[0].message.content
@@ -468,6 +470,7 @@ def generate_swot_analysis(
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         swot_content = response.choices[0].message.content
@@ -578,6 +581,7 @@ def _trigger_analysis_update_sync(
                 completion_kwargs["api_key"] = api_key
             if api_base:
                 completion_kwargs["api_base"] = api_base
+            apply_model_params(completion_kwargs)
 
             response = completion(**completion_kwargs)
             swot_content = response.choices[0].message.content
@@ -611,6 +615,7 @@ def _trigger_analysis_update_sync(
                 completion_kwargs["api_key"] = api_key
             if api_base:
                 completion_kwargs["api_base"] = api_base
+            apply_model_params(completion_kwargs)
 
             response = completion(**completion_kwargs)
             briefing_content = response.choices[0].message.content

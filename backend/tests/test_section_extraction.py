@@ -7,7 +7,7 @@ from typing import Optional
 
 def extract_section(text: str, section_name: str) -> Optional[str]:
     """Standalone version of _extract_section used in consultation/business_case/cost services."""
-    pattern = rf"##\s*{section_name}\s*\n(.*?)(?=##|$)"
+    pattern = rf"##\s*{section_name}[^\n]*\n(.*?)(?=##|$)"
     match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
     if match:
         return match.group(1).strip()
@@ -68,3 +68,43 @@ class TestExtractSection:
         text = "##   Spaced Header  \nContent here."
         result = extract_section(text, "Spaced Header")
         assert result == "Content here."
+
+    def test_header_with_trailing_parenthetical(self):
+        """Headers like '## RECURRING COSTS (Monthly/Annual)' should match 'RECURRING COSTS'."""
+        text = (
+            "## RECURRING COSTS (Monthly/Annual)\n"
+            "Cloud hosting: $500/month\n"
+            "Licenses: $200/month\n"
+            "\n"
+            "## MAINTENANCE (Annual)\n"
+            "Support contract: $2,400/year\n"
+        )
+        result = extract_section(text, "RECURRING COSTS")
+        assert result is not None
+        assert "Cloud hosting" in result
+        assert "Licenses" in result
+        # Should not bleed into the next section
+        assert "Support contract" not in result
+
+    def test_header_with_trailing_parenthetical_german(self):
+        """German headers with parenthetical text should also match."""
+        text = (
+            "## LAUFENDE KOSTEN (Monatlich/Jährlich)\n"
+            "Cloud-Hosting: 500€/Monat\n"
+            "\n"
+            "## WARTUNG (Jährlich)\n"
+            "Wartungsvertrag: 2.400€/Jahr\n"
+        )
+        result = extract_section(text, "LAUFENDE KOSTEN")
+        assert result is not None
+        assert "Cloud-Hosting" in result
+
+    def test_header_with_tco_parenthetical(self):
+        """TCO header with '(TCO)' suffix should match."""
+        text = (
+            "## 3-YEAR TOTAL COST OF OWNERSHIP (TCO)\n"
+            "Total: $150,000\n"
+        )
+        result = extract_section(text, "3-YEAR TOTAL COST OF OWNERSHIP")
+        assert result is not None
+        assert "Total: $150,000" in result

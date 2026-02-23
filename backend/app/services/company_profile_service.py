@@ -5,6 +5,7 @@ import logging
 from typing import Optional, Dict, List
 from litellm import completion
 from sqlalchemy.orm import Session
+from ..utils.llm import apply_model_params
 
 from ..models import Session as SessionModel, CompanyInfo
 from ..schemas.company_profile import CompanyProfile, CompanyProfileResponse
@@ -216,6 +217,7 @@ def extract_company_profile(
         completion_kwargs["api_key"] = api_key
     if api_base:
         completion_kwargs["api_base"] = api_base
+    apply_model_params(completion_kwargs)
 
     logger.info(f"Extracting company profile for session {session_uuid}")
 

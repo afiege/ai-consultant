@@ -23,6 +23,7 @@ from ..schemas import (
     TemperatureConfig,
 )
 from ..services.default_prompts import get_all_defaults
+from ..utils.llm import apply_model_params
 
 
 class LLMTestRequest(BaseModel):
@@ -294,6 +295,7 @@ def test_llm_connection(request: LLMTestRequest):
 
         if request.api_base:
             completion_kwargs["api_base"] = request.api_base
+        apply_model_params(completion_kwargs)
 
         # Debug logging
         print(f"[LLM Test] Model: {request.model}")

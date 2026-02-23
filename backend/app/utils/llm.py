@@ -23,6 +23,17 @@ logger = logging.getLogger(__name__)
 # Install safe logging filter to prevent API keys from appearing in logs
 logger.addFilter(SafeLogFilter())
 
+def apply_model_params(completion_kwargs: dict) -> dict:
+    """Apply model-specific parameters required by certain providers."""
+    model = completion_kwargs.get("model", "")
+    if "qwen3" in model.lower():
+        completion_kwargs["extra_body"] = {"enable_thinking": False}
+        completion_kwargs["enable_thinking"] = False
+    if "magistral" in model.lower():
+        completion_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
+    return completion_kwargs
+
+
 # Exceptions that should trigger a retry
 RETRYABLE_EXCEPTIONS = (
     RateLimitError,
@@ -78,9 +89,20 @@ def create_llm_caller(
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         try:
-            return completion(**completion_kwargs)
+            response = completion(**completion_kwargs)
+            # Some reasoning models return content as a list of blocks
+            # (e.g. [{"type": "thinking", ...}, {"type": "text", "text": "..."}])
+            # Extract plain text to avoid Pydantic serialization errors downstream.
+            msg = response.choices[0].message
+            if isinstance(msg.content, list):
+                msg.content = " ".join(
+                    block.get("text", "") for block in msg.content
+                    if block.get("type") == "text"
+                )
+            return response
         except RETRYABLE_EXCEPTIONS:
             # Let tenacity handle retry
             raise
@@ -122,6 +144,7 @@ def create_llm_caller(
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         try:
             return completion(**completion_kwargs)

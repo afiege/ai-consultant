@@ -699,7 +699,7 @@ class BusinessCaseService:
         import re
 
         # Try to find section with ## header
-        pattern = rf"##\s*{section_name}\s*\n(.*?)(?=##|$)"
+        pattern = rf"##\s*{section_name}[^\n]*\n(.*?)(?=##|$)"
         match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
 
         if match:

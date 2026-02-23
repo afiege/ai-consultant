@@ -12,6 +12,7 @@ from litellm import completion
 
 from ..models import ConsultationFinding, FindingCrossReference
 from .session_settings import get_llm_settings
+from ..utils.llm import apply_model_params
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,7 @@ def extract_cross_references(
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         content = response.choices[0].message.content

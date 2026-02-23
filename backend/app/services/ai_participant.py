@@ -5,6 +5,7 @@ from litellm import completion
 import logging
 
 from .default_prompts import get_prompt
+from ..utils.llm import apply_model_params
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,7 @@ class AIParticipant:
                 completion_kwargs["api_key"] = self.api_key
             if self.api_base:
                 completion_kwargs["api_base"] = self.api_base
+            apply_model_params(completion_kwargs)
 
             response = completion(**completion_kwargs)
 
@@ -349,6 +351,7 @@ Return the clustering as JSON."""
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         content = response.choices[0].message.content
@@ -618,6 +621,7 @@ Return the assessment as JSON."""
             completion_kwargs["api_key"] = api_key
         if api_base:
             completion_kwargs["api_base"] = api_base
+        apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
         content = response.choices[0].message.content
