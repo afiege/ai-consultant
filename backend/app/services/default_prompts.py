@@ -335,12 +335,16 @@ Available references:
 Example: "Based on the [[maturity_assessment|digital maturity assessment]], the company is well-positioned for..."
 
 ## COMPANY PROFILE
-[Provide a concise summary of the company including:
-- Industry and business area
-- Size and key characteristics (employees, revenue range if mentioned)
-- Main products/services
-- Digital maturity level (acatech Industry 4.0 Index): Overall score and level name, plus assessment of each dimension (Resources, Information Systems, Culture, Organizational Structure) - what are their strengths and gaps?
-- Key business challenges they face]
+Use ONLY the verified facts from the VERIFIED COMPANY DATA block provided above this prompt.
+Do NOT invent, estimate, or alter any numbers, KPIs, revenue figures, employee counts, or maturity scores.
+If a field is not in the verified data, omit it — do not fill it from the conversation or general knowledge.
+You may add 1–2 sentences of interpretation on what the maturity level means for AI readiness.
+
+Structure your summary:
+- Company name, industry, size (employees, revenue — only if in verified data)
+- Main products/services and core business
+- Digital maturity: state the exact score and level name from verified data, then brief interpretation
+- Key business challenges (only those explicitly known)
 
 ## BUSINESS OBJECTIVES
 [Describe the business problem/opportunity, specific goals, and success criteria. What does the business want to achieve and how will success be measured?]
@@ -1308,12 +1312,16 @@ Verfügbare Referenzen:
 Beispiel: "Basierend auf der [[maturity_assessment|Reifegradanalyse]] ist das Unternehmen gut positioniert für..."
 
 ## UNTERNEHMENSPROFIL
-[Geben Sie eine kompakte Zusammenfassung des Unternehmens:
-- Branche und Geschäftsbereich
-- Größe und wesentliche Merkmale (Mitarbeiterzahl, Umsatzbereich falls genannt)
-- Hauptprodukte/-dienstleistungen
-- Digitaler Reifegrad (acatech Industrie 4.0 Index): Gesamtscore und Stufenname, sowie Bewertung jeder Dimension (Ressourcen, Informationssysteme, Kultur, Organisationsstruktur) - wo liegen Stärken und Lücken?
-- Zentrale geschäftliche Herausforderungen]
+Verwenden Sie AUSSCHLIESSLICH die verifizierten Fakten aus dem oben bereitgestellten Block VERIFIZIERTE UNTERNEHMENSDATEN.
+Erfinden, schätzen oder verändern Sie KEINE Zahlen, KPIs, Umsatzangaben, Mitarbeiterzahlen oder Reifegradscores.
+Wenn ein Feld nicht in den verifizierten Daten enthalten ist, lassen Sie es weg — füllen Sie es nicht aus dem Gespräch oder allgemeinem Wissen.
+Sie dürfen 1–2 Sätze Interpretation hinzufügen, was der Reifegrad für die KI-Bereitschaft bedeutet.
+
+Struktur der Zusammenfassung:
+- Firmenname, Branche, Größe (Mitarbeiter, Umsatz — nur wenn in verifizierten Daten)
+- Hauptprodukte/-dienstleistungen und Kerngeschäft
+- Digitaler Reifegrad: exakter Score und Stufenname aus verifizierten Daten, dann kurze Interpretation
+- Zentrale Herausforderungen (nur explizit bekannte)
 
 ## GESCHÄFTSZIELE
 [Beschreiben Sie das Geschäftsproblem bzw. die Chance, die konkreten Ziele und Erfolgskriterien. Was möchte das Unternehmen erreichen und woran wird der Erfolg gemessen?]

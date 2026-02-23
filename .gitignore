@@ -92,8 +92,11 @@ htmlcov/
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
 
-# Evaluation (benchmark data, results)
-evaluation/
+# Evaluation — test run data and runner scripts (generated, not tracked)
+evaluation/matrix_runs/
+evaluation/test_runs/
+evaluation/results/
+evaluation/run_benchmark_matrix.py
 
 # Claude Code settings (optional - remove if you want to share settings)
 .claude/

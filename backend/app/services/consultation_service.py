@@ -552,6 +552,9 @@ class ConsultationService:
             self.custom_prompts
         )
 
+        # Prepend verified structured data so the LLM uses real facts for the COMPANY PROFILE section
+        extraction_prompt = self._build_verified_data_block(db_session, session_uuid) + extraction_prompt
+
         messages.append({"role": "user", "content": extraction_prompt})
 
         response = self._call_llm_extraction(messages, max_tokens=2000)
@@ -979,6 +982,54 @@ When multiple people contribute:
         if should_extract:
             # Auto-extract findings
             pass  # Let user trigger this manually for now
+
+    def _build_verified_data_block(self, db_session: SessionModel, session_uuid: str) -> str:
+        """Build a verified facts block to prepend to the extraction prompt.
+
+        This prevents the LLM from hallucinating company KPIs or maturity scores
+        by providing the actual structured data as a grounding block.
+        """
+        lines = []
+
+        # Structured company profile (from company_profile_service)
+        profile_context = get_profile_as_context(self.db, session_uuid, self.language)
+        if profile_context and profile_context.strip() != "No company profile available.":
+            lines.append(profile_context.strip())
+
+        # Maturity assessment scores (direct from DB — no LLM involved)
+        maturity = self.db.query(MaturityAssessment).filter(
+            MaturityAssessment.session_id == db_session.id
+        ).first()
+        if maturity:
+            maturity_lines = [
+                f"Digital Maturity (acatech Industry 4.0 Index):",
+                f"  Overall: {maturity.overall_score:.1f}/6 ({maturity.maturity_level})",
+                f"  Resources: {maturity.resources_score}/6",
+                f"  Information Systems: {maturity.information_systems_score}/6",
+                f"  Culture: {maturity.culture_score}/6",
+                f"  Organizational Structure: {maturity.organizational_structure_score}/6",
+            ]
+            lines.append("\n".join(maturity_lines))
+
+        if not lines:
+            return ""
+
+        if self.language == "de":
+            header = (
+                "## VERIFIZIERTE UNTERNEHMENSDATEN\n"
+                "Die folgenden Fakten sind maschinell verifiziert. "
+                "Verwende sie WÖRTLICH im Abschnitt UNTERNEHMENSPROFIL. "
+                "Verändere, schätze oder erfinde KEINE Zahlen oder KPIs.\n\n"
+            )
+        else:
+            header = (
+                "## VERIFIED COMPANY DATA\n"
+                "The following facts are machine-verified. "
+                "Use them VERBATIM in the COMPANY PROFILE section. "
+                "Do NOT alter, estimate, or invent any numbers or KPIs.\n\n"
+            )
+
+        return header + "\n\n".join(lines) + "\n\n---\n\n"
 
     def _save_finding(self, session_id: int, factor_type: str, text: str):
         """Save or update a finding."""
