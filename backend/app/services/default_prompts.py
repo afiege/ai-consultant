@@ -910,6 +910,8 @@ Example: "The [[business_case|business case]] projects annual savings of €X, w
 ## INITIAL INVESTMENT
 [One-time costs breakdown:]
 
+**Column ordering (MANDATORY): Conservative = highest cost (worst case: delays, scope creep, rework). Optimistic = lowest cost (best case: smooth execution). Values MUST be monotonically ordered: Conservative ≥ Moderate ≥ Optimistic.**
+
 | Category | Conservative | Moderate | Optimistic |
 |----------|-------------|----------|------------|
 | Development & Implementation | € | € | € |
@@ -2203,6 +2205,8 @@ Beispiel: "Der [[business_case|Business Case]] prognostiziert jährliche Einspar
 
 ## ERSTINVESTITION
 [Einmalige Kostenaufschlüsselung:]
+
+**Spaltenreihenfolge (PFLICHT): Konservativ = höchste Kosten (schlechtester Fall: Verzögerungen, Scope-Wachstum, Nacharbeit). Optimistisch = niedrigste Kosten (bester Fall: reibungsloser Ablauf). Die Werte MÜSSEN monoton sein: Konservativ ≥ Moderat ≥ Optimistisch.**
 
 | Kategorie | Konservativ | Moderat | Optimistisch |
 |-----------|-------------|---------|--------------|

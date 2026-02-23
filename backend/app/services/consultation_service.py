@@ -595,7 +595,11 @@ class ConsultationService:
         project_plan = (
             self._extract_section(summary, "PROJECT PLAN") or
             self._extract_section(summary, "PROJEKTPLAN") or
-            self._extract_section(summary, "IMPLEMENTATION STEPS")
+            self._extract_section(summary, "IMPLEMENTATION STEPS") or
+            self._extract_section(summary, "PROJEKTPLANUNG") or
+            self._extract_section(summary, "UMSETZUNGSPLAN") or
+            self._extract_section(summary, "PILOTPLAN") or
+            self._extract_section(summary, "PROJEKTSCHRITTE")
         )
         self._save_finding(db_session.id, "project_plan", project_plan)
 

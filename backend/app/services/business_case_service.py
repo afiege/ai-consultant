@@ -525,7 +525,11 @@ class BusinessCaseService:
 
         calculation = (
             self._extract_section(summary, "BACK-OF-THE-ENVELOPE CALCULATION") or
-            self._extract_section(summary, "ÜBERSCHLAGSRECHNUNG")
+            self._extract_section(summary, "ÜBERSCHLAGSRECHNUNG") or
+            self._extract_section(summary, "NUTZENBERECHNUNG") or
+            self._extract_section(summary, "BENEFIT CALCULATION") or
+            self._extract_section(summary, "ÜBERSCHLAGSBERECHNUNG") or
+            self._extract_section(summary, "KOSTENNUTZEN-ANALYSE")
         )
         self._save_finding(db_session.id, "business_case_calculation", calculation)
 
