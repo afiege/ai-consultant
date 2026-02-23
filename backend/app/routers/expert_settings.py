@@ -1,5 +1,6 @@
 """Router for expert mode settings."""
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -7,6 +8,11 @@ import json
 import httpx
 from typing import Optional, List
 from litellm import completion
+
+from ..utils.security import SafeLogFilter
+
+logger = logging.getLogger(__name__)
+logger.addFilter(SafeLogFilter())
 
 from ..database import get_db
 from ..models import Session as SessionModel
@@ -297,15 +303,12 @@ def test_llm_connection(request: LLMTestRequest):
             completion_kwargs["api_base"] = request.api_base
         apply_model_params(completion_kwargs)
 
-        # Debug logging
-        print(f"[LLM Test] Model: {request.model}")
-        print(f"[LLM Test] API Base: {request.api_base}")
-        print(f"[LLM Test] API Key (first 10 chars): {request.api_key[:10] if request.api_key else 'None'}...")
-        print(f"[LLM Test] Full completion_kwargs: {list(completion_kwargs.keys())}")
+        # Debug logging (no key material)
+        logger.debug(f"[LLM Test] Model: {request.model}, API Base: {request.api_base}, has_key: {bool(request.api_key)}, kwargs: {list(completion_kwargs.keys())}")
 
         # Safety check: if model has openai/ prefix but no api_base, warn
         if request.model and request.model.startswith("openai/") and not request.api_base:
-            print(f"[LLM Test] WARNING: Model has 'openai/' prefix but no api_base - will call OpenAI API!")
+            logger.warning(f"[LLM Test] Model has 'openai/' prefix but no api_base - will call OpenAI API!")
             return LLMTestResponse(
                 success=False,
                 message="Model uses 'openai/' prefix but no API base URL is set. This would call the OpenAI API. Please select a provider first."
