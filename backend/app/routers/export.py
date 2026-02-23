@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel
 from litellm import completion
-from ..utils.llm import apply_model_params
+from ..utils.llm import apply_model_params, extract_content
 
 from ..database import get_db
 
@@ -262,7 +262,7 @@ def generate_transition_briefing(
         apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
-        briefing_content = response.choices[0].message.content
+        briefing_content = extract_content(response)
 
         # Save the briefing as a finding
         _save_finding(db, db_session.id, "technical_briefing", briefing_content)
@@ -487,7 +487,7 @@ def generate_swot_analysis(
         apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
-        swot_content = response.choices[0].message.content
+        swot_content = extract_content(response)
 
         # Save the SWOT as a finding
         _save_finding(db, db_session.id, "swot_analysis", swot_content)
@@ -599,7 +599,7 @@ def _trigger_analysis_update_sync(
             apply_model_params(completion_kwargs)
 
             response = completion(**completion_kwargs)
-            swot_content = response.choices[0].message.content
+            swot_content = extract_content(response)
 
             _save_finding(db, db_session.id, "swot_analysis", swot_content)
             logger.info(f"Auto-updated SWOT analysis for session {session_id}")
@@ -633,7 +633,7 @@ def _trigger_analysis_update_sync(
             apply_model_params(completion_kwargs)
 
             response = completion(**completion_kwargs)
-            briefing_content = response.choices[0].message.content
+            briefing_content = extract_content(response)
 
             _save_finding(db, db_session.id, "technical_briefing", briefing_content)
             logger.info(f"Auto-updated Technical Briefing for session {session_id}")

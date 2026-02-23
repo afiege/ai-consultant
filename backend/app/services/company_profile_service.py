@@ -5,7 +5,7 @@ import logging
 from typing import Optional, Dict, List
 from litellm import completion
 from sqlalchemy.orm import Session
-from ..utils.llm import apply_model_params
+from ..utils.llm import apply_model_params, extract_content
 
 from ..models import Session as SessionModel, CompanyInfo
 from ..schemas.company_profile import CompanyProfile, CompanyProfileResponse
@@ -229,7 +229,7 @@ def extract_company_profile(
     logger.info(f"Extracting company profile for session {session_uuid}")
 
     response = completion(**completion_kwargs)
-    content = response.choices[0].message.content
+    content = extract_content(response)
 
     # Parse JSON from response
     profile_data = _parse_json_response(content)

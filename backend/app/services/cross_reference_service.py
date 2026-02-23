@@ -12,7 +12,7 @@ from litellm import completion
 
 from ..models import ConsultationFinding, FindingCrossReference
 from .session_settings import get_llm_settings
-from ..utils.llm import apply_model_params
+from ..utils.llm import apply_model_params, extract_content
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ def extract_cross_references(
         apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
-        content = response.choices[0].message.content
+        content = extract_content(response)
 
         # Parse the JSON response
         references = _parse_llm_response(content)

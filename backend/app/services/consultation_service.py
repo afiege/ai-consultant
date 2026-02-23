@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Generator
 from sqlalchemy.orm import Session
 import logging
 
-from ..utils.llm import LLMCaller
+from ..utils.llm import LLMCaller, strip_think_tokens
 from ..utils.security import validate_and_sanitize_message
 
 logger = logging.getLogger(__name__)
@@ -220,7 +220,7 @@ class ConsultationService:
 
             for chunk in stream:
                 if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
+                    content = strip_think_tokens(chunk.choices[0].delta.content)
                     full_response += content
                     yield format_sse_data(content)
 
@@ -383,7 +383,7 @@ class ConsultationService:
 
             for chunk in stream:
                 if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
+                    content = strip_think_tokens(chunk.choices[0].delta.content)
                     full_response += content
                     yield format_sse_data(content)
 
@@ -457,7 +457,7 @@ class ConsultationService:
 
             for chunk in stream:
                 if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
+                    content = strip_think_tokens(chunk.choices[0].delta.content)
                     full_response += content
                     yield format_sse_data(content)
 

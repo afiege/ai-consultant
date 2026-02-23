@@ -29,7 +29,7 @@ from ..schemas import (
     TemperatureConfig,
 )
 from ..services.default_prompts import get_all_defaults
-from ..utils.llm import apply_model_params
+from ..utils.llm import apply_model_params, extract_content
 
 
 class LLMTestRequest(BaseModel):
@@ -333,7 +333,7 @@ def test_llm_connection(request: LLMTestRequest):
         response = completion(**completion_kwargs)
 
         # Extract response content
-        content = response.choices[0].message.content
+        content = extract_content(response)
 
         return LLMTestResponse(
             success=True,

@@ -548,13 +548,18 @@ Example: "This aligns with the [[ai_goals|AI/Data Mining Goals]] identified in t
 [Map the project to the 5-level value framework. Indicate which level(s) apply and justify your choice briefly.]
 
 ## BACK-OF-THE-ENVELOPE CALCULATION
-[Provide the estimated annual monetary BENEFIT. Include:
+Provide the estimated annual monetary BENEFIT. Include:
 - A clear breakdown of savings, avoided costs, or revenue enabled
 - Tables showing the benefit calculation
 - All assumptions and benchmarks used
 - Conservative, moderate, and optimistic scenarios if appropriate
 
-**NOTE: Do NOT include implementation costs here. This section is about the VALUE/BENEFIT the solution will deliver. Implementation costs will be calculated separately in Step 5b (Cost Estimation).**]
+**End this section with a single summary line:**
+> **Total Annual Benefit (moderate estimate): €X**
+
+This number will be used in Step 5b for the ROI calculation.
+
+**NOTE: Do NOT include implementation costs here. This section is about the VALUE/BENEFIT the solution will deliver. Implementation costs will be calculated separately in Step 5b (Cost Estimation).**
 
 ## VALIDATION QUESTIONS
 [List exactly 3 specific questions the client must answer to turn this estimate into a robust, bankable business case. These should target the key assumptions or data gaps.]
@@ -769,7 +774,23 @@ Example: "The [[business_case|business case]] projects annual savings of €X, w
 [3 specific ways to reduce costs if budget is constrained]
 
 ## INVESTMENT VS. RETURN
-[Compare with potential benefits from Step 5a, estimate payback period]
+Build an explicit ROI calculation using the numbers from Step 5a (business case) and the cost estimates above.
+
+Required table:
+
+| Metric | Value |
+|--------|-------|
+| Annual Benefit (from Step 5a) | € (use the figure from the business case calculation) |
+| Annual Recurring Costs (infrastructure + licenses + maintenance) | € |
+| **Net Annual Benefit** | € (= Annual Benefit − Annual Recurring Costs) |
+| Initial Investment | € (moderate estimate from above) |
+| **Simple Payback Period** | X years (= Initial Investment ÷ Net Annual Benefit) |
+| **3-Year ROI** | X% (= (3 × Net Annual Benefit − Initial Investment) ÷ Initial Investment × 100) |
+
+Then add a 2-3 sentence qualitative assessment:
+- Is the payback period realistic given the company context?
+- Is the ROI positive or negative over 3 years?
+- Flag clearly if the investment is **NOT VIABLE** (payback > 5 years or 3-year ROI negative).
 
 Use markdown formatting with clear tables.""",
 
@@ -1536,13 +1557,18 @@ Beispiel: "Dies stimmt mit den [[ai_goals|KI-/Data-Mining-Zielen]] überein, die
 [Ordnen Sie das Projekt dem 5-Stufen-Wertrahmen zu. Geben Sie an, welche Stufe(n) zutreffen und begründen Sie Ihre Wahl kurz.]
 
 ## ÜBERSCHLAGSRECHNUNG
-[Geben Sie den geschätzten jährlichen monetären NUTZEN an. Beinhaltet:
+Geben Sie den geschätzten jährlichen monetären NUTZEN an. Beinhaltet:
 - Eine klare Aufschlüsselung der Einsparungen, vermiedenen Kosten oder ermöglichten Umsätze
 - Tabellen mit der Nutzenberechnung
 - Alle verwendeten Annahmen und Benchmarks
 - Falls sinnvoll: konservatives, moderates und optimistisches Szenario
 
-**HINWEIS: Hier KEINE Implementierungskosten aufführen. Dieser Abschnitt behandelt den WERT/NUTZEN, den die Lösung liefern wird. Implementierungskosten werden separat in Schritt 5b (Kostenschätzung) berechnet.**]
+**Abschluss dieses Abschnitts mit einer einzelnen Zusammenfassungszeile:**
+> **Gesamter Jahresnutzen (moderate Schätzung): €X**
+
+Diese Zahl wird in Schritt 5b für die ROI-Berechnung verwendet.
+
+**HINWEIS: Hier KEINE Implementierungskosten aufführen. Dieser Abschnitt behandelt den WERT/NUTZEN, den die Lösung liefern wird. Implementierungskosten werden separat in Schritt 5b (Kostenschätzung) berechnet.**
 
 ## VALIDIERUNGSFRAGEN
 [Listen Sie genau 3 spezifische Fragen auf, die der Kunde beantworten muss, um diese Schätzung in einen belastbaren, bankfähigen Business Case zu verwandeln. Diese sollten auf die wichtigsten Annahmen oder Datenlücken abzielen.]
@@ -1746,7 +1772,23 @@ Beispiel: "Der [[business_case|Business Case]] prognostiziert jährliche Einspar
 [3 konkrete Möglichkeiten zur Kostensenkung bei begrenztem Budget]
 
 ## INVESTITION VS. RENDITE
-[Vergleich mit potenziellen Nutzen aus Schritt 5a, Schätzung der Amortisationszeit]
+Erstellen Sie eine explizite ROI-Berechnung mit den Zahlen aus Schritt 5a (Business Case) und den obigen Kostenschätzungen.
+
+Pflichtabelle:
+
+| Kennzahl | Wert |
+|----------|------|
+| Jährlicher Nutzen (aus Schritt 5a) | € (aus der Business-Case-Berechnung) |
+| Jährliche laufende Kosten (Infrastruktur + Lizenzen + Wartung) | € |
+| **Netto-Jahresnutzen** | € (= Jährlicher Nutzen − Jährliche laufende Kosten) |
+| Erstinvestition | € (moderate Schätzung von oben) |
+| **Einfache Amortisationszeit** | X Jahre (= Erstinvestition ÷ Netto-Jahresnutzen) |
+| **3-Jahres-ROI** | X% (= (3 × Netto-Jahresnutzen − Erstinvestition) ÷ Erstinvestition × 100) |
+
+Dann 2-3 Sätze qualitative Bewertung:
+- Ist die Amortisationszeit realistisch im Unternehmenskontext?
+- Ist der ROI über 3 Jahre positiv oder negativ?
+- Klar kennzeichnen, wenn die Investition **NICHT RENTABEL** ist (Amortisationszeit > 5 Jahre oder 3-Jahres-ROI negativ).
 
 Verwenden Sie Markdown-Formatierung mit klaren Tabellen.""",
 

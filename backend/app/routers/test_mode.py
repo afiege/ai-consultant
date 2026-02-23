@@ -16,7 +16,7 @@ from ..models.idea import IdeaSheet, Idea
 from ..models.prioritization import Prioritization
 from ..models.participant import Participant
 from ..utils.sse import format_sse_data
-from ..utils.llm import apply_model_params
+from ..utils.llm import apply_model_params, extract_content
 
 router = APIRouter(prefix="/api/test-mode", tags=["test-mode"])
 
@@ -486,7 +486,7 @@ async def generate_persona_response(
         apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
-        generated_response = response.choices[0].message.content
+        generated_response = extract_content(response)
 
         return {
             "response": generated_response,
@@ -766,7 +766,7 @@ Respond with exactly {ideas_to_generate} ideas, one per line, without numbering 
         apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
-        generated_text = response.choices[0].message.content
+        generated_text = extract_content(response)
 
         # Parse ideas (split by newlines, clean up)
         generated_ideas = [line.strip() for line in generated_text.strip().split('\n') if line.strip()]
@@ -912,7 +912,7 @@ Only include clusters that receive at least 1 point."""
         apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
-        generated_text = response.choices[0].message.content
+        generated_text = extract_content(response)
 
         # Parse votes
         votes = {}
@@ -1077,7 +1077,7 @@ Only include ideas that receive at least 1 point."""
         apply_model_params(completion_kwargs)
 
         response = completion(**completion_kwargs)
-        generated_text = response.choices[0].message.content
+        generated_text = extract_content(response)
 
         # Parse votes
         votes = {}

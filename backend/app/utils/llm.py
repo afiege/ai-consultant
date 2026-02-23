@@ -1,5 +1,6 @@
 """LLM utility functions with retry logic and error handling."""
 
+import re
 import logging
 from typing import Dict, List, Generator, Optional
 from tenacity import (
@@ -22,6 +23,37 @@ from .security import SafeLogFilter, redact_api_key
 logger = logging.getLogger(__name__)
 # Install safe logging filter to prevent API keys from appearing in logs
 logger.addFilter(SafeLogFilter())
+
+_THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def strip_think_tokens(text: str) -> str:
+    """Remove <think>…</think> blocks that some models emit despite thinking being disabled."""
+    return _THINK_TAG_RE.sub("", text).strip()
+
+
+def extract_content(response) -> str:
+    """Safely extract plain-text content from an LLM response.
+
+    Handles:
+    - content=None  → returns ""
+    - content as list of typed blocks (reasoning models) → joins text blocks only
+    - residual <think>…</think> tags → stripped
+    """
+    msg = response.choices[0].message
+    content = msg.content
+
+    if content is None:
+        return ""
+
+    if isinstance(content, list):
+        content = " ".join(
+            block.get("text", "") for block in content
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+
+    return strip_think_tokens(content)
+
 
 def apply_model_params(completion_kwargs: dict) -> dict:
     """Apply model-specific parameters required by certain providers."""
@@ -93,15 +125,8 @@ def create_llm_caller(
 
         try:
             response = completion(**completion_kwargs)
-            # Some reasoning models return content as a list of blocks
-            # (e.g. [{"type": "thinking", ...}, {"type": "text", "text": "..."}])
-            # Extract plain text to avoid Pydantic serialization errors downstream.
-            msg = response.choices[0].message
-            if isinstance(msg.content, list):
-                msg.content = " ".join(
-                    block.get("text", "") for block in msg.content
-                    if block.get("type") == "text"
-                )
+            # Normalise content: handle None, list blocks, and residual think tokens.
+            response.choices[0].message.content = extract_content(response)
             return response
         except RETRYABLE_EXCEPTIONS:
             # Let tenacity handle retry
