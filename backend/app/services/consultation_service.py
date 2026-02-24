@@ -580,7 +580,13 @@ class ConsultationService:
 
         situation = (
             self._extract_section(summary, "SITUATION ASSESSMENT") or
-            self._extract_section(summary, "SITUATIONSBEWERTUNG")
+            self._extract_section(summary, "SITUATIONSANALYSE") or
+            self._extract_section(summary, "SITUATIONSBEWERTUNG") or
+            self._extract_section(summary, "CURRENT SITUATION") or
+            self._extract_section(summary, "AKTUELLE SITUATION") or
+            self._extract_section(summary, "SITUATIONSBEURTEILUNG") or
+            self._extract_section(summary, "IST-ANALYSE") or
+            self._extract_section(summary, "AUSGANGSSITUATION")
         )
         self._save_finding(db_session.id, "situation_assessment", situation)
 

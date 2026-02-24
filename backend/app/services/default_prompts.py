@@ -590,11 +590,13 @@ Provide the estimated annual monetary BENEFIT. Include:
 
 This number will be used in Step 5b for the ROI calculation.
 
+**⛔ CRITICAL — Revenue is NOT a benefit:** The company's annual revenue figure from the profile is context only. Do NOT use it as a benefit, do NOT treat it as savings, and do NOT include it in any calculation. Benefits must be derived exclusively from operational improvements (reduced downtime, saved labor hours, avoided scrap, etc.) calculated bottom-up from the conversation.
+
 **Plausibility Check (mandatory):** Compare the estimated benefit to the company's annual revenue from the profile:
 - Annual Benefit / Annual Revenue = X% — state this ratio explicitly
-- If > 50%: ⚠️ FLAG — "Benefit exceeds 50% of revenue. Assumptions require strong justification or revision."
-- If 20–50%: ⚠️ NOTE — "Elevated ratio — validate assumptions carefully before presenting to management."
-- If < 20%: ✓ Within plausible range for a targeted AI project.
+- If > 20%: ⛔ STOP — Recalculate. A single AI project cannot realistically generate benefits exceeding 20% of annual revenue. Revise assumptions downward until the ratio is below 20%.
+- If 10–20%: ⚠️ NOTE — "Elevated ratio — validate assumptions carefully before presenting to management."
+- If < 10%: ✓ Within plausible range for a targeted AI project.
 
 **Benefit Type Breakdown:**
 
@@ -1897,11 +1899,13 @@ Geben Sie den geschätzten jährlichen monetären NUTZEN an. Beinhaltet:
 
 Diese Zahl wird in Schritt 5b für die ROI-Berechnung verwendet.
 
+**⛔ KRITISCH — Umsatz ist KEIN Nutzen:** Der Jahresumsatz aus dem Unternehmensprofil ist reiner Kontext. Verwenden Sie ihn NICHT als Nutzen, NICHT als Einsparung und NICHT in einer Berechnung. Der Nutzen muss ausschließlich aus operativen Verbesserungen abgeleitet werden (reduzierte Ausfallzeiten, eingesparte Arbeitsstunden, vermiedener Ausschuss usw.) — bottom-up aus dem Gespräch berechnet.
+
 **Plausibilitätsprüfung (Pflicht):** Vergleich des geschätzten Nutzens mit dem Jahresumsatz aus dem Unternehmensprofil:
 - Jahresnutzen / Jahresumsatz = X% — dieses Verhältnis explizit angeben
-- Wenn > 50%: ⚠️ KENNZEICHNEN — „Nutzen überschreitet 50% des Umsatzes. Annahmen erfordern starke Begründung oder Überarbeitung."
-- Wenn 20–50%: ⚠️ HINWEIS — „Erhöhtes Verhältnis — Annahmen sorgfältig validieren vor Managementpräsentation."
-- Wenn < 20%: ✓ Im plausiblen Bereich für ein gezieltes KI-Projekt.
+- Wenn > 20%: ⛔ STOP — Neu berechnen. Ein einzelnes KI-Projekt kann realistischerweise keinen Nutzen von mehr als 20% des Jahresumsatzes erzeugen. Annahmen nach unten korrigieren, bis das Verhältnis unter 20% liegt.
+- Wenn 10–20%: ⚠️ HINWEIS — „Erhöhtes Verhältnis — Annahmen sorgfältig validieren vor Managementpräsentation."
+- Wenn < 10%: ✓ Im plausiblen Bereich für ein gezieltes KI-Projekt.
 
 **Einsparungstypen-Aufschlüsselung:**
 
