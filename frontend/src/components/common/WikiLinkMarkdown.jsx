@@ -177,7 +177,7 @@ function processWikiLinks(content, crossReferences = [], enableAutoDetect = true
 /**
  * Custom component to render wiki-links as clickable elements.
  */
-const WikiLinkComponent = ({ target, relationship, children, onNavigate }) => {
+const WikiLinkComponent = ({ target, relationship, children, onNavigate, sectionContents }) => {
   const mapping = WIKI_LINK_MAP[target];
 
   if (!mapping) {
@@ -204,12 +204,20 @@ const WikiLinkComponent = ({ target, relationship, children, onNavigate }) => {
 
   const colorClass = relationshipStyles[relationship] || relationshipStyles.references;
 
+  // Build tooltip: content preview takes priority, fall back to relationship label
+  const contentPreview = sectionContents?.[target]?.substring(0, 120);
+  const tooltipText = contentPreview
+    ? `${contentPreview}…`
+    : relationship
+    ? `${relationship} → ${FINDING_TYPE_LABELS[target] || target}`
+    : FINDING_TYPE_LABELS[target] || target;
+
   return (
     <button
       type="button"
       onClick={handleClick}
       className={`${colorClass} hover:underline font-medium cursor-pointer bg-transparent border-none p-0 inline`}
-      title={relationship ? `${relationship} → ${FINDING_TYPE_LABELS[target] || target}` : undefined}
+      title={tooltipText}
     >
       {children}
     </button>
@@ -230,13 +238,15 @@ const WikiLinkComponent = ({ target, relationship, children, onNavigate }) => {
  * @param {string} className - Additional CSS classes
  * @param {Array} crossReferences - LLM-extracted cross-references [{phrase, target, relationship, confidence}]
  * @param {boolean} enableAutoDetect - Whether to auto-detect finding mentions (default: true)
+ * @param {Object} sectionContents - Map of section_id → text content for tooltip previews
  */
 export const WikiLinkMarkdown = ({
   content,
   onNavigate,
   className = '',
   crossReferences = [],
-  enableAutoDetect = true
+  enableAutoDetect = true,
+  sectionContents = {}
 }) => {
   // Process content to mark wiki-links
   const processedContent = useMemo(() => {
@@ -307,6 +317,7 @@ export const WikiLinkMarkdown = ({
                 target={segment.target}
                 relationship={segment.relationship}
                 onNavigate={onNavigate}
+                sectionContents={sectionContents}
               >
                 {segment.text}
               </WikiLinkComponent>

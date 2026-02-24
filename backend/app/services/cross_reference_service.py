@@ -13,6 +13,7 @@ from litellm import completion
 from ..models import ConsultationFinding, FindingCrossReference
 from .session_settings import get_llm_settings
 from ..utils.llm import apply_model_params, extract_content
+from ..utils.cross_ref_registry import ALL_IDS
 
 logger = logging.getLogger(__name__)
 

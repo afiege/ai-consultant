@@ -272,6 +272,7 @@ class PDFReportGenerator:
                 .filter(
                     ConsultationMessage.session_id == sid,
                     ConsultationMessage.message_type == msg_type,
+                    ConsultationMessage.role != 'system',
                 )
                 .order_by(ConsultationMessage.created_at)
                 .all()

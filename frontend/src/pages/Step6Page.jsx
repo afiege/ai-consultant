@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
@@ -110,6 +110,45 @@ const Step6Page = () => {
       setLoading(false);
     }
   };
+
+  // Build section content map for wiki-link tooltip previews
+  const sectionContents = useMemo(() => {
+    if (!allFindings) return {};
+    const map = {};
+    const sp = allFindings.company_info?.structured_profile;
+    if (sp) {
+      map.company_profile = [sp.industry, sp.core_business, sp.employee_count].filter(Boolean).join(' · ');
+    }
+    const mat = allFindings.maturity;
+    if (mat) {
+      map.maturity_assessment = `${mat.maturity_level} (${mat.overall_score?.toFixed(1)}/6)`;
+    }
+    if (allFindings.crisp_dm?.business_objectives?.text) {
+      map.business_objectives = allFindings.crisp_dm.business_objectives.text;
+    }
+    if (allFindings.crisp_dm?.situation_assessment?.text) {
+      map.situation_assessment = allFindings.crisp_dm.situation_assessment.text;
+    }
+    if (allFindings.crisp_dm?.ai_goals?.text) {
+      map.ai_goals = allFindings.crisp_dm.ai_goals.text;
+    }
+    if (allFindings.crisp_dm?.project_plan?.text) {
+      map.project_plan = allFindings.crisp_dm.project_plan.text;
+    }
+    if (allFindings.business_case?.classification?.text) {
+      map.business_case = allFindings.business_case.classification.text;
+    }
+    if (allFindings.costs?.tco?.text) {
+      map.cost_tco = allFindings.costs.tco.text;
+    }
+    if (allFindings.analysis?.swot_analysis?.text) {
+      map.swot_analysis = allFindings.analysis.swot_analysis.text;
+    }
+    if (allFindings.analysis?.technical_briefing?.text) {
+      map.technical_briefing = allFindings.analysis.technical_briefing.text;
+    }
+    return map;
+  }, [allFindings]);
 
   const handleNavigate = useCallback((tab, subTarget) => {
     setActiveTab(tab);
@@ -264,11 +303,11 @@ const Step6Page = () => {
       case 'company_profile':
         return <CompanyProfileTab findings={allFindings} session={session} t={t} onNavigate={handleNavigate} />;
       case 'crisp_dm':
-        return <CrispDmTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+        return <CrispDmTab findings={allFindings} t={t} onNavigate={handleNavigate} sectionContents={sectionContents} />;
       case 'business_case':
-        return <BusinessCaseTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+        return <BusinessCaseTab findings={allFindings} t={t} onNavigate={handleNavigate} sectionContents={sectionContents} />;
       case 'costs':
-        return <CostsTab findings={allFindings} t={t} onNavigate={handleNavigate} />;
+        return <CostsTab findings={allFindings} t={t} onNavigate={handleNavigate} sectionContents={sectionContents} />;
       case 'swot':
         return (
           <SwotTab
@@ -278,6 +317,7 @@ const Step6Page = () => {
             onGenerate={handleGenerateSwot}
             loading={swotLoading}
             error={swotError}
+            sectionContents={sectionContents}
           />
         );
       case 'briefing':
@@ -289,6 +329,7 @@ const Step6Page = () => {
             onGenerate={handleGenerateBriefing}
             loading={briefingLoading}
             error={briefingError}
+            sectionContents={sectionContents}
           />
         );
       case 'tic':
@@ -572,7 +613,7 @@ const DimensionScore = ({ label, score }) => (
   </div>
 );
 
-const CrispDmTab = ({ findings, t, onNavigate }) => {
+const CrispDmTab = ({ findings, t, onNavigate, sectionContents }) => {
   const crisp = findings?.crisp_dm;
 
   const sections = [
@@ -598,6 +639,7 @@ const CrispDmTab = ({ findings, t, onNavigate }) => {
             content={section.data.text}
             onNavigate={onNavigate}
             className="text-green-700"
+            sectionContents={sectionContents}
           />
         </div>
       ))}
@@ -605,7 +647,7 @@ const CrispDmTab = ({ findings, t, onNavigate }) => {
   );
 };
 
-const BusinessCaseTab = ({ findings, t, onNavigate }) => {
+const BusinessCaseTab = ({ findings, t, onNavigate, sectionContents }) => {
   const bc = findings?.business_case;
 
   const sections = [
@@ -630,6 +672,7 @@ const BusinessCaseTab = ({ findings, t, onNavigate }) => {
             content={section.data.text}
             onNavigate={onNavigate}
             className="text-orange-700"
+            sectionContents={sectionContents}
           />
         </div>
       ))}
@@ -637,7 +680,7 @@ const BusinessCaseTab = ({ findings, t, onNavigate }) => {
   );
 };
 
-const CostsTab = ({ findings, t, onNavigate }) => {
+const CostsTab = ({ findings, t, onNavigate, sectionContents }) => {
   const costs = findings?.costs;
 
   const sections = [
@@ -666,6 +709,7 @@ const CostsTab = ({ findings, t, onNavigate }) => {
             content={section.data.text}
             onNavigate={onNavigate}
             className="text-red-700"
+            sectionContents={sectionContents}
           />
         </div>
       ))}
@@ -673,7 +717,7 @@ const CostsTab = ({ findings, t, onNavigate }) => {
   );
 };
 
-const SwotTab = ({ findings, t, onNavigate, onGenerate, loading, error }) => {
+const SwotTab = ({ findings, t, onNavigate, onGenerate, loading, error, sectionContents }) => {
   const swot = findings?.analysis?.swot_analysis;
 
   return (
@@ -711,6 +755,7 @@ const SwotTab = ({ findings, t, onNavigate, onGenerate, loading, error }) => {
               content={swot.text}
               onNavigate={onNavigate}
               className="text-amber-800"
+              sectionContents={sectionContents}
             />
           </div>
         </div>
@@ -719,7 +764,7 @@ const SwotTab = ({ findings, t, onNavigate, onGenerate, loading, error }) => {
   );
 };
 
-const BriefingTab = ({ findings, t, onNavigate, onGenerate, loading, error }) => {
+const BriefingTab = ({ findings, t, onNavigate, onGenerate, loading, error, sectionContents }) => {
   const briefing = findings?.analysis?.technical_briefing;
 
   return (
@@ -757,6 +802,7 @@ const BriefingTab = ({ findings, t, onNavigate, onGenerate, loading, error }) =>
               content={briefing.text}
               onNavigate={onNavigate}
               className="text-indigo-800"
+              sectionContents={sectionContents}
             />
           </div>
         </div>

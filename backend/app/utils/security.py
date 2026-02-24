@@ -240,6 +240,7 @@ ALLOWED_API_BASE_PREFIXES = [
     "https://chat-ai.academiccloud.de",   # SAIA / AcademicCloud
     "https://llm.scads.ai",               # ScaDS.AI
     # Commercial LLM providers
+    "https://api.groq.com",               # Groq
     "https://api.mistral.ai",             # Mistral
     "https://dashscope-intl.aliyuncs.com",  # DashScope (Alibaba)
     "https://integrate.api.nvidia.com",   # NVIDIA NIM

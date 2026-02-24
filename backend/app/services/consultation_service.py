@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Generator
 from sqlalchemy.orm import Session
 import logging
 
-from ..utils.llm import LLMCaller, strip_think_tokens, extract_content
+from ..utils.llm import LLMCaller, strip_think_tokens, extract_content, normalize_wiki_links
 from ..utils.security import validate_and_sanitize_message
 
 logger = logging.getLogger(__name__)
@@ -568,7 +568,7 @@ class ConsultationService:
             self._extract_section(summary, "COMPANY PROFILE") or
             self._extract_section(summary, "UNTERNEHMENSPROFIL")
         )
-        self._save_finding(db_session.id, "company_profile", company_profile)
+        self._save_finding(db_session.id, "company_profile", normalize_wiki_links(company_profile) if company_profile else company_profile)
 
         # Try new format first, fall back to old format for compatibility
         business_obj = (
@@ -576,7 +576,7 @@ class ConsultationService:
             self._extract_section(summary, "GESCHÄFTSZIELE") or
             self._extract_section(summary, "PROJECT RECOMMENDATION")
         )
-        self._save_finding(db_session.id, "business_objectives", business_obj)
+        self._save_finding(db_session.id, "business_objectives", normalize_wiki_links(business_obj) if business_obj else business_obj)
 
         situation = (
             self._extract_section(summary, "SITUATION ASSESSMENT") or
@@ -588,7 +588,7 @@ class ConsultationService:
             self._extract_section(summary, "IST-ANALYSE") or
             self._extract_section(summary, "AUSGANGSSITUATION")
         )
-        self._save_finding(db_session.id, "situation_assessment", situation)
+        self._save_finding(db_session.id, "situation_assessment", normalize_wiki_links(situation) if situation else situation)
 
         ai_goals = (
             self._extract_section(summary, "AI/DATA MINING GOALS") or
@@ -599,7 +599,7 @@ class ConsultationService:
             self._extract_section(summary, "AI GOALS") or
             self._extract_section(summary, "BUSINESS CASE")
         )
-        self._save_finding(db_session.id, "ai_goals", ai_goals)
+        self._save_finding(db_session.id, "ai_goals", normalize_wiki_links(ai_goals) if ai_goals else ai_goals)
 
         project_plan = (
             self._extract_section(summary, "PROJECT PLAN") or
@@ -610,7 +610,7 @@ class ConsultationService:
             self._extract_section(summary, "PILOTPLAN") or
             self._extract_section(summary, "PROJEKTSCHRITTE")
         )
-        self._save_finding(db_session.id, "project_plan", project_plan)
+        self._save_finding(db_session.id, "project_plan", normalize_wiki_links(project_plan) if project_plan else project_plan)
 
         open_risks = (
             self._extract_section(summary, "OPEN RISKS / BLOCKERS") or
@@ -618,7 +618,7 @@ class ConsultationService:
             self._extract_section(summary, "OFFENE RISIKEN / BLOCKER") or
             self._extract_section(summary, "OFFENE RISIKEN")
         )
-        self._save_finding(db_session.id, "open_risks", open_risks)
+        self._save_finding(db_session.id, "open_risks", normalize_wiki_links(open_risks) if open_risks else open_risks)
 
         if not any([company_profile, business_obj, situation, ai_goals, project_plan]):
             logger.warning(

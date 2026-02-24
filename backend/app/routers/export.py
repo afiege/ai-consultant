@@ -1,10 +1,12 @@
 """Export router for generating PDF reports and transition briefings."""
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import Optional
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from pydantic import BaseModel
 from litellm import completion
 from ..utils.llm import apply_model_params, extract_content
@@ -20,6 +22,7 @@ from ..config import settings
 from ..utils.security import validate_api_base
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 class AutoUpdateRequest(BaseModel):
@@ -191,9 +194,11 @@ def get_export_data(
 
 
 @router.post("/{session_uuid}/transition-briefing/generate")
+@limiter.limit("10/minute")
 def generate_transition_briefing(
+    request: Request,
     session_uuid: str,
-    request: TransitionBriefingRequest,
+    body: TransitionBriefingRequest,
     db: Session = Depends(get_db),
     x_api_key: Optional[str] = Header(None)
 ):
@@ -218,10 +223,10 @@ def generate_transition_briefing(
     session_model, session_api_base = get_llm_settings(db_session)
     temps = get_temperature_config(db_session)
 
-    # Use request overrides if provided, otherwise use session settings
-    api_key = x_api_key or request.api_key
-    model = request.model or session_model
-    api_base = request.api_base or session_api_base
+    # Use body overrides if provided, otherwise use session settings
+    api_key = x_api_key or body.api_key
+    model = body.model or session_model
+    api_base = body.api_base or session_api_base
 
     # Validate api_base against allowlist to prevent SSRF
     try:
@@ -233,7 +238,7 @@ def generate_transition_briefing(
     context = _build_transition_context(db, db_session)
 
     # Get the prompt template - use session language setting if available
-    language = request.language or db_session.prompt_language or "en"
+    language = body.language or db_session.prompt_language or "en"
     prompt_template = get_prompt("transition_briefing_system", language)
 
     # Fill in the template
@@ -416,9 +421,11 @@ def _save_finding(db: Session, session_id: int, factor_type: str, text: str):
 
 
 @router.post("/{session_uuid}/swot-analysis/generate")
+@limiter.limit("10/minute")
 def generate_swot_analysis(
+    request: Request,
     session_uuid: str,
-    request: TransitionBriefingRequest,
+    body: TransitionBriefingRequest,
     db: Session = Depends(get_db),
     x_api_key: Optional[str] = Header(None)
 ):
@@ -443,10 +450,10 @@ def generate_swot_analysis(
     session_model, session_api_base = get_llm_settings(db_session)
     temps = get_temperature_config(db_session)
 
-    # Use request overrides if provided, otherwise use session settings
-    api_key = x_api_key or request.api_key
-    model = request.model or session_model
-    api_base = request.api_base or session_api_base
+    # Use body overrides if provided, otherwise use session settings
+    api_key = x_api_key or body.api_key
+    model = body.model or session_model
+    api_base = body.api_base or session_api_base
 
     # Validate api_base against allowlist to prevent SSRF
     try:
@@ -458,7 +465,7 @@ def generate_swot_analysis(
     context = _build_transition_context(db, db_session)
 
     # Get the prompt template - use session language setting if available
-    language = request.language or db_session.prompt_language or "en"
+    language = body.language or db_session.prompt_language or "en"
     prompt_template = get_prompt("swot_analysis_system", language)
 
     # Fill in the template
@@ -649,9 +656,11 @@ def _trigger_analysis_update_sync(
 
 
 @router.post("/{session_uuid}/analysis/auto-update")
+@limiter.limit("10/minute")
 def auto_update_analysis(
+    request: Request,
     session_uuid: str,
-    request: AutoUpdateRequest,
+    body: AutoUpdateRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     x_api_key: Optional[str] = Header(None)
@@ -674,10 +683,10 @@ def auto_update_analysis(
     # Get LLM settings
     session_model, session_api_base = get_llm_settings(db_session)
 
-    api_key = x_api_key or request.api_key
+    api_key = x_api_key or body.api_key
     model = session_model
-    api_base = request.api_base or session_api_base
-    language = request.language or db_session.prompt_language or "en"
+    api_base = body.api_base or session_api_base
+    language = body.language or db_session.prompt_language or "en"
 
     # Schedule background task
     background_tasks.add_task(
@@ -705,9 +714,11 @@ class CrossReferenceRequest(BaseModel):
 
 
 @router.post("/{session_uuid}/cross-references/extract")
+@limiter.limit("10/minute")
 def extract_cross_references(
+    request: Request,
     session_uuid: str,
-    request: CrossReferenceRequest,
+    body: CrossReferenceRequest,
     db: Session = Depends(get_db),
     x_api_key: Optional[str] = Header(None)
 ):
@@ -732,10 +743,10 @@ def extract_cross_references(
     # Get LLM settings
     session_model, session_api_base = get_llm_settings(db_session)
 
-    api_key = x_api_key or request.api_key
+    api_key = x_api_key or body.api_key
     model = session_model
-    api_base = request.api_base or session_api_base
-    language = request.language or db_session.prompt_language or "en"
+    api_base = body.api_base or session_api_base
+    language = body.language or db_session.prompt_language or "en"
 
     try:
         total_refs = extract_all_cross_references(

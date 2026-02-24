@@ -19,17 +19,34 @@ from litellm.exceptions import (
 )
 
 from .security import SafeLogFilter, redact_api_key
+from .cross_ref_registry import ALL_IDS
 
 logger = logging.getLogger(__name__)
 # Install safe logging filter to prevent API keys from appearing in logs
 logger.addFilter(SafeLogFilter())
 
 _THINK_TAG_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+_WIKI_RE = re.compile(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]')
 
 
 def strip_think_tokens(text: str) -> str:
     """Remove <think>…</think> blocks that some models emit despite thinking being disabled."""
     return _THINK_TAG_RE.sub("", text).strip()
+
+
+def normalize_wiki_links(text: str) -> str:
+    """Normalize wiki-link IDs: fix case, underscores, and camelCase variations."""
+    def _fix(m):
+        raw_id = m.group(1)
+        display = m.group(2) or raw_id
+        # camelCase → snake_case (must happen before lowercasing)
+        normalized = re.sub(r'([a-z])([A-Z])', r'\1_\2', raw_id.strip())
+        # lowercase, replace spaces/dashes with underscore
+        normalized = normalized.lower().replace(" ", "_").replace("-", "_")
+        if normalized in ALL_IDS:
+            return f'[[{normalized}|{display}]]'
+        return m.group(0)  # leave unknown IDs unchanged
+    return _WIKI_RE.sub(_fix, text)
 
 
 def extract_content(response) -> str:

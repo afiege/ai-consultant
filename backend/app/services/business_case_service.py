@@ -3,7 +3,7 @@
 from typing import List, Optional, Dict, Generator
 from sqlalchemy.orm import Session
 
-from ..utils.llm import LLMCaller, strip_think_tokens, extract_content
+from ..utils.llm import LLMCaller, strip_think_tokens, extract_content, normalize_wiki_links
 from ..utils.security import validate_and_sanitize_message
 
 from ..models import (
@@ -526,7 +526,7 @@ class BusinessCaseService:
                 header_lines,
                 summary[:800] if summary else "(empty)"
             )
-        self._save_finding(db_session.id, "business_case_classification", classification)
+        self._save_finding(db_session.id, "business_case_classification", normalize_wiki_links(classification) if classification else classification)
 
         calculation = (
             self._extract_section(summary, "BACK-OF-THE-ENVELOPE CALCULATION") or
@@ -556,13 +556,13 @@ class BusinessCaseService:
                 header_lines,
                 summary[:800] if summary else "(empty)"
             )
-        self._save_finding(db_session.id, "business_case_calculation", calculation)
+        self._save_finding(db_session.id, "business_case_calculation", normalize_wiki_links(calculation) if calculation else calculation)
 
         validation = (
             self._extract_section(summary, "VALIDATION QUESTIONS") or
             self._extract_section(summary, "VALIDIERUNGSFRAGEN")
         )
-        self._save_finding(db_session.id, "business_case_validation", validation)
+        self._save_finding(db_session.id, "business_case_validation", normalize_wiki_links(validation) if validation else validation)
 
         pitch = (
             self._extract_section(summary, "MANAGEMENT PITCH") or
@@ -576,25 +576,25 @@ class BusinessCaseService:
             self._extract_section(summary, "STRATEGIC PITCH") or
             self._extract_section(summary, "C-LEVEL PITCH")
         )
-        self._save_finding(db_session.id, "business_case_pitch", pitch)
+        self._save_finding(db_session.id, "business_case_pitch", normalize_wiki_links(pitch) if pitch else pitch)
 
         assumptions = (
             self._extract_section(summary, "KEY ASSUMPTIONS") or
             self._extract_section(summary, "WICHTIGE ANNAHMEN")
         )
-        self._save_finding(db_session.id, "business_case_assumptions", assumptions)
+        self._save_finding(db_session.id, "business_case_assumptions", normalize_wiki_links(assumptions) if assumptions else assumptions)
 
         viability = (
             self._extract_section(summary, "VIABILITY ASSESSMENT") or
             self._extract_section(summary, "WIRTSCHAFTLICHKEITSBEWERTUNG")
         )
-        self._save_finding(db_session.id, "business_case_viability", viability)
+        self._save_finding(db_session.id, "business_case_viability", normalize_wiki_links(viability) if viability else viability)
 
         complexity_indicator = (
             self._extract_section(summary, "COMPLEXITY INDICATOR") or
             self._extract_section(summary, "KOMPLEXITÄTSINDIKATOR")
         )
-        self._save_finding(db_session.id, "business_case_complexity_indicator", complexity_indicator)
+        self._save_finding(db_session.id, "business_case_complexity_indicator", normalize_wiki_links(complexity_indicator) if complexity_indicator else complexity_indicator)
 
         if not any([classification, calculation, validation, pitch]):
             logger.warning(

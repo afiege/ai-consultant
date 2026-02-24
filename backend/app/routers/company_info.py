@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 import uuid
 import os
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..database import get_db
 from ..models import Session as SessionModel, CompanyInfo
@@ -31,6 +33,7 @@ class ProfileExtractionRequest(BaseModel):
     api_base: Optional[str] = None
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/{session_uuid}/company-info/text", response_model=CompanyInfoResponse)
@@ -140,7 +143,9 @@ async def upload_company_file(
 
 
 @router.post("/{session_uuid}/company-info/crawl", response_model=CompanyInfoResponse)
+@limiter.limit("10/minute")
 def crawl_company_website(
+    request: Request,
     session_uuid: str,
     data: CompanyInfoWebCrawlCreate,
     db: Session = Depends(get_db)
@@ -249,9 +254,11 @@ def delete_company_info(
 
 
 @router.post("/{session_uuid}/company-profile/extract", response_model=CompanyProfileResponse)
+@limiter.limit("10/minute")
 def extract_profile(
+    request: Request,
     session_uuid: str,
-    request: ProfileExtractionRequest,
+    body: ProfileExtractionRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -275,9 +282,9 @@ def extract_profile(
             detail=f"Session with UUID {session_uuid} not found"
         )
 
-    # Get model settings from session or request
-    model = request.model or db_session.llm_model or "mistral/mistral-small-latest"
-    api_base = request.api_base or db_session.llm_api_base
+    # Get model settings from session or body
+    model = body.model or db_session.llm_model or "mistral/mistral-small-latest"
+    api_base = body.api_base or db_session.llm_api_base
     language = db_session.prompt_language or "en"
 
     try:
@@ -285,7 +292,7 @@ def extract_profile(
             db=db,
             session_uuid=session_uuid,
             model=model,
-            api_key=request.api_key,
+            api_key=body.api_key,
             api_base=api_base,
             language=language
         )

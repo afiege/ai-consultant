@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Generator, Tuple
 from sqlalchemy.orm import Session
 import logging
 
-from ..utils.llm import LLMCaller, strip_think_tokens, extract_content
+from ..utils.llm import LLMCaller, strip_think_tokens, extract_content, normalize_wiki_links
 from ..utils.security import validate_and_sanitize_message
 
 logger = logging.getLogger(__name__)
@@ -529,25 +529,25 @@ class CostEstimationService:
                 header_lines,
                 summary[:800] if summary else "(empty)"
             )
-        self._save_finding(db_session.id, "cost_complexity", complexity)
+        self._save_finding(db_session.id, "cost_complexity", normalize_wiki_links(complexity) if complexity else complexity)
 
         initial = (
             self._extract_section(summary, "INITIAL INVESTMENT") or
             self._extract_section(summary, "ERSTINVESTITION")
         )
-        self._save_finding(db_session.id, "cost_initial", initial)
+        self._save_finding(db_session.id, "cost_initial", normalize_wiki_links(initial) if initial else initial)
 
         recurring = (
             self._extract_section(summary, "RECURRING COSTS") or
             self._extract_section(summary, "LAUFENDE KOSTEN")
         )
-        self._save_finding(db_session.id, "cost_recurring", recurring)
+        self._save_finding(db_session.id, "cost_recurring", normalize_wiki_links(recurring) if recurring else recurring)
 
         maintenance = (
             self._extract_section(summary, "MAINTENANCE") or
             self._extract_section(summary, "WARTUNG")
         )
-        self._save_finding(db_session.id, "cost_maintenance", maintenance)
+        self._save_finding(db_session.id, "cost_maintenance", normalize_wiki_links(maintenance) if maintenance else maintenance)
 
         tco = (
             self._extract_section(summary, "3-YEAR TOTAL COST OF OWNERSHIP") or
@@ -558,25 +558,25 @@ class CostEstimationService:
             self._extract_section(summary, "GESAMTBETRIEBSKOSTEN") or
             self._extract_section(summary, "TCO")
         )
-        self._save_finding(db_session.id, "cost_tco", tco)
+        self._save_finding(db_session.id, "cost_tco", normalize_wiki_links(tco) if tco else tco)
 
         drivers = (
             self._extract_section(summary, "COST DRIVERS") or
             self._extract_section(summary, "KOSTENTREIBER")
         )
-        self._save_finding(db_session.id, "cost_drivers", drivers)
+        self._save_finding(db_session.id, "cost_drivers", normalize_wiki_links(drivers) if drivers else drivers)
 
         optimization = (
             self._extract_section(summary, "COST OPTIMIZATION OPTIONS") or
             self._extract_section(summary, "KOSTENOPTIMIERUNGSOPTIONEN")
         )
-        self._save_finding(db_session.id, "cost_optimization", optimization)
+        self._save_finding(db_session.id, "cost_optimization", normalize_wiki_links(optimization) if optimization else optimization)
 
         roi = (
             self._extract_section(summary, "INVESTMENT VS. RETURN") or
             self._extract_section(summary, "INVESTITION VS. RENDITE")
         )
-        self._save_finding(db_session.id, "cost_roi", roi)
+        self._save_finding(db_session.id, "cost_roi", normalize_wiki_links(roi) if roi else roi)
 
         if not any([complexity, initial, recurring, tco, roi]):
             logger.warning(

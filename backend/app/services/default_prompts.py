@@ -1,5 +1,6 @@
 """Default prompts for AI services in English and German."""
 
+import re as _re
 from typing import Optional, Dict
 
 DEFAULT_PROMPTS = {
@@ -2678,6 +2679,45 @@ def get_prompt(
 def get_all_defaults() -> Dict[str, Dict[str, str]]:
     """Get all default prompts for both languages."""
     return DEFAULT_PROMPTS
+
+
+def _inject_cross_refs() -> None:
+    """Replace hardcoded cross-reference blocks with registry-generated ones.
+
+    This ensures each extraction prompt only lists sections that exist at the
+    time it runs, eliminating broken links to not-yet-generated sections.
+    """
+    from ..utils.cross_ref_registry import build_cross_ref_block
+
+    # Pattern matches the entire cross-ref block including the trailing blank line
+    block_re = _re.compile(
+        r'\n## (?:CROSS-REFERENCE LINKS|QUERVERWEISE)\n.*?\n\n',
+        _re.DOTALL
+    )
+
+    replacements = [
+        ("en", "extraction_summary",        "consultation"),
+        ("en", "business_case_extraction",  "business_case"),
+        ("en", "cost_estimation_extraction", "cost_estimation"),
+        ("en", "transition_briefing_system", "technical_briefing"),
+        ("en", "swot_analysis_system",      "swot"),
+        ("de", "extraction_summary",        "consultation"),
+        ("de", "business_case_extraction",  "business_case"),
+        ("de", "cost_estimation_extraction", "cost_estimation"),
+        ("de", "transition_briefing_system", "technical_briefing"),
+        ("de", "swot_analysis_system",      "swot"),
+    ]
+
+    for lang, key, step in replacements:
+        if lang not in DEFAULT_PROMPTS or key not in DEFAULT_PROMPTS[lang]:
+            continue
+        original = DEFAULT_PROMPTS[lang][key]
+        new_block = build_cross_ref_block(lang, step) + "\n"
+        replaced = block_re.sub(new_block, original, count=1)
+        DEFAULT_PROMPTS[lang][key] = replaced
+
+
+_inject_cross_refs()
 
 
 def get_prompt_keys() -> list:

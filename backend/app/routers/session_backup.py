@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 
 from ..database import get_db
+from ..utils.security import validate_api_base
 from ..models import (
     Session as SessionModel,
     CompanyInfo,
@@ -21,6 +22,17 @@ from ..models import (
 )
 
 router = APIRouter()
+
+
+def _validate_restored_api_base(api_base: str | None) -> str | None:
+    """Validate api_base from backup to prevent SSRF. Returns None if invalid."""
+    if not api_base or api_base == '[anonymized]':
+        return None
+    try:
+        validate_api_base(api_base)
+        return api_base
+    except ValueError:
+        return None
 
 
 @router.get("/{session_uuid}/backup")
@@ -209,8 +221,14 @@ async def restore_session_backup(
     Creates a new session with a new UUID but restores all data.
     Returns the new session UUID.
     """
+    MAX_BACKUP_SIZE = 10 * 1024 * 1024  # 10 MB
     try:
-        content = await file.read()
+        content = await file.read(MAX_BACKUP_SIZE + 1)
+        if len(content) > MAX_BACKUP_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Backup file too large (max 10 MB)"
+            )
         backup = json.loads(content.decode('utf-8'))
     except json.JSONDecodeError as e:
         raise HTTPException(
@@ -248,7 +266,7 @@ async def restore_session_backup(
         prompt_language=session_data.get('prompt_language', 'en'),
         custom_prompts=session_data.get('custom_prompts'),
         llm_model=session_data.get('llm_model'),
-        llm_api_base=session_data.get('llm_api_base'),
+        llm_api_base=_validate_restored_api_base(session_data.get('llm_api_base')),
     )
 
     db.add(new_session)

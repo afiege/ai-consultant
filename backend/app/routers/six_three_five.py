@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import uuid
 import asyncio
 import json
 import logging
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,9 @@ from ..services.session_settings import get_llm_settings, get_temperature_config
 from ..schemas import LLMRequest
 from ..config import settings
 
+router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
+
 
 def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, str]], str]:
     """
@@ -38,9 +43,6 @@ def _get_expert_settings(db_session: SessionModel) -> tuple[Optional[Dict[str, s
         Tuple of (custom_prompts dict or None, language code)
     """
     return get_custom_prompts(db_session), get_prompt_language(db_session)
-
-
-router = APIRouter()
 
 
 def generate_ai_ideas_background(
@@ -69,9 +71,11 @@ def generate_ai_ideas_background(
 
 
 @router.post("/{session_uuid}/six-three-five/start")
+@limiter.limit("10/minute")
 def start_six_three_five(
+    request: Request,
     session_uuid: str,
-    request: LLMRequest,
+    body: LLMRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
@@ -87,10 +91,10 @@ def start_six_three_five(
             detail=f"Session {session_uuid} not found"
         )
 
-    # Get LLM settings (model and api_base from session, api_key from request)
+    # Get LLM settings (model and api_base from session, api_key from body)
     model, api_base = get_llm_settings(db_session)
     temps = get_temperature_config(db_session)
-    api_key = request.api_key
+    api_key = body.api_key
 
     # Get expert settings
     custom_prompts, language = _get_expert_settings(db_session)
@@ -346,9 +350,11 @@ def submit_ideas(
 
 
 @router.post("/{session_uuid}/six-three-five/advance-round")
+@limiter.limit("10/minute")
 async def advance_round(
+    request: Request,
     session_uuid: str,
-    request: LLMRequest,
+    body: LLMRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
@@ -366,10 +372,10 @@ async def advance_round(
     if not db_session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
-    # Get LLM settings (model and api_base from session, api_key from request)
+    # Get LLM settings (model and api_base from session, api_key from body)
     model, api_base = get_llm_settings(db_session)
     temps = get_temperature_config(db_session)
-    api_key = request.api_key
+    api_key = body.api_key
 
     # Get all sheets
     sheets = db.query(IdeaSheet).filter(

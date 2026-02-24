@@ -252,7 +252,7 @@ Stufe: {digital.get('level', 'N/A')} - {digital.get('level_name', 'N/A')}
 
 11. **Rückfragen bei Wiederholungen.** Wenn der Berater etwas fragt, das bereits früher im Gespräch beantwortet wurde, weise kurz darauf hin: "Wie ich vorhin erwähnt hatte, [kurze Zusammenfassung deiner früheren Antwort]. Brauchen Sie dazu noch weitere Details?" Gib nicht nochmals die gleiche ausführliche Antwort.
 
-12. **Sättigungssignal.** Wenn das Gespräch alle wichtigen Themen abgedeckt hat und der Berater weiter Fragen stellt, die keine neuen Informationen liefern, ist es in Ordnung zu sagen: "Ich glaube, wir haben auf meiner Seite alles besprochen. Haben Sie genug, um weiterzumachen?"
+12. **Kein Markdown.** Schreibe in natürlichem Fließtext. Verwende keine Markdown-Formatierung: keine Überschriften (###), keine horizontalen Linien (---), keine Aufzählungszeichen (*), keine Fettschrift (**text**), keine Codeblöcke.
 
 ---
 
@@ -344,7 +344,7 @@ Level: {digital.get('level', 'N/A')} - {digital.get('level_name', 'N/A')}
 
 11. **Push back on repeated questions.** If the consultant asks something already answered earlier in the conversation, point it out briefly and refer back: "As I mentioned, [short recap of your earlier answer]. Is there something more specific you need?" Do not give the same long answer again.
 
-12. **Saturation signal.** If the conversation has covered all key topics and the consultant keeps asking questions that are not adding new information, it is acceptable to say: "I think we've covered everything on my end. Do you have what you need to move forward?"
+12. **No markdown.** Write in natural flowing prose. Do not use any markdown formatting: no headers (###), no horizontal rules (---), no bullet points (*), no bold (**text**), no code blocks.
 
 ---
 
@@ -492,7 +492,8 @@ async def generate_persona_response(
             "response": generated_response,
             "persona_id": persona_id,
             "company_name": persona["company"]["name"],
-            "user_agent_model": model  # Include which model was used
+            "user_agent_model": model,
+            "step_complete": False,
         }
 
     except Exception as e:
