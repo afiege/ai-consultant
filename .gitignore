@@ -87,23 +87,22 @@ htmlcov/
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
 
-# Evaluation — track scripts and personas, ignore run outputs
-evaluation/test_runs/
-evaluation/matrix_runs/
-evaluation/results/
+# Evaluation — not tracked in git
+evaluation/
 
 # Docs — not tracked in git
 docs/
+
+# Claude Code settings
+.claude/
 
 # Lock files (LibreOffice)
 .~lock.*
 
 # Thesis / personal documents
 *.odt
-PublicationDraft_InquiryMethodAndTools_V3.pdf
-Aufgabenstellung_DA_Fiege_sign.pdf
 consultation-report-*.pdf
 lib.bib
 Technology Inquiry Canvas Material.pdf
-Technology Inquiry Canvas Material.pptx
+Aufgabenstellung_DA_Fiege_sign.pdf
 REQUIREMENTS.md
