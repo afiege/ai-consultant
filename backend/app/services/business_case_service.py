@@ -544,6 +544,18 @@ class BusinessCaseService:
             self._extract_section(summary, "NUTZEN-KALKULATION") or
             self._extract_section(summary, "BENEFIT ANALYSIS")
         )
+        if not calculation:
+            header_lines = [
+                l.strip() for l in summary.split('\n')
+                if l.strip().startswith('#') or l.strip().startswith('**')
+            ][:20]
+            logger.warning(
+                "Business case CALCULATION section missing for session %s. "
+                "Headers found: %s | First 800 chars: %s",
+                session_uuid,
+                header_lines,
+                summary[:800] if summary else "(empty)"
+            )
         self._save_finding(db_session.id, "business_case_calculation", calculation)
 
         validation = (

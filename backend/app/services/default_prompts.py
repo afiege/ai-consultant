@@ -1168,6 +1168,8 @@ Formulate specific questions that must be answered in the Technical Understandin
 
 **Blockers** – Technical, organizational, or infrastructural hurdles that must be addressed.
 
+**MANDATORY:** Review the full conversation and explicitly list EVERY risk or challenge that was mentioned or implied — including data labeling effort, model accuracy / false positive risk, variant complexity, change management, integration effort, and data quality gaps. Do NOT omit a challenge simply because it was only briefly mentioned. If a risk was raised by the client but not resolved, it must appear here as a Blocker or Open Risk.
+
 ### 4. HYPOTHESES FOR TECHNICAL IMPLEMENTATION
 
 Based on the maturity level and the conversations: Which solution approaches appear realistic? Formulate 2-3 hypotheses that should be validated in the Technical Understanding phase.
@@ -2465,6 +2467,8 @@ Formulieren Sie spezifische Fragen, die in der Technical Understanding Phase bea
 **Enabler** – Vorhandene Ressourcen, Kompetenzen oder Systeme, die den Use Case unterstützen.
 
 **Blocker** – Technische, organisatorische oder infrastrukturelle Hürden, die adressiert werden müssen.
+
+**PFLICHT:** Prüfen Sie das gesamte Gespräch und listen Sie JEDEN genannten oder angedeuteten Risikopunkt explizit auf — darunter Datenetikettierungsaufwand, Modellgenauigkeit / Falsch-Positiv-Risiko, Variantenkomplexität, Change Management, Integrationsaufwand und Datenqualitätslücken. Lassen Sie keine Herausforderung aus, auch wenn sie nur kurz erwähnt wurde. Wenn ein Risiko vom Kunden angesprochen aber nicht aufgelöst wurde, muss es hier als Blocker oder offener Punkt erscheinen.
 
 ### 4. HYPOTHESEN FÜR DIE TECHNISCHE UMSETZUNG
 
