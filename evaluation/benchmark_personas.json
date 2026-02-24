@@ -1,0 +1,1994 @@
+{
+  "version": "1.0",
+  "description": "Benchmark-Personas für LLM-Bewertung in CRISP-DM-Beratung (Schritt 4)",
+  "created": "2025-01-22",
+  "personas": [
+    {
+      "persona_id": "mfg_01_metal_quality",
+      "company": {
+        "name": "Müller Metallbau GmbH",
+        "sub_industry": "Metallverarbeitung / CNC-Bearbeitung",
+        "size_employees": 45,
+        "size_revenue_eur": 8000000,
+        "business_model": "B2B-Werkstatt zur Herstellung von kundenspezifischen Stahl- und Aluminiumkomponenten für Automobil-Tier-2-Zulieferer. Flexible Produktion mit geringen Stückzahlen mit typischen Chargengröße von 50-500 Stück pro Auftrag. Familienunternehmen seit 1985, jetzt in zweiter Generation geleitet.",
+        "products_services": "CNC-bearbeitete Präzisionsteile (Drehen, Fräsen), Schweißbaugruppen, Oberflächenbehandlung (Eloxierung, Pulverbeschichtung über Subunternehmer)",
+        "target_market": "Automobil-Tier-2-Zulieferer in Süddeutschland (70%), Maschinenhersteller (20%), Luft- und Raumfahrt-Prototyping (10%)",
+        "kpis": {
+          "oee": {
+            "value": 62,
+            "unit": "%",
+            "target": 75,
+            "note": "Gesamtanlageneffektivität über 8 CNC-Maschinen"
+          },
+          "scrap_rate": {
+            "value": 4.2,
+            "unit": "%",
+            "target": 2.0,
+            "note": "Nach der Produktion verworfene Teile, Hauptqualitätsproblem"
+          },
+          "on_time_delivery": {
+            "value": 87,
+            "unit": "%",
+            "target": 95,
+            "note": "Lieferleistung für Kunden"
+          },
+          "lead_time_days": {
+            "value": 12,
+            "unit": "Tage",
+            "target": 8,
+            "note": "Durchschnittliche Zeit von Bestellung bis Lieferung"
+          },
+          "first_pass_yield": {
+            "value": 91,
+            "unit": "%",
+            "target": 97,
+            "note": "Teile, die beim ersten Inspektionsgang die Qualitätskontrolle bestehen"
+          },
+          "setup_time_avg_min": {
+            "value": 45,
+            "unit": "min",
+            "target": 25,
+            "note": "Durchschnittliche CNC-Rüstzeit zwischen Aufträgen"
+          },
+          "customer_complaints_monthly": {
+            "value": 3.5,
+            "unit": "count",
+            "target": 1,
+            "note": "Qualitätsbezogene Beschwerden pro Monat"
+          }
+        },
+        "team_structure": "Inhaber-Manager (technischer Hintergrund), 3 Schichtleiter, 8 CNC-Operatoren, 2 Qualitätskontrolleure (Vollzeit manuelle Inspektionen), 25 Produktionsmitarbeiter, 4 Verwaltungs-/Verkaufspersonal",
+        "strategic_goals": "Kundenbeschwerden innerhalb von 12 Monaten um 50% reduzieren, IATF 16949-Zertifizierung innerhalb von 18 Monaten erreichen, um neue Automobilaufträge zu gewinnen, Abhängigkeit von Schlüssel-CNC-Programmierern verringern",
+        "digitalization_maturity": {
+          "level": 2,
+          "level_name": "Konnektivität",
+          "acatech_assessment": {
+            "resources": {
+              "score": 2.0,
+              "q1": 2,
+              "q2": 2,
+              "q3": 2,
+              "q4": 2,
+              "notes": "Grundlegende digitale Fähigkeiten, eigenständige CNC-Maschinen, papiergestützte Nachverfolgung"
+            },
+            "information_systems": {
+              "score": 2.25,
+              "q1": 3,
+              "q2": 2,
+              "q3": 1,
+              "q4": 3,
+              "notes": "SAP für Finanzen, aber Produktion nutzt Excel, keine integrierten Daten"
+            },
+            "culture": {
+              "score": 2.5,
+              "q1": 3,
+              "q2": 2,
+              "q3": 2,
+              "q4": 3,
+              "notes": "Familienunternehmen offen für Veränderungen aber vorsichtig, Wissen ist isoliert"
+            },
+            "organizational_structure": {
+              "score": 2.0,
+              "q1": 2,
+              "q2": 2,
+              "q3": 2,
+              "q4": 2,
+              "notes": "Traditionelle Hierarchie, Entscheidungen dauern lange, begrenzte funktionsübergreifende Arbeit"
+            }
+          },
+          "details": {
+            "erp": "SAP Business One - Finanzen, Bestellungen, Bestandsverwaltung",
+            "mes": "Keine - Produktionsplanung über Excel und Whiteboard",
+            "machine_connectivity": "Eigenständige CNC-Controller (Siemens, Fanuc), kein Datenexport",
+            "quality_system": "Papierchecklisten, manuelle Messdateneingabe in Excel",
+            "cad_cam": "SolidWorks für Design, manuelle G-Code-Programmierung",
+            "data_analytics": "Monatliche Excel-Berichte manuell vom Controller erstellt"
+          }
+        },
+        "current_challenges": [
+          "Manuelle Qualitätsprüfung ist ein Engpass - 2 Vollzeitkräfte als Inspektoren, immer noch Fehler die Kunden erreichen",
+          "Keine Echtzeit-Transparenz bei der Maschinenauslastung - OEE wird monatlich aus Papierlisten berechnet",
+          "Schlüsselpersonenabhängigkeit - nur 2 erfahrene Programmierer wissen, wie komplexe Teile effizient programmiert werden",
+          "Hohe Rüstzeiten verringern die produktive Kapazität bei kleinen Chargengrößen"
+        ]
+      },
+      "focus_idea": {
+        "title": "KI-basierte visuelle Qualitätsprüfung",
+        "description": "Implementierung eines Computervisions-Systems mit Kameras an CNC-Maschinenausgängen zur automatischen Erkennung von Oberflächendefekten (Kratzer, Grate, Werkzeugmarken) und Maßabweichungen, wodurch manuelle Stichprobenkontrollen ersetzt werden und 100% Inline-Inspektionen ermöglicht werden."
+      },
+      "ground_truth": {
+        "value_level": "Prozesseffizienz",
+        "expected_kpi_impact": {
+          "scrap_rate": "Von 4,2% auf ca. 2% reduzieren durch frühere Fehlererkennung",
+          "first_pass_yield": "Von 91% auf ca. 96% erhöhen",
+          "inspection_fte": "Von 2 VZÄ auf 0,5 VZÄ Überwachungsrolle reduzieren",
+          "customer_complaints": "Um 60-70% reduzieren durch weniger fehlgeschlagene Teile"
+        },
+        "key_metrics_to_identify": [
+          "Aktuelle Inspektionszeit pro Teil",
+          "Fehlerentweichungsrate zu Kunden",
+          "Arten und Häufigkeit von Fehlern",
+          "Anzahl der zu inspizierenden Teilvarianten"
+        ],
+        "critical_questions": [
+          "Wie viele verschiedene Teilgeometrien benötigen Inspektionen? (beeinflusst Trainingsdatenbedarf)",
+          "Gibt es historische Fehlerbilddaten oder wird die Erfassung von vorne beginnen?",
+          "Was sind die Beleuchtungs- und Teillagerungsbeschränkungen am Maschinenausgang?",
+          "Was ist die akzeptable Falsch-Positiv-Rate, bevor Operatoren das Vertrauen verlieren?"
+        ],
+        "expected_challenges": [
+          "Trainingsdatenerfassung für Hochmix-Umgebung (viele Teilvarianten)",
+          "Integration in den Produktionsfluss ohne Zykluszeitzuwachs",
+          "ROI-Rechtfertigung angesichts von Chargengrößen - Amortisation über Teilefamilien",
+          "Veränderungsmanagement - Inspektoren wechseln zur Überwachungsrolle"
+        ],
+        "realistic_first_step": "Pilotanlage auf 3-5 Teilefamilien mit dem höchsten Volumen, die 40% der Produktion darstellen, initialer manueller Kameratrigger",
+        "implementation_costs": {
+          "currency": "EUR",
+          "development_and_software": {
+            "description": "CV-Modellentwicklung, Integration mit Produktionssystem, Benutzeroberfläche für Operatoren",
+            "estimate_range": [
+              40000,
+              60000
+            ]
+          },
+          "hardware": {
+            "description": "Kameras, Beleuchtung, Montagehardware für 4 CNC-Maschinen (Pilot deckt ca. 50% der Werkstatt ab)",
+            "estimate_range": [
+              25000,
+              35000
+            ]
+          },
+          "integration_and_infrastructure": {
+            "description": "Netzwerkinfrastruktur, Verkabelung, Edge-Computing-Gerät, Datenprotokollierungssystem",
+            "estimate_range": [
+              15000,
+              25000
+            ]
+          },
+          "training_and_change_management": {
+            "description": "Operatorenschulung zum System, Umschulung des QC-Inspektors zur Überwachungsrolle, Unterstützung bei der Veränderungsverwaltung",
+            "estimate_range": [
+              10000,
+              15000
+            ]
+          },
+          "implementation_consulting": {
+            "description": "Projektmanagement, Systemintegrationssupport, Validierung",
+            "estimate_range": [
+              8000,
+              12000
+            ]
+          },
+          "total_initial_investment": {
+            "estimate_range": [
+              98000,
+              147000
+            ],
+            "recommendation": "Planen Sie €110-130k; typische Projekte neigen zum höheren Ende"
+          },
+          "annual_recurring": {
+            "software_license_and_updates": {
+              "estimate_range": [
+                5000,
+                8000
+              ]
+            },
+            "maintenance_and_support": {
+              "estimate_range": [
+                3000,
+                5000
+              ]
+            },
+            "total_annual": {
+              "estimate_range": [
+                8000,
+                13000
+              ]
+            }
+          }
+        },
+        "realistic_timeline": {
+          "total_project_duration_months": "12-18 Monate vom Projektstart bis zur vollständigen Produktion",
+          "phases": [
+            {
+              "phase": "Entdeckung & Design (Monate 1-2)",
+              "activities": "Bewerten Sie aktuelle Inspektionsprozesse, sammeln Sie Beispielfehlbilder, entwerfen Sie einen CV-Modellansatz, planen Sie die Infrastruktur",
+              "outcomes": [
+                "Pilotbereich abgesteckt",
+                "10-15 Beispielbilder pro Teilefamilie erfasst"
+              ]
+            },
+            {
+              "phase": "Pilotbereitstellung (Monate 3-6)",
+              "activities": "Installieren Sie Kameras/Hardware auf 3-5 Maschinen, sammeln Sie Trainingsdaten (500-1000 Bilder pro Teilefamilie), trainieren Sie ein erstes CV-Modell, Operatorenschulung",
+              "outcomes": [
+                "Modell erreicht 85-90% Genauigkeit bei Pilotfamilien",
+                "Operatoren trainiert und komfortabel",
+                "Initiale Fehlererkennung funktioniert"
+              ]
+            },
+            {
+              "phase": "Pilotvalidierung & Verbesserung (Monate 6-9)",
+              "activities": "Führen Sie Pilot parallel zur manuellen Inspektionen aus, verfeinern Sie das Modell basierend auf Leistung in der Praxis, passen Sie die Falsch-Positiv-Rate an, validieren Sie die Integration",
+              "outcomes": [
+                "Modell auf 90-95% Genauigkeit verfeinert",
+                "Falsch-Positiv-Rate für Operatoren akzeptabel",
+                "Produktionsfluss validiert (keine Zykluszeitzeitwirkung)"
+              ]
+            },
+            {
+              "phase": "Skalierung auf vollständige Flotte (Monate 9-15)",
+              "activities": "Installieren Sie verbleibende Kameras/Hardware auf der gesamten CNC-Flotte, sammeln Sie Daten für zusätzliche Teilefamilien, trainieren Sie das Modell neu, erweitern Sie die Operatorenschulung",
+              "outcomes": [
+                "Alle 4 Maschinen ausgestattet",
+                "Abdeckung auf 8-10 Teilefamilien erweitert, die 70-80% der Produktion darstellen"
+              ]
+            },
+            {
+              "phase": "Übergang zum stabilen Zustand (Monate 15-18)",
+              "activities": "Schließen Sie den Übergang von Inspector zu Aufsicht ab, etablieren Sie einen laufenden Modellwartungsprozess, erfassen Sie gewonnene Erkenntnisse",
+              "outcomes": [
+                "Vollständige operative Übergabe",
+                "0,5 VZÄ Überwachungsmodell etabliert",
+                "Kontinuierlicher Verbesserungsprozess etabliert"
+              ]
+            }
+          ],
+          "when_benefits_appear": {
+            "early_signs_months_3_6": "10-15% Ausschussreduzierung bei Pilotfamilien, Prozessvalidierung",
+            "significant_benefits_months_9_12": "30-50% des Zielnutzens, wenn das Modell reift und 70-80% der Produktion erreicht",
+            "full_benefit_realization_months_18": "95%+ des Zielnutzens; vollständiger Übergang von 2 VZÄ → 0,5 VZÄ abgeschlossen"
+          },
+          "critical_timeline_drivers": [
+            "Geschwindigkeit der Trainingsdatenerfassung (500-1000 Bilder pro Familie benötigen 4-8 Wochen)",
+            "Modellverbesserungsiterationen (3-5 Zyklen typisch, 2-3 Wochen jeweils)",
+            "Operatorakzeptanz und Komfort (normalerweise 2-3 Monate vor vollständigem Vertrauen)"
+          ]
+        },
+        "scaling_plan": {
+          "post_pilot_strategy": "Erweitern Sie von 3-5 Teilefamilien (40% Produktion) auf 8-10 Familien (70-80% Produktion), dann verbleibende Familien",
+          "scaling_phases": [
+            {
+              "phase": "Phase 2: Mittlere Volumen-Familien (Monate 9-12)",
+              "scope": "Zusätzliche 3-5 Teilefamilien, die die nächsten 20-30% des Produktionsvolumens darstellen",
+              "effort": "Moderat - neue Trainingsdatenerfassung (4-6 Wochen), Modellumschulung (1-2 Wochen), minimale Infrastrukturarbeiten"
+            },
+            {
+              "phase": "Phase 3: Schwanzfamilien (Monate 12-18)",
+              "scope": "Verbleibende vielfältige Teilefamilien, die die endgültigen 10-20% der Produktion darstellen",
+              "effort": "Höher - erhebliche Trainingsdatenarbeit für Niedrigvolumen-Varianten, möglicherweise spezialisierte Modelle"
+            },
+            {
+              "phase": "Phase 4: Kontinuierliche Verbesserung (Monat 18+)",
+              "scope": "Laufende Modellverbesserung, Integation von Operatorrückmeldungen, Einführung automatisierter Entscheidungslogik, wo Falsch-Positiv-Raten zu vernachlässigen sind",
+              "effort": "Niedrig - Wartungsmodus mit monatlicher Datenerfassung und vierteljährlichen Modellaktualisierungen"
+            }
+          ],
+          "scaling_success_criteria": [
+            "Genauigkeit über 90% über alle neuen Teilefamilien beibehalten",
+            "Falsch-Positiv-Rate <5% (Operatoren behalten Vertrauen)",
+            "Keine Produktionszykluszeitzeitwirkung über alle Maschinen",
+            "Bereitstellungszeit pro neuer Familie <8 Wochen (Datenerfassung + Training)"
+          ]
+        },
+        "change_management": {
+          "adoption_risks": [
+            "Inspektor-Widerstand: 2 VZÄ Qualitätsinspektoren können das System als Bedrohung für die Jobsicherheit ansehen",
+            "Skepsis der Bediener: CNC-Bediener vertrauen automatisierten Entscheidungen möglicherweise anfangs nicht; Fehlalarme untergraben schnell das Vertrauen",
+            "Workflow-Störung: Die Integration darf keine Zykluszeit hinzufügen, oder Operatoren werden das System umgehen",
+            "Datenqualitätsprobleme: Wenn sich Kameraplatzierung, Beleuchtung oder Positionierung unterscheiden, verschlechtert sich die Modellgenauigkeit"
+          ],
+          "mitigation_strategies": [
+            {
+              "risk": "Bedenken zur Jobsicherheit des Inspektors",
+              "mitigation": "Präsentieren Sie als Rollentwicklung, nicht Elimination. Schulen Sie Inspektoren als QC-Überwachungsmanager, die die Systemleistung überwachen, Anomalien untersuchen und Modellfeedback verfeinern. Bieten Sie Umschulung/Upskilling an, nicht Entlassungen."
+            },
+            {
+              "risk": "Operatorskepsis / Falsch-Positive untergraben Vertrauen",
+              "mitigation": "Führen Sie parallele Inspektionen (manuell + automatisiert) für die ersten 3 Monate durch. Benachrichtigen Sie Operatoren anfangs nur bei hoher Konfidenz-Fehlererkennung (>95% Sicherheit). Reduzieren Sie den Schwellenwert schrittweise, wenn Vertrauen aufgebaut wird. Jede Falsch-Positive sollte eine Modell-Feedback-Schleife auslösen."
+            },
+            {
+              "risk": "Workflow-Integrationsfehler",
+              "mitigation": "Testen Sie die Integration während des Piloten ausgiebig. Wenn der Kameratrigger anfangs manuell ist (nicht automatisch), behalten Operatoren die Kontrolle. Messen Sie die tatsächliche Zykluszeit mit dem System an Ort und Stelle vor vollständiger Bereitstellung."
+            },
+            {
+              "risk": "Die Trainingsdatenerfassung dauert länger als erwartet",
+              "mitigation": "Beginnen Sie mit der Erfassung von Fehlerbildern während der Projektentdeckungsphase (Monate 1-2), nicht warten auf formalen Pilot. Etablieren Sie eine Datenerfassungs-SOP früh mit Operatoren."
+            }
+          ],
+          "stakeholder_engagement_plan": [
+            "Monat 0: Kommunizieren Sie Projektziele und Umfang an alle Mitarbeiter. Beheben Sie Bedenken direkt.",
+            "Monat 1-2: Operatorenschulung zur Datenerfassungs-SOP. QC-Inspektor-Einweisung auf neue Rollenmöglichkeiten.",
+            "Monat 3: Pilot-Kickoff-Treffen mit vollem Team. Rollenklar für jede Person.",
+            "Monate 3-6: Monatliche Statusaktualisierungen. Fordern Sie Operatorrückmeldungen zu Falsch-Positiven an. Dokumentieren Sie gewonnene Erkenntnisse.",
+            "Monat 9: Übergabplanung: Welcher Inspektor wird QC-Überwachungsmanager? Welche Schulung brauchen sie?",
+            "Monat 18: Feier von Meilensteinen. Dokumentieren Sie Erfolgsgeschichten für interne Kommunikation."
+          ],
+          "required_training": [
+            {
+              "audience": "CNC Operators (8 people)",
+              "content": "Systemgrundlagen (was es tut/nicht tut), wie man Warnungen interpretiert, wie man Probleme meldet",
+              "duration": "4 Stunden, wiederholt 3x pro Schicht"
+            },
+            {
+              "audience": "QC Inspectors (2 people)",
+              "content": "Modellinterpretation, Anomalie-Untersuchung, Feedback-Loop-Prozess, Qualitätsüberwachungsrolle",
+              "duration": "16 Stunden (2-3 Tage), laufender Support"
+            },
+            {
+              "audience": "Production Manager & Supervisors (4 people)",
+              "content": "Systemübersicht, KPI-Verfolgung, Integration in die Produktionsplanung, Eskalationsverfahren",
+              "duration": "8 Stunden, vierteljährliche Auffrischung"
+            },
+            {
+              "audience": "Owner/Manager",
+              "content": "Geschäftsmetriken, ROI-Verfolgung, langfristige Vision für Automatisierung in der Werkstatt",
+              "duration": "4 Stunden, monatliche Aktualisierungen"
+            }
+          ]
+        }
+      },
+      "language": "de"
+    },
+    {
+      "persona_id": "mfg_02_plastics_maintenance",
+      "company": {
+        "name": "Kunststofftechnik Berger KG",
+        "sub_industry": "Kunststoff-Spritzgussformerei",
+        "size_employees": 78,
+        "size_revenue_eur": 14000000,
+        "business_model": "Lohnfertiger für technische Kunststoffteile für die Medizingeräte- und Unterhaltungselektronikbranche. Mittelvolumen-Produktion (5.000-50.000 Stück pro Charge). Betrieb 24/7 in 3 Schichten mit 22 Spritzgussmaschinen.",
+        "products_services": "Spritzgegossene technische Teile, Einlegeteile, 2-Komponenten-Spritzguss, Reinraumproduktion (ISO Klasse 8) für Medizinteile",
+        "target_market": "Medizingeräte-OEMs (45%), Unterhaltungselektronikmarken (35%), Automobilinnenausstatter (20%)",
+        "kpis": {
+          "oee": {
+            "value": 58,
+            "unit": "%",
+            "target": 75,
+            "note": "Durch ungeplante Werkzeugfehler beeinträchtigt"
+          },
+          "unplanned_downtime_pct": {
+            "value": 18,
+            "unit": "%",
+            "target": 5,
+            "note": "Hauptursache für OEE-Verlust"
+          },
+          "mold_mtbf_hours": {
+            "value": 850,
+            "unit": "Stunden",
+            "target": 2000,
+            "note": "Mittlere Zeit zwischen Werkzeugausfällen"
+          },
+          "scrap_rate": {
+            "value": 2.8,
+            "unit": "%",
+            "target": 1.5,
+            "note": "Höher nach Werkzeugproblemen"
+          },
+          "on_time_delivery": {
+            "value": 82,
+            "unit": "%",
+            "target": 95,
+            "note": "Verfehlt durch ungeplante Ausfallzeiten"
+          },
+          "energy_cost_per_kg": {
+            "value": 0.42,
+            "unit": "EUR/kg",
+            "target": 0.35,
+            "note": "Hoch aufgrund ineffizienter Anfahrvorgänge"
+          },
+          "mold_repair_cost_annual": {
+            "value": 180000,
+            "unit": "EUR",
+            "target": 100000,
+            "note": "Notfallreparaturen sind teuer"
+          }
+        },
+        "team_structure": "Geschäftsführer (Geschäftsfokus), Produktionsleiter, 4 Schichtleiter, 12 Maschinenführer, 6 Werkzeugsteller, 3 Werkzeugwartungstechniker, 2 Qualitätsingenieure, 8 Verpackung/Logistik, 5 Verwaltung",
+        "strategic_goals": "Reduzieren Sie ungeplante Ausfallzeiten um 70%, um Kapazität für neuen Medizingeräte-Vertrag zu gewinnen, verlängern Sie die Werkzeuglebensdauer um 50%, erreichen Sie ISO 13485-Zertifizierung für Expansion der medizinischen Produktion",
+        "digitalization_maturity": {
+          "level": 3,
+          "level_name": "Sichtbarkeit",
+          "acatech_assessment": {
+            "resources": {
+              "score": 3.0,
+              "q1": 3,
+              "q2": 3,
+              "q3": 3,
+              "q4": 3,
+              "notes": "Verbundene Maschinen mit Sensoren, Operatoren in digitalen Werkzeugen geschult"
+            },
+            "information_systems": {
+              "score": 3.5,
+              "q1": 4,
+              "q2": 3,
+              "q3": 4,
+              "q4": 3,
+              "notes": "ERP+MES integriert, OPC-UA-Konnektivität, Historiendatenbank verfügbar"
+            },
+            "culture": {
+              "score": 3.0,
+              "q1": 3,
+              "q2": 3,
+              "q3": 3,
+              "q4": 3,
+              "notes": "Offen für digitale Lösungen, Wissensaustausch verbessert sich, Führung unterstützend"
+            },
+            "organizational_structure": {
+              "score": 2.75,
+              "q1": 3,
+              "q2": 2,
+              "q3": 3,
+              "q4": 3,
+              "notes": "24/7-Schichten erfordern Koordination, gewisse Agilität in Wartungsentscheidungen"
+            }
+          },
+          "details": {
+            "erp": "proALPHA ERP - vollständige Produktionsplanungsintegration",
+            "mes": "Basis-MES für Verfolgung von Zykluszeiten und Mengen pro Maschine",
+            "machine_connectivity": "OPC-UA-Verbindung zu 15 von 22 Maschinen, Erfassung von Zyklus-Daten",
+            "quality_system": "Digitale SPC-Diagramme, automatische Messdatenprotokollierung",
+            "sensors": "Temperatur- und Drucksensoren an allen Maschinen, Daten protokolliert aber nicht analysiert",
+            "data_analytics": "Historiendatenbank mit 2 Jahren Sensordaten, keine prädiktiven Analysen"
+          }
+        },
+        "current_challenges": [
+          "Ungeplante Werkzeugausfälle verursachen 18% Ausfallzeit - Wartung ist reaktiv, nicht prädiktiv",
+          "Sensordaten (Temperatur, Druck, Zykluszeiten) werden erfasst, aber nicht für Prognosen genutzt",
+          "Werkzeugwartung wird nur nach Schusszahl geplant, nicht nach tatsächlichem Zustand",
+          "Erfahrene Werkzeugtechniker gehen in Rente - Wissenstransfer kritisch"
+        ]
+      },
+      "focus_idea": {
+        "title": "KI-gestützte vorausschauende Werkzeugwartung",
+        "description": "Setzen Sie Maschinenlernmodelle ein, die Spritzgießprozessparameter (Druckkurven, Temperaturprofile, Zykluszeit-Abweichungen) analysieren, um Werkzeugverschleiß und bevorstehende Ausfälle vorherzusagen und zustandsbasierte Wartungsplanung vor Ausfällen zu ermöglichen."
+      },
+      "ground_truth": {
+        "value_level": "Risikominderung",
+        "expected_kpi_impact": {
+          "unplanned_downtime": "Von 18% auf ca. 5% reduzieren",
+          "oee": "Von 58% auf ca. 72% erhöhen",
+          "mold_mtbf": "Von 850h auf ca. 1800h durch rechtzeitige Wartung erweitern",
+          "mold_repair_cost": "Um 40% reduzieren - Präventivwartung vs Notfallreparaturen"
+        },
+        "key_metrics_to_identify": [
+          "Historische Korrelation zwischen Prozessabweichungen und Ausfällen",
+          "Kosten ungeplanter vs geplanter Ausfallzeiten",
+          "Vorlaufzeit für Werkzeugreparatur/Austausch",
+          "Aktuelle Wartungs-Trigger-Kriterien"
+        ],
+        "critical_questions": [
+          "Wie viele Werkzeugausfälle in den letzten 2 Jahren haben Prozessdatenhistorie?",
+          "Was ist der Kostenunterschied zwischen Notfallreparatur und geplanter Wartung?",
+          "Sind Ausfallmodi konsistent oder stark variabel über Werkzeugtypen?",
+          "Welcher Prognose-Horizont ist für die Wartungsplanung erforderlich (Stunden, Tage, Wochen)?"
+        ],
+        "expected_challenges": [
+          "Beschriftung historischer Daten - Zuordnung von Sensordaten zu Ausfallerereignissen",
+          "Verschiedene Werkzeugtypen benötigen möglicherweise unterschiedliche Modelle",
+          "Falsch-Positive verursachen unnötige Wartungsstopps",
+          "Integration mit Wartungsplanungs-Workflows"
+        ],
+        "realistic_first_step": "Beginnen Sie mit 5 wertvollsten Werkzeugen, analysieren Sie historische Sensordaten, um Ausfallvorboten zu identifizieren",
+        "implementation_costs": {
+          "currency": "EUR",
+          "development_and_software": {
+            "description": "ML-Modellentwicklung (Prognosemodell + Konfidenz-Scoring), Integration mit Historiendatenbank, Benachrichtigungssystem",
+            "estimate_range": [
+              35000,
+              50000
+            ]
+          },
+          "infrastructure": {
+            "description": "Datenintegrations-Plattform (Historiendatenbank zu ML-Pipeline), API-Entwicklung für Wartungsplanungssystem-Integration",
+            "estimate_range": [
+              20000,
+              30000
+            ]
+          },
+          "training_and_change_management": {
+            "description": "Wartungstechnikerschulung zur Interpretation von Prognosen, Schichtleiterschulung, Operatorkommunikation",
+            "estimate_range": [
+              8000,
+              12000
+            ]
+          },
+          "implementation_consulting": {
+            "description": "Datenetikettenunterstützung, Modellvalidierung gegen historische Ausfälle, Integrationstests",
+            "estimate_range": [
+              10000,
+              15000
+            ]
+          },
+          "total_initial_investment": {
+            "estimate_range": [
+              73000,
+              107000
+            ],
+            "recommendation": "Planen Sie €85-95k; Datenetiketierung dauert oft länger als erwartet"
+          },
+          "annual_recurring": {
+            "software_licenses_and_hosting": {
+              "estimate_range": [
+                6000,
+                10000
+              ]
+            },
+            "model_maintenance_and_updates": {
+              "estimate_range": [
+                4000,
+                8000
+              ]
+            },
+            "total_annual": {
+              "estimate_range": [
+                10000,
+                18000
+              ]
+            }
+          }
+        },
+        "realistic_timeline": {
+          "total_project_duration_months": "10-14 Monate vom Start bis zu messbarem Nutzen",
+          "phases": [
+            {
+              "phase": "Datenvorbereitung & Etikettierung (Monate 1-3)",
+              "activities": "Extrahieren Sie 2 Jahre Historiendaten, identifizieren Sie vergangene Werkzeugausfälle, ordnen Sie Sensordaten Ausfallerereignissen zu, erstellen Sie Trainingsdataset",
+              "outcomes": [
+                "50-100 beschriftete Ausfallerereignisse",
+                "Datenqualität bewertet",
+                "Datenbereinigung abgeschlossen"
+              ]
+            },
+            {
+              "phase": "Modellentwicklung & Validierung (Monate 3-6)",
+              "activities": "Erstellen Sie Prognosemodelle, validieren Sie gegen historische Daten, identifizieren Sie optimalen Prognosehorizont (Stunden/Tage voraus)",
+              "outcomes": [
+                "Modellgenauigkeit 80-85% bei historischen Daten",
+                "Falsch-Positiv-Rate <10%",
+                "Produktionsbereitstellungsansatz abgesteckt"
+              ]
+            },
+            {
+              "phase": "Pilot mit 5 Werkzeugen (Monate 6-10)",
+              "activities": "Setzen Sie auf 5 wertvollste Werkzeuge ein, führen Sie im Überwachungsmodus aus (noch nicht Wartung auslösen), sammeln Sie Echtzeit-Validierungsdaten",
+              "outcomes": [
+                "Genauigkeit in der Praxis bestätigt (wahrscheinlich 70-80%, da Bedingungen vom Training abweichen)",
+                "Wartungsteam gewinnt Vertrauen",
+                "Optimale Benachrichtigungsschwellen bestimmt"
+              ]
+            },
+            {
+              "phase": "Operative Integration (Monate 10-12)",
+              "activities": "Verbindung mit Wartungsplanungssystem, Einrichtung von Benachrichtigungs-Workflows, Schulung von Technikern, Aktivierung von Benachrichtigungen für Wartungsmaßnahmen",
+              "outcomes": [
+                "Erste 3-4 Aktionen vorausschauender Wartung erfolgreich durchgeführt",
+                "Team vertraut dem Prozess"
+              ]
+            },
+            {
+              "phase": "Skalierung auf vollständige Flotte (Monate 12-14)",
+              "activities": "Setzen Sie auf verbleibende hochwertige Werkzeuge ein (7-10 zusätzlich), sammeln Sie Daten zur Modellverbesserung",
+              "outcomes": [
+                "Messbare Reduzierung ungeplanter Ausfallzeiten (Ziel: 18%→10% sichtbar)",
+                "ROI wird offensichtlich"
+              ]
+            }
+          ],
+          "when_benefits_appear": {
+            "early_signs_months_6_9": "Fähigkeit, Werkzeugverschleiß 1-3 Tage im Voraus für Pilot-Werkzeuge vorherzusagen; null Produktionsauswirkung",
+            "significant_benefits_months_10_12": "Erste verhinderte Ausfälle (vermiedene Notfallreparaturen), 5-10% Reduzierung ungeplanter Ausfallzeiten sichtbar",
+            "full_benefit_realization_months_18_24": "18%→5-7% ungeplante Ausfallzeit in vollständiger Flotte; 40% Kostenreduzierung bei Werkzeugreparaturen"
+          },
+          "critical_timeline_drivers": [
+            "Genauigkeit des Datenetikettierens (Zuordnung von Ausfällen zu Sensordaten), typischerweise Engpass",
+            "Modellvalidierung gegen reale Bedingungen; Trainingsdaten entsprechen oft nicht perfekt der Produktion",
+            "Annahme durch Wartungsteam und Vertrauen; Wartungsentscheidungen erfordern Vertrauen in ML-Prognosen"
+          ]
+        },
+        "scaling_plan": {
+          "post_pilot_strategy": "Erweitern Sie von 5 kritischen Werkzeugen zu vollständiger Werkzeugflotte (geschätztes 15-20 hochwertige Werkzeuge), dann archivieren Sie weniger kritische Werkzeuge",
+          "scaling_phases": [
+            {
+              "phase": "Phase 2: Hochwertige Werkzeuge (Monate 10-14)",
+              "scope": "Setzen Sie auf nächste 7-10 kostspieligste Werkzeuge ein, die 60-70% der Reparaturkosten darstellen",
+              "effort": "Niedrig-moderat; nutzen Sie trainierte Modelle aus Phase 1, minimale neue Datenerfassung"
+            },
+            {
+              "phase": "Phase 3: Vollständige Flottenabdeckung (Monate 14-18)",
+              "scope": "Erweitern auf verbleibende Werkzeuge; benötigen möglicherweise werkzeugtyp-spezifische Modelle für spezialisierte Ausrüstung",
+              "effort": "Moderat; Datenerfassung für Werkzeugtypen nicht im Pilot"
+            },
+            {
+              "phase": "Phase 4: Optimierung & KI-Verbesserung (Monat 18+)",
+              "scope": "Einführung zusätzlicher Sensorsignale falls verfügbar, saisonale Mustererkennung, prädiktive Teilbestellung",
+              "effort": "Niedrig-laufend; kontinuierlicher Verbesserungsmodus"
+            }
+          ],
+          "scaling_success_criteria": [
+            "Falsch-Positiv-Rate beibehalten <8% (Wartungsteam behält Vertrauen)",
+            "Prognosehorizont erreichbar innerhalb Wartungsplanungszyklus (typischerweise 3-7 Tage)",
+            "Erfolgsquote der ersten Wartung >85% (Prognosen führen zu tatsächlich verhinderten Ausfällen)",
+            "Kosten pro eingesetztem Modell <€5k (amortisiert über 5-Jahr-Lebensdauer)"
+          ]
+        },
+        "change_management": {
+          "adoption_risks": [
+            "Skepsis von Wartungstechnikern: Erfahrene Techniker vertrauen möglicherweise nicht auf KI-Prognosen vs ihre manuelle Expertise",
+            "Falsch-Positive: Unnötige Wartungsstopps unterbrechen 24/7-Betrieb und schädigen Teamvertrauen",
+            "Integrationskomplexität: Benachrichtigungen müssen Wartungsplanungssystem-Änderungen auslösen; noch vorhandene manuelle Prozesse erzeugen Konflikte",
+            "Fähigkeitslücken: Wartungsteam hat unzureichende ML-Kenntnisse; Interpretation von Konfidenzwerten und Handeln nach differenzierten Prognosen ist schwierig"
+          ],
+          "mitigation_strategies": [
+            {
+              "risk": "Skepsis von Technikern bei KI vs Erfahrung",
+              "mitigation": "Positionieren Sie KI als 'zweite Meinung', die Expertise erweitert, nicht ersetzt. Im Pilot validieren Techniker jede Prognose vor der Aktion. Verfolgen Sie die Erfolgsquote von Prognosen, um Glaubwürdigkeit aufzubauen. Dokumentieren Sie Fälle, wo KI Verschleißverlauf früher erkannt hat als Menschen."
+            },
+            {
+              "risk": "Falsch-Positive schädigen das Vertrauen im 24/7-Betrieb",
+              "mitigation": "Führen Sie für die ersten 4-6 Wochen nur im Überwachungsmodus aus. Triggern Sie Wartung nur für hochkonfidente Prognosen (>90%). Passen Sie die Schwellen wöchentlich basierend auf Validierungsdaten an. Falsch-Positive sollten analysiert werden, um das Modell zu verbessern, nicht abzutun."
+            },
+            {
+              "risk": "Integration mit Wartungsplanungssystem ist schwerfällig",
+              "mitigation": "Investieren Sie in enge Integration während der Entwicklungsphase (nicht nachträglich). Benachrichtigungen müssen Wartungsarbeitsaufträge automatisch ausfüllen. Schichtleiter sollten Prognosen auf ihrem morgendlichen Dashboard sehen. System darf keine zusätzlichen manuellen Schritte erzeugen."
+            },
+            {
+              "risk": "Wartungsteam hat unzureichende ML-Kenntnisse",
+              "mitigation": "Schulung sollte sich auf 'was man tun soll, wenn man eine Benachrichtigung erhält' konzentrieren, nicht 'wie das Modell funktioniert.' Bieten Sie Entscheidungsbaum: Falls Konfidenz >90%, Wartung einplanen. Falls <70%, ignorieren. Falls 70-90%, 24h warten und neu bewerten. Halten Sie es einfach."
+            }
+          ],
+          "stakeholder_engagement_plan": [
+            "Monat 0: Erklären Sie den geschäftlichen Fall (€180k jährliche Notfallreparaturen könnten mit vorausschauender Wartung auf €110k sinken). Zeigen Sie Daten.",
+            "Monat 2: Teilnahme des Wartungsteams an der Datenetiketierung. Aufbau von Ownership bei der Datensatzqualität.",
+            "Monat 5: Techniker-Schulung zum Lesen von Prognosen und Entscheidungslogik. Praktisches Arbeiten mit Modellausgaben.",
+            "Monat 6: Pilot-Kickoff-Treffen. Klare Rollen: Techniker validieren Prognosen, Schichtleiter koordinieren Planung, Ingenieure überwachen Modellleistung.",
+            "Monate 6-10: Wöchentliche Metrik-Überprüfungen. Feiern Sie erste erfolgreiche Prognosen (verhinderte Ausfälle). Verfolgen Sie Falsch-Positiv-Rate.",
+            "Monat 12: Übergang zum operativen Modus. Techniker treffen nun unabhängige Wartungsentscheidungen auf Basis von KI-Benachrichtigungen.",
+            "Monat 18: ROI-Verifizierung und Feier. Zeigen Sie tatsächliche Ausfallzeitreduzierung und Kosteneinsparungen."
+          ],
+          "required_training": [
+            {
+              "audience": "Wartungstechniker (3 Personen)",
+              "content": "Interpretation von ML-Konfidenzwerten, Entscheidungslogik für Benachrichtigungen, wie Wartungsmaßnahmen für Modell-Feedback protokolliert werden, Eskalationsverfahren",
+              "duration": "8 Stunden (1 Tag), vierteljährliche Auffrischung"
+            },
+            {
+              "audience": "Schichtleiter (4 Personen)",
+              "content": "Überwachung von Benachrichtigungen im Dashboard, Wartungsplanung als Reaktion auf Benachrichtigungen, Koordination mit Technikern",
+              "duration": "4 Stunden, kurze monatliche Auffrischung"
+            },
+            {
+              "audience": "Maschinenführer (12 Personen)",
+              "content": "Nicht-technisch; nur Bewusstsein, dass vorausschauende Wartung stattfindet, wie man ungewöhnliche Geräusche/Drücke meldet",
+              "duration": "1 Stunde Einweisung"
+            },
+            {
+              "audience": "Produktions- und Engineering-Management",
+              "content": "Geschäftsmetriken (Ausfallzeitreduzierung, Kosteneinsparungen), Modellleistungsüberwachung, kontinuierlicher Verbesserungsprozess",
+              "duration": "4 Stunden initial, monatliche 30-Minuten-Synchronisation"
+            }
+          ]
+        }
+      },
+      "language": "de"
+    },
+    {
+      "persona_id": "mfg_03_electronics_testing",
+      "company": {
+        "name": "ElektronikWerk Sachsen GmbH",
+        "sub_industry": "Elektronikbestückung / Leiterplattenherstellung",
+        "size_employees": 120,
+        "size_revenue_eur": 22000000,
+        "business_model": "EMS (Electronics Manufacturing Services) Anbieter spezialisiert auf mittelkomplexe Leiterplattenmontage für Industrieautomations- und IoT-Gerätehersteller. Vollservice von Prototyping bis Serienproduktion (100-10.000 Einheiten).",
+        "products_services": "SMT-Bestückung, Durchsteckmontage, Schutzlackierung, Funktionsprüfung, Komplettgerätmontage",
+        "target_market": "Industrieautomations-OEMs (50%), IoT-Gerätestartups (30%), Automobil-Elektronik-Tier-1-Zulieferer (20%)",
+        "kpis": {
+          "first_pass_yield": {
+            "value": 94.2,
+            "unit": "%",
+            "target": 98,
+            "note": "Nach Funktionsprüfung"
+          },
+          "test_coverage": {
+            "value": 78,
+            "unit": "%",
+            "target": 95,
+            "note": "Prozentsatz der durch Test erkannten Fehlermodi"
+          },
+          "test_time_per_board_min": {
+            "value": 4.5,
+            "unit": "min",
+            "target": 2.5,
+            "note": "Dauer des Funktionstests"
+          },
+          "field_return_rate_ppm": {
+            "value": 1200,
+            "unit": "ppm",
+            "target": 500,
+            "note": "Kundenrücksendungen innerhalb der Garantiezeit"
+          },
+          "npi_time_weeks": {
+            "value": 6,
+            "unit": "Wochen",
+            "target": 3,
+            "note": "Zeit für Neuprodukteinführung"
+          },
+          "test_development_hours": {
+            "value": 80,
+            "unit": "Stunden",
+            "target": 40,
+            "note": "Stunden zur Testentwicklung für ein neues Produkt"
+          },
+          "aoi_false_call_rate": {
+            "value": 8,
+            "unit": "%",
+            "target": 2,
+            "note": "AOI-Falsch-Positive, die manuelle Überprüfung erfordern"
+          }
+        },
+        "team_structure": "Geschäftsführer, Betriebsleiter, 3 Produktionslinienleiter, 15 SMT-Operatoren, 8 Testingenieure, 6 Testtechniker, 4 NPI-Ingenieure, 5 Qualitätsteam, 12 Handmontage, 10 Verwaltung/Vertrieb",
+        "strategic_goals": "Feldausfallquote um 60% reduzieren, um Automobilqualitätsanforderungen zu erfüllen, NPI-Zeit halbieren, um mehr IoT-Startup-Geschäft zu gewinnen, Test-Engineering-Engpass reduzieren",
+        "digitalization_maturity": {
+          "level": 4,
+          "level_name": "Transparenz",
+          "acatech_assessment": {
+            "resources": {
+              "score": 4.0,
+              "q1": 4,
+              "q2": 4,
+              "q3": 4,
+              "q4": 4,
+              "notes": "Fachkundige Testingenieure, vollständig verbundene SMT-Linien, digitale Werkzeuge überall"
+            },
+            "information_systems": {
+              "score": 4.25,
+              "q1": 5,
+              "q2": 4,
+              "q3": 4,
+              "q4": 4,
+              "notes": "Vollständige ERP+MES-Integration, Rückverfolgbarkeit, Power BI-Dashboards"
+            },
+            "culture": {
+              "score": 4.0,
+              "q1": 4,
+              "q2": 4,
+              "q3": 4,
+              "q4": 4,
+              "notes": "Datengesteuerte Kultur, kontinuierliche Verbesserungsmentalität, offen für KI-Akzeptanz"
+            },
+            "organizational_structure": {
+              "score": 3.75,
+              "q1": 4,
+              "q2": 4,
+              "q3": 3,
+              "q4": 4,
+              "notes": "Agile NPI-Prozesse, datengestützte Entscheidungen, einige funktionale Silos bleiben"
+            }
+          },
+          "details": {
+            "erp": "SAP Business ByDesign",
+            "mes": "Aegis FactoryLogix - vollständige Rückverfolgbarkeit, SPC, Rezeptverwaltung",
+            "machine_connectivity": "Alle SMT-Linien verbunden, AOI-Daten integriert",
+            "quality_system": "Vollständig digital - 8D-Berichte, FMEA-Datenbank, Fehler-Pareto-Dashboards",
+            "test_systems": "LabVIEW-basierte Funktionsprüfer, Ergebnisse in zentraler Datenbank",
+            "data_analytics": "Power BI-Dashboards, grundlegende statistische Analyse, noch keine ML/KI"
+          }
+        },
+        "current_challenges": [
+          "Test-Abdeckungslücken - Feldausfälle zeigen Fehlermodi, die bei Fabrik-Tests nicht erfasst werden",
+          "Test-Entwicklung ist Engpass für NPI - jedes neue Produkt benötigt benutzerdefinierte Test-Sequenz",
+          "AOI Falsch-Alarm-Rate zu hoch - Operatoren verbringen Zeit mit Überprüfung von Falsch-Positiven",
+          "Testingenieure analysieren manuell Feldausfälle, um Test-Abdeckung zu verbessern - langsame Feedback-Schleife"
+        ]
+      },
+      "focus_idea": {
+        "title": "KI-gestützte Testoptimierung und Abdeckungsanalyse",
+        "description": "Nutzen Sie maschinelles Lernen, um Korrelation zwischen Fabrik-Testergebnissen, AOI-Daten und Feldausfällen zu analysieren, Abdeckungslücken zu identifizieren, optimale Test-Sequenzen vorzuschlagen und Test-Cases für neue Produkte auf Basis ähnlicher historischer Designs automatisch zu generieren."
+      },
+      "ground_truth": {
+        "value_level": "Risikominderung + Projektbeschleunigung",
+        "expected_kpi_impact": {
+          "test_coverage": "Von 78% auf ca. 92% erhöhen",
+          "field_return_rate": "Von 1200 ppm auf ca. 600 ppm reduzieren",
+          "test_development_hours": "Von 80h auf ca. 45h für ähnliche Produkte reduzieren",
+          "npi_time": "Von 6 Wochen auf ca. 4 Wochen reduzieren"
+        },
+        "key_metrics_to_identify": [
+          "Korrelation zwischen spezifischen Test-Schritten und Feldausfallmodi",
+          "Gemeinsamkeitsanalyse über Produktfamilien hinweg für Test-Wiederverwendung",
+          "Grundursachen-Verteilung von Feldausfällen",
+          "Test-Schritt-Beitrag zur Gesamttest-Zeit"
+        ],
+        "critical_questions": [
+          "Wie gut können Feldausfälle auf bestimmte Produktionschargen und Test-Daten zurückverfolgt werden?",
+          "Welcher Prozentsatz von Produkten hat ähnliche Test-Anforderungen?",
+          "Gibt es eine Taxonomie/Klassifizierung von Test-Typen und Ausfallmodi?",
+          "Wie werden Test-Sequenzen derzeit gestaltet - formale FMEA oder Engineering-Urteil?"
+        ],
+        "expected_challenges": [
+          "Datenqualität - Verknüpfung von Feldausfällen mit Fabrik-Daten über Systeme hinweg",
+          "Test-Engineer-Akzeptanz - KI ergänzt eher als ersetzt Expertise",
+          "Validierung von KI-vorgeschlagenen Test-Cases vor Produktionsnutzung",
+          "Umgang mit Produktvielfalt - generisches Modell vs produktspezifisch"
+        ],
+        "realistic_first_step": "Analysieren Sie die Top 10 Produkte nach Feldausfallquote, korrelieren Sie Test-Daten mit Ausfallmodi, um Abdeckungslücken zu identifizieren",
+        "implementation_costs": {
+          "currency": "EUR",
+          "data_integration_and_engineering": {
+            "description": "ETL-Pipeline, die ERP, MES, AOI, Test-Systeme und Feldausfalls-Datenbank verbindet; Datenqualitätsbewertung und Behebung",
+            "estimate_range": [
+              45000,
+              65000
+            ]
+          },
+          "ml_model_development": {
+            "description": "Korrelations-Analyse-Modelle, Test-Sequenz-Empfehlungsmaschine, Ausfallmodus-Prognose",
+            "estimate_range": [
+              35000,
+              50000
+            ]
+          },
+          "test_case_validation_framework": {
+            "description": "Automatische Test-Case-Generierung, Validierungsprotokolle, Integration mit Test-Engineering-Workflows",
+            "estimate_range": [
+              25000,
+              35000
+            ]
+          },
+          "training_and_change_management": {
+            "description": "Test-Engineer-Schulung zu KI-Empfehlungen, Validierungsprotokolle, Workflow-Integration; NPI-Team-Einweisung",
+            "estimate_range": [
+              12000,
+              18000
+            ]
+          },
+          "implementation_and_integration": {
+            "description": "Systemintegration, API-Entwicklung, Validierungstests in Produktionsumgebung",
+            "estimate_range": [
+              15000,
+              25000
+            ]
+          },
+          "total_initial_investment": {
+            "estimate_range": [
+              132000,
+              193000
+            ],
+            "recommendation": "Planen Sie €155-170k; Datenintegration ist typischerweise die größte variable Kostenstelle"
+          },
+          "annual_recurring": {
+            "software_and_licenses": {
+              "estimate_range": [
+                8000,
+                12000
+              ]
+            },
+            "data_maintenance_and_updates": {
+              "estimate_range": [
+                5000,
+                10000
+              ]
+            },
+            "total_annual": {
+              "estimate_range": [
+                13000,
+                22000
+              ]
+            }
+          }
+        },
+        "realistic_timeline": {
+          "total_project_duration_months": "14-20 Monate vom Start bis zu messbarem Nutzen",
+          "phases": [
+            {
+              "phase": "Datenintegration & Qualitätsbewertung (Monate 1-4)",
+              "activities": "Verbinden Sie alle Datenquellen, bewerten Sie Datenqualität über Systeme, identifizieren Sie Lücken in der Feldausfalls-Rückverfolgbarkeit, erstellen Sie einheitliches Dataset für 2+ Jahre Produkte",
+              "outcomes": [
+                "Daten-Pipeline betriebsfähig",
+                "Feldausfälle zu 90%+ der Test-Daten zurückverfolgt",
+                "Datenqualitäts-Baseline etabliert"
+              ]
+            },
+            {
+              "phase": "Analyse & Korrelations-Entdeckung (Monate 4-8)",
+              "activities": "Analysieren Sie Korrelation zwischen Test-Schritten und Feldausfällen für Top 10 Produkte, identifizieren Sie Abdeckungslücken, entwickeln Sie Taxonomie von Test-Typen und Ausfallmodi",
+              "outcomes": [
+                "Abdeckungslücken identifiziert (typischerweise 15-25% von Feldausfällen nicht von aktuellen Tests erfasst)",
+                "Produktfamilien-Gemeinsamkeitsanalyse abgeschlossen"
+              ]
+            },
+            {
+              "phase": "Pilot-Modellentwicklung & Validierung (Monate 8-12)",
+              "activities": "Erstellen Sie Empfehlungsmaschine für Test-Verbesserungen, generieren Sie Test-Case-Vorschläge für 3-5 neue Produkte, validieren Sie Vorschläge mit Test-Ingenieuren",
+              "outcomes": [
+                "Test-Ingenieure genehmigen KI-Vorschläge (gegen Expertise validiert)",
+                "Vertrauen in Empfehlungen: 70-80%",
+                "Validierungsprotokolle etabliert"
+              ]
+            },
+            {
+              "phase": "Begrenzte operative Bereitstellung (Monate 12-16)",
+              "activities": "Setzen Sie für nächste 5-10 neue Produkteinführungen ein, nutzen Sie KI-Vorschläge für Test-Entwicklung, messen Sie Entwicklungszeit und resultierende Test-Abdeckung",
+              "outcomes": [
+                "10-20% Reduzierung in Test-Entwicklungszeit sichtbar",
+                "Feldausfallquote stabilisiert sich/verbessert sich"
+              ]
+            },
+            {
+              "phase": "Vollständige Integration & Optimierung (Monate 16-20)",
+              "activities": "Integrieren Sie in Standard-NPI-Prozess, kontinuierliche Modellverbesserung, erweitern Sie auf vollständiges Produktportfolio",
+              "outcomes": [
+                "Nachhaltige 30-40% Reduzierung in Test-Entwicklungszeit für ähnliche Produkte",
+                "Feldausfallquote um 15-25% verbessert"
+              ]
+            }
+          ],
+          "when_benefits_appear": {
+            "early_signs_months_8_12": "Abdeckungslücken identifiziert; Test-Ingenieure sehen Wert in KI-Analyse; hohes Vertrauen in Empfehlungen",
+            "significant_benefits_months_12_16": "5-10% Reduzierung in NPI-Zeit auf neuen Produkten sichtbar; Test-Entwicklung 25-30% schneller",
+            "full_benefit_realization_months_18_24": "Konsistente 35-45% Test-Entwicklungszeit-Reduzierung; Feldausfallquote auf 600→700-900 ppm verbessert (nicht volle 600 aufgrund anderer Faktoren)"
+          },
+          "critical_timeline_drivers": [
+            "Datenintegrations-Qualität; Rückverfolgung von Feldausfällen zu Test-Daten ist arbeitsintensiv",
+            "Test-Engineer-Akzeptanz; Validierung von KI-Vorschlägen erfordert Fachkompetenz",
+            "Produkt-Start-Pipeline; Vorteile nur sichtbar, wenn neue Produkte durch NPI gehen"
+          ]
+        },
+        "scaling_plan": {
+          "post_pilot_strategy": "Erweitern Sie von Top-10-Produkt-Analyse auf vollständige Portfolio-Abdeckung; entwickeln Sie produktfamilien-spezifische Modelle",
+          "scaling_phases": [
+            {
+              "phase": "Phase 2: Top 20-30 Produkte (Monate 12-16)",
+              "scope": "Setzen Sie Modell auf alle in 2024-2025 eingeführten Produkte ein (20-30 neue Modelle)",
+              "effort": "Niedrig; nutzen Sie vorhandenes Validierungs-Framework, schrittweise Modellverbesserung"
+            },
+            {
+              "phase": "Phase 3: Produktfamilien-Modelle (Monate 16-20)",
+              "scope": "Entwickeln Sie spezialisierte Modelle für Produktfamilien mit unterschiedlichen Test-Anforderungen (IoT, Automobil, Industrie)",
+              "effort": "Moderat; familien-spezifische Trainingsdaten, Validierung für jede Familie"
+            },
+            {
+              "phase": "Phase 4: Kontinuierliche Verbesserung (Monat 20+)",
+              "scope": "Automatische Test-Sequenz-Optimierung basierend auf tatsächlicher Test/Felddata-Feedback-Schleife",
+              "effort": "Niedrig; automatisierte Modell-Updates aus Produktionsdaten"
+            }
+          ],
+          "scaling_success_criteria": [
+            "Test-Engineer-Zufriedenheit >4/5 (KI-Vorschläge als hilfreich wahrgenommen, nicht belastend)",
+            "Validierungs-Akzeptanzrate >80% (Ingenieure akzeptieren KI-Vorschläge ohne große Änderungen)",
+            "NPI-Zyklus-Zeit-Verbesserung 15-20% auf vollständigem Portfolio (nicht nur Ähnlichkeitsfälle)",
+            "Feldausfallquote-Verbesserung nachhaltig >15% über alle Produkte"
+          ]
+        },
+        "change_management": {
+          "adoption_risks": [
+            "Test-Engineer-Widerstand: Ingenieure können KI als Bedrohung für Expertise oder Einführung von ungeprüftem Code in die Produktion ansehen",
+            "Datenqualität verbessert die Korrelationserkennung nicht: Schlechte Rückverfolgbarkeit von Feldausfällen zu Testdaten begrenzt die Modellgenauigkeit",
+            "Validierungslast: Validierung von KI-generierten Test-Cases nimmt Zeit in Anspruch; Ingenieure können es als mehr Arbeit, nicht weniger, sehen",
+            "Falsches Vertrauen: KI schlägt Test-Verbesserungen vor, die richtig scheinen, aber kritische Ausfallmodi verpassen; Entweichungen ins Feld schädigen Glaubwürdigkeit"
+          ],
+          "mitigation_strategies": [
+            {
+              "risk": "Test-Engineer-Widerstand",
+              "mitigation": "Beziehen Sie Test-Ingenieure früh (Monat 4) in die Analysephase ein. Nutzen Sie KI zunächst als 'Analyse-Werkzeug', nicht 'Empfehlungsmaschine'. Ingenieure schlagen Verbesserungen vor; KI validiert sie. Bauen Sie Vertrauen durch Transparenz auf."
+            },
+            {
+              "risk": "Feldausfalls-Rückverfolgbarkeit ist schlecht",
+              "mitigation": "Frühe Datenqualitätsbewertung (Monat 1-4) wird dies identifizieren. Wenn Rückverfolgbarkeit <80%, investieren Sie in Verbesserung der Feldaten-Erfassung vor Versuch der Korrelations-Analyse. Dies ist Voraussetzungsarbeit, keine Projektverzögerung."
+            },
+            {
+              "risk": "Validierungsaufwand hebt Zeiteinsparungen auf",
+              "mitigation": "Implementieren Sie Validierungsautomatisierung wo möglich (Vergleich mit FMEA, Design-Review-Notizen). Beginnen Sie bei KI-Vorschlägen mit hochkonfidenten Empfehlungen (>85%), um manuelle Überprüfung zu minimieren. Senken Sie den Schwellenwert schrittweise, wenn das Vertrauen wächst."
+            },
+            {
+              "risk": "Falsches Vertrauen in KI-Vorschläge",
+              "mitigation": "Pilotvalidierung ist entscheidend (Monat 8-12). Jeder KI-Vorschlag muss bei 1-2 Produktstarts im Feld validiert werden, bevor er standardisiert wird. Verfolgen Sie Feldausfallquoten nach Teststrategie. Konservativer Ansatz: KI schlägt vor, Ingenieure validieren in begrenzter Produktion vor vollständiger Bereitstellung."
+            }
+          ],
+          "stakeholder_engagement_plan": [
+            "Monat 0: NPI-Führungs-Buy-in; Projektziele erklären (schnellere Markteinführung, weniger Feldausfälle)",
+            "Monat 2: Test-Engineer-Briefing zum Datenintegrationsstatus; Feedback zur Datenqualität einholen",
+            "Monat 4: Test-Ingenieure nehmen an der Lückenanalyse teil; gemeinsames Verständnis der Abdeckungslücken aufbauen",
+            "Monat 8: Detaillierte Erklärung des KI-Modells; Ingenieure überprüfen Empfehlungen für 3-5 Produkte",
+            "Monat 10: Schulung zu Validierungsprotokollen; Rollenklarheit (Ingenieure validieren, KI schlägt vor)",
+            "Monat 12: Pilot-Produktstarts; Erfolge feiern, Bedenken ansprechen",
+            "Monat 16: Übergang zum Standardprozess; Workflows in NPI-Dokumentation formalisieren",
+            "Monat 20: Metriken-Review und Feier; NPI-Zeit- und Qualitätsverbesserungen zeigen"
+          ],
+          "required_training": [
+            {
+              "audience": "Test-Ingenieure (8 Personen)",
+              "content": "Verständnis von ML-Modellgrenzen und Konfidenzwerten, Validierungsprotokolle für KI-Vorschläge, Bereitstellung von Feedback-Loop-Daten",
+              "duration": "12 Stunden (2 Tage) initial, vierteljährliche Auffrischungen"
+            },
+            {
+              "audience": "NPI-Ingenieure (4 Personen)",
+              "content": "Integration von KI-Empfehlungen in den Produktentwurfs-Workflow, Zeitplanimplikationen, Kommunikation mit Kunden über Testabdeckung",
+              "duration": "6 Stunden, praktisch mit Pilotprodukten"
+            },
+            {
+              "audience": "Qualitätsingenieure (5 Personen)",
+              "content": "Standards für die Erfassung von Feldausfallsdaten, Anforderungen an die Rückverfolgbarkeit, wie Daten in die Modellverbesserung einfließen",
+              "duration": "4 Stunden initial, laufend"
+            },
+            {
+              "audience": "Operations- / NPI-Führung",
+              "content": "Geschäftsmetriken (NPI-Zeit, Feldausfallverfolgung), Modellleistung, kontinuierlicher Verbesserungsprozess",
+              "duration": "4 Stunden initial, monatliche Updates"
+            }
+          ]
+        }
+      },
+      "language": "de"
+    },
+    {
+      "persona_id": "mfg_04_food_digitalization",
+      "company": {
+        "name": "Bäckerei Konditorei Hofmann e.K.",
+        "sub_industry": "Lebensmittelverarbeitung / Industriebäckerei",
+        "size_employees": 52,
+        "size_revenue_eur": 6500000,
+        "business_model": "Regionale Industriebäckerei, die Brot, Brötchen und Gebäck für 85 Einzelhandelsstandorte (eigene Läden und Partnercafés) sowie Großhandel an 3 Supermarktketten produziert. Produktion läuft 6 Tage/Woche mit Nachtschichten.",
+        "products_services": "Frisches Brot (12 Sorten), Brötchen, Croissants, Kuchen, Saisonspezialitäten. Tägliche Lieferung an alle Standorte bis 6 Uhr morgens.",
+        "target_market": "Eigene Einzelhandelsläden im Umkreis von 50 km (60% Umsatz), Partnercafés und Hotels (25%), regionale Supermarktketten (15%)",
+        "kpis": {
+          "waste_rate": {
+            "value": 12,
+            "unit": "%",
+            "target": 5,
+            "note": "Unverkaufte Produkte zurückgegeben und entsorgt"
+          },
+          "batch_traceability": {
+            "value": 0,
+            "unit": "%",
+            "target": 100,
+            "note": "Zutaten können nicht bis zu Endprodukten zurückverfolgt werden"
+          },
+          "forecast_accuracy": {
+            "value": 65,
+            "unit": "%",
+            "target": 85,
+            "note": "Tägliche Bedarfsprognose vs tatsächliche Verkäufe"
+          },
+          "energy_cost_monthly": {
+            "value": 18000,
+            "unit": "EUR",
+            "target": 14000,
+            "note": "Öfen laufen ineffizient"
+          },
+          "production_planning_hours": {
+            "value": 3,
+            "unit": "Stunden/Tag",
+            "target": 0.5,
+            "note": "Manuelle Planung jeden Abend"
+          },
+          "ingredient_waste_pct": {
+            "value": 8,
+            "unit": "%",
+            "target": 3,
+            "note": "Abgelaufene oder überbestellte Zutaten"
+          },
+          "delivery_accuracy": {
+            "value": 91,
+            "unit": "%",
+            "target": 98,
+            "note": "Korrekte Mengen an Standorte"
+          }
+        },
+        "team_structure": "Inhaber-Manager (Bäckermeister), Ehefrau (Finanzen/Verwaltung), Produktionsleiter, 4 Bäckermeister, 18 Bäckereiarbeiter, 12 Verkaufspersonal in den Läden, 8 Lieferfahrer, 4 Reinigungs-/Hilfspersonal",
+        "strategic_goals": "Lebensmittelverschwendung reduzieren um Nachhaltigkeitsziele zu erfüllen und Margen zu verbessern, EU-Lebensmittelsicherheits-Rückverfolgbarkeits-Compliance vor 2026 erreichen, tägliche Einbindung des Inhabers in die Produktionsplanung reduzieren",
+        "digitalization_maturity": {
+          "level": 1,
+          "level_name": "Computerisierung",
+          "acatech_assessment": {
+            "resources": {
+              "score": 1.25,
+              "q1": 1,
+              "q2": 1,
+              "q3": 1,
+              "q4": 2,
+              "notes": "Grundlegende Computerkenntnisse für Verwaltung, traditionelle Bäckereiausrüstung, Papieraufzeichnung"
+            },
+            "information_systems": {
+              "score": 1.0,
+              "q1": 1,
+              "q2": 1,
+              "q3": 1,
+              "q4": 1,
+              "notes": "Kein ERP, isolierte Kassensysteme, keine Datenintegration"
+            },
+            "culture": {
+              "score": 2.0,
+              "q1": 2,
+              "q2": 2,
+              "q3": 2,
+              "q4": 2,
+              "notes": "Traditionell, aber Inhaber erkennt Veränderungsbedarf, Wissen beim Bäckermeister"
+            },
+            "organizational_structure": {
+              "score": 1.5,
+              "q1": 1,
+              "q2": 2,
+              "q3": 1,
+              "q4": 2,
+              "notes": "Inhaberabhängige Entscheidungen, erfahrungsbasierte Planung, begrenzte Delegation"
+            }
+          },
+          "details": {
+            "erp": "Kein ERP - Buchhaltung bei DATEV über Steuerberater",
+            "pos": "Einfache Kassensysteme in den Läden, keine zentralen Daten",
+            "production_planning": "Handgeschriebene Listen basierend auf Inhabererfahrung",
+            "inventory": "Wöchentliche physische Zählung, Bestellungen per Telefon/Fax",
+            "quality_records": "Papier-HACCP-Protokolle, in Ordnern abgelegt",
+            "recipes": "Notizbuch des Bäckermeisters, einige eingetippte Rezepte"
+          }
+        },
+        "current_challenges": [
+          "Keine Rückverfolgbarkeit - wenn ein Rückruf nötig ist, können betroffene Produkte oder Chargen nicht identifiziert werden",
+          "Bedarfsprognose basiert auf reiner Erfahrung - Inhaber entscheidet nächtliche Produktion aus dem Bauchgefühl",
+          "12% Verschwendungsquote beeinträchtigt Margen - Überproduktion für einige Produkte, Bestandsfehlvorfälle bei anderen",
+          "Inhaber arbeitet 14-Stunden-Tage einschließlich 3 Stunden Produktionsplanung - Nachfolgerisiko"
+        ]
+      },
+      "focus_idea": {
+        "title": "Digitalisierung der Produktionsplanung mit Nachfrageprognose",
+        "description": "Implementierung eines digitalen Produktionsplanungssystems, das Verkaufsdaten von allen Standorten erfasst, historische Muster und externe Faktoren (Wetter, Ereignisse) nutzt, um den täglichen Bedarf pro Produkt und Standort zu prognostizieren, und optimierte Produktionspläne automatisch erstellt."
+      },
+      "ground_truth": {
+        "value_level": "Prozesseffizienz + Budgetsubstitution",
+        "expected_kpi_impact": {
+          "waste_rate": "Von 12% auf ca. 6% im ersten Jahr reduzieren",
+          "forecast_accuracy": "Von 65% auf ca. 80% erhöhen",
+          "production_planning_hours": "Von 3 Stunden auf ca. 30 Minuten reduzieren",
+          "ingredient_waste": "Von 8% auf ca. 4% reduzieren"
+        },
+        "key_metrics_to_identify": [
+          "Aktuell verfügbare Granularität der Verkaufsdaten",
+          "Saisonale und wöchentliche Bedarfsmuster",
+          "Korrelation zwischen Wetter/Ereignissen und Verkäufen",
+          "Implizite Prognoseregeln des Inhabers zum Digitalisieren"
+        ],
+        "critical_questions": [
+          "Können Kassensysteme aufgerüstet werden, um produktbezogene Verkäufe zu erfassen?",
+          "Wie viele historische Verkaufsdaten liegen in irgendeiner Form vor?",
+          "Welche externen Datenquellen sind verfügbar (Wetter, lokale Ereignisse)?",
+          "Ist der Inhaber bereit, Systemempfehlungen zu vertrauen?"
+        ],
+        "expected_challenges": [
+          "Keine digitale Verkaufsdatenbasis vorhanden - zuerst POS-Aufrüstung erforderlich",
+          "Veränderungsmanagement - Inhaber muss Kontrolle abgeben",
+          "Kaltstart-Problem - Prognosemodell mit begrenzter Historie aufbauen",
+          "Integration mit manuellen Produktionsprozessen"
+        ],
+        "realistic_first_step": "Vernetztes Kassensystem in 5 Pilotläden installieren, 3 Monate Verkaufsdaten erfassen, bevor KI-Modellierung beginnt",
+        "implementation_costs": {
+          "currency": "EUR",
+          "pos_system_upgrade": {
+            "description": "NEUE SYSTEME zuerst erforderlich - Vernetzte Kassensysteme für 5 Pilotläden (oder alle 12 Läden bei vollständiger Bereitstellung)",
+            "estimate_range": [
+              18000,
+              30000
+            ],
+            "note": "Dies ist eine VORAUSSETZUNG, muss vor dem Prognosesystem erfolgen. Wird häufig in Kostenschätzungen übersehen."
+          },
+          "data_integration_and_infrastructure": {
+            "description": "Zentrales Data-Warehouse, Verkaufsdatenaggregation, Wetter-/Ereignisdatenintegration, ETL-Pipelines",
+            "estimate_range": [
+              12000,
+              20000
+            ]
+          },
+          "forecasting_model_development": {
+            "description": "Zeitreihenprognosemodelle, Saisonmusteranalyse, standortspezifische Modelle (pro Laden)",
+            "estimate_range": [
+              15000,
+              25000
+            ]
+          },
+          "production_planning_integration": {
+            "description": "Integration in Inhaber-Workflow, Dashboard zur Prognoseansicht, Rezeptskalierungsempfehlungen",
+            "estimate_range": [
+              8000,
+              12000
+            ]
+          },
+          "training_and_change_management": {
+            "description": "Inhaberschulung zum Lesen von Prognosen und wann zu überschreiben, Bäckerschulung zu angepassten Mengen, Mitarbeiterkommunikation",
+            "estimate_range": [
+              6000,
+              10000
+            ]
+          },
+          "total_initial_investment": {
+            "estimate_range": [
+              59000,
+              97000
+            ],
+            "recommendation": "Planen Sie €70-85k; POS-Aufrüstung überschreitet häufig Anfangsschätzungen aufgrund von Installationsarbeiten"
+          },
+          "annual_recurring": {
+            "pos_network_and_support": {
+              "estimate_range": [
+                4000,
+                6000
+              ]
+            },
+            "forecasting_system_hosting_and_updates": {
+              "estimate_range": [
+                3000,
+                5000
+              ]
+            },
+            "total_annual": {
+              "estimate_range": [
+                7000,
+                11000
+              ]
+            }
+          }
+        },
+        "realistic_timeline": {
+          "total_project_duration_months": "12-16 Monate vom Start bis zu messbarem Nutzen",
+          "phases": [
+            {
+              "phase": "Phase 0: Datenbasis (Monate 1-3)",
+              "activities": "Vernetzte Kassensysteme in 5 Pilotläden (oder alle 12) beschaffen und installieren, tägliche Verkaufsdaten nach Produkt und Standort erfassen",
+              "outcomes": [
+                "5+ Läden mit vernetztem Kassensystem",
+                "1 Monat saubere tägliche Verkaufsdaten erfasst"
+              ]
+            },
+            {
+              "phase": "Phase 1: Datenerfassung (Monate 1-6)",
+              "activities": "3-6 Monate kontinuierliche Kassendaten erfassen, Wetter-/Ereignisdaten integrieren, Saisonmuster bewerten, implizite Prognoseregeln des Inhabers dokumentieren",
+              "outcomes": [
+                "6 Monate Verkaufshistorie pro Produkt pro Standort",
+                "Saisonmuster identifiziert (Feiertage, Wettereinflüsse)",
+                "Prognoselogik des Inhabers dokumentiert"
+              ]
+            },
+            {
+              "phase": "Phase 2: Modellentwicklung & Validierung (Monate 6-10)",
+              "activities": "Prognosemodelle entwickeln, gegen verbleibende historische Daten validieren, standortspezifische Modelle trainieren, Genauigkeitserwartungen kalibrieren",
+              "outcomes": [
+                "Prognosegenauigkeit 70-75% auf Validierungsdaten",
+                "Modelle produktionsbereit",
+                "Inhaber über Modellgrenzen informiert"
+              ]
+            },
+            {
+              "phase": "Phase 3: Pilotbereitstellung (Monate 10-12)",
+              "activities": "Prognosesystem bereitstellen, Inhaber tägliche Prognose 1 Woche im Voraus zeigen, mit manueller Inhaber-Prognose vergleichen, basierend auf Feedback verfeinern",
+              "outcomes": [
+                "Inhaber sieht Prognoseempfehlungen",
+                "Prognosegenauigkeit verbessert sich, während Inhaber lernt dem System zu vertrauen",
+                "Produktionsplanungsstunden beginnen zu sinken"
+              ]
+            },
+            {
+              "phase": "Phase 4: Vollständige Integration (Monate 12-16)",
+              "activities": "Vollständige Implementierung in allen Läden, verbleibende Kassendaten integrieren, automatisierte Bestellung etablieren, Abfall-/Effizienzverbesserungen messen",
+              "outcomes": [
+                "Abfallquote sinkend (Ziel: 12%→8% bis Monat 16)",
+                "Produktionsplanung 2-3 Stunden (vs 3 Stunden Ausgangsbasis)",
+                "Zutatenabfall verbessert sich"
+              ]
+            }
+          ],
+          "when_benefits_appear": {
+            "early_signs_months_6_9": "Prognosegenauigkeit >70%, anfängliche 2-3% Abfallreduzierung, Inhaber verbringt weniger Zeit mit abendlicher Planung",
+            "significant_benefits_months_12_15": "Abfallquote 12%→9-10%, Prognosegenauigkeit 75-80%, Produktionsplanung auf 1-1,5 Stunden reduziert",
+            "full_benefit_realization_months_18_24": "Abfallquote 12%→6%, Prognosegenauigkeit 80%+, Produktionsplanung 30 Minuten, Zutatenabfall 8%→4%"
+          },
+          "critical_timeline_drivers": [
+            "Kasseninstallation und Datenerfassung (Monate 1-3 laufen oft slip)",
+            "Kaltstart: Prognosemodelle benötigen 3-6 Monate Daten, um Saisonmuster zu erfassen; Beschleunigung verschlechtert Modelle",
+            "Inhaberakzeptanz: Vertrauen muss schrittweise aufgebaut werden; sofortige Abhängigkeit vom System zu erzwingen schafft Widerstand"
+          ]
+        },
+        "scaling_plan": {
+          "post_pilot_strategy": "Von 5 Pilotläden auf alle 12 Einzelhandelsläden, zentrale Bestellung integrieren, auf Großhandelskanäle ausweiten",
+          "scaling_phases": [
+            {
+              "phase": "Phase 2a: Verbleibende 7 Einzelhandelsläden (Monate 10-14)",
+              "scope": "Kassensystem in verbleibenden Läden installieren, Daten integrieren, standortspezifische Modelle bereit",
+              "effort": "Moderat; Installation ist arbeitsintensiv, Modellierung schnell (Pilotansatz wiederverwenden)"
+            },
+            {
+              "phase": "Phase 2b: Großhandelskanal-Prognose (Monate 14-18)",
+              "scope": "Prognose auf 3 Supermarkt-Großhandelsverträge ausweiten; andere Muster als Einzelhandel",
+              "effort": "Moderat; unterschiedliche Bedarfsmuster, separate Modelle erforderlich"
+            },
+            {
+              "phase": "Phase 3: Automatisierte Bestellung (Monat 18+)",
+              "scope": "Automatische Zutatenbestellung basierend auf Prognose, Lageroptimierung",
+              "effort": "Niedrig-moderat; Integration mit Lieferantensystemen"
+            }
+          ],
+          "scaling_success_criteria": [
+            "Prognosegenauigkeit >75% über alle Standorte beibehalten",
+            "Inhaberkomfort mit System steigt (schrittweise Reduzierung der Überschreibungsfrequenz)",
+            "Abfallquote setzt Trend zum Ziel fort",
+            "Skalierbarkeit auf neue Läden <2 Wochen (Kasseninstallation + Datenerfassung)"
+          ]
+        },
+        "change_management": {
+          "adoption_risks": [
+            "Inhaberwiderstand: 14-Stunden-Tage = Identität des Inhabers; Planungszeit reduzieren kann sich wie Kontrollverlust anfühlen",
+            "Frühe Prognoseungenauigkeit: Kaltstart-Modelle werden falsch liegen; Inhaberskepsis wenn Jahr-1-Genauigkeit nur 65-70%",
+            "Datenqualitätsprobleme: Kassendaten können nicht sauber sein; Verkäufe in Läden inkonsistent erfasst",
+            "System erfordert Vertrauen: Inhaber muss auf Prognosen handeln; wenn er häufig überschreibt, materialisieren sich Vorteile nicht"
+          ],
+          "mitigation_strategies": [
+            {
+              "risk": "Identitäts-/Kontrollprobleme des Inhabers",
+              "mitigation": "Als 'System gibt Ihnen Ihre Abende zurück' framen. Freigewordene Zeit als Möglichkeit für strategische Arbeit positionieren (Menüplanung, neue Produkte, Ladenbesuche). Konkrete Lebensqualitätsverbesserungen zeigen, nicht nur Effizienzwerte."
+            },
+            {
+              "risk": "Prognoseungenauigkeit in Jahr 1 demoralisiert Inhaber",
+              "mitigation": "Realistische Erwartungen setzen (65-75% Genauigkeit Jahr 1, 80%+ bis Jahr 2). Inhaber zeigen, dass anfängliches System 'sich an Ihre Regeln anpasst.' Kleine Verbesserungen früh feiern (2-3% Abfallreduzierung). Mit Ausgangsbasis vergleichen (aktuelle 65% Genauigkeit des Inhabers), nicht mit perfekten Prognosen."
+            },
+            {
+              "risk": "Kassendatenqualität ist schlecht",
+              "mitigation": "Phase 0 (Monate 1-3) konzentriert sich auf Datenerfassung und Qualitätsprüfungen. Wenn Daten unordentlich sind, Quelle beheben (Bedienerschulung, Prozessänderungen) bevor Modellierung versucht wird. Dies verzögert Projekt, stellt aber Modellzuverlässigkeit sicher."
+            },
+            {
+              "risk": "Inhaber überschreibt Prognosen; Vorteile materialisieren sich nicht",
+              "mitigation": "Tägliches Engagement für erste 3 Monate. System zeigt 'hier ist meine Empfehlung, hier ist warum, hier ist was Sie letzte Woche gesagt haben.' Verständnis der Prognoselogik aufbauen. Für ersten Monat sind Inhaberüberschreibungen erwartet (70-80% Überschreibungsrate anfangs normal). Bis Monat 6 sollte auf 20-30% sinken."
+            }
+          ],
+          "stakeholder_engagement_plan": [
+            "Monat 0: Inhabergespräch zum Geschäftsfall; erklären, dass Prognose 90% der Lösung ist, nicht KI selbst",
+            "Monat 1: Kasseninstallation beginnt. Inhaber und Personal werden an neuen Kassensystemen geschult.",
+            "Monat 3: Erstes Daten-Review-Meeting. Inhaber 1 Monat Verkaufsmuster zeigen. Gespräche darüber beginnen, 'warum' Verkäufe variieren.",
+            "Monat 6: Prognosemodell erklärt. Inhaber sieht Vergleich von 'was ich getan hätte' vs 'was System empfiehlt' vs 'was tatsächlich passiert ist'.",
+            "Monat 9: System geht mit Empfehlungen nur live (nicht automatisiert). Inhaber sieht tägliche Prognose 1 Woche voraus.",
+            "Monat 12: Metriken-Review. Abfall sinkend? Planungszeit sinkend? Lebensqualität des Inhabers verbessert? Fortschritt feiern.",
+            "Monat 18: Vollständige Integration. Verbleibende Läden online. Entscheidungspunkt: Bestellung automatisieren oder manuelle Aufsicht beibehalten?"
+          ],
+          "required_training": [
+            {
+              "audience": "Inhaber & Ehefrau (Geschäftsleitung)",
+              "content": "Wie Prognosen gelesen und interpretiert werden, wann System zu überschreiben, Geschäftsmetriken-Verfolgung, kontinuierliche Verbesserung",
+              "duration": "8 Stunden initial (2 halbe Tage), monatliche 1-Stunden-Check-ins"
+            },
+            {
+              "audience": "Bäckermeister (4 Personen)",
+              "content": "Wie Rezepte/Mengen basierend auf Prognoseeingaben angepasst werden, Qualitätserwartungen bei Mengenänderungen",
+              "duration": "4 Stunden praktische Schulung, praktische Anleitung für erste 2 Wochen"
+            },
+            {
+              "audience": "Ladenpersonal (12 Personen)",
+              "content": "Genaue Verkaufsdateneingabe (kritisch!), Bedienung des Kassensystems, Kommunikation bei ungewöhnlichem Bedarf",
+              "duration": "2 Stunden pro Laden (für jede Schicht wiederholt)"
+            },
+            {
+              "audience": "Lieferfahrer",
+              "content": "Bewusstsein für neue prognosebasierte Mengen, Bestätigungsverfahren",
+              "duration": "1 Stunde Einweisung"
+            }
+          ]
+        }
+      },
+      "language": "de"
+    },
+    {
+      "persona_id": "mfg_05_precision_design",
+      "company": {
+        "name": "Feinmechanik Weber GmbH",
+        "sub_industry": "Feinmechanik / Medizingerätekomponenten",
+        "size_employees": 35,
+        "size_revenue_eur": 7500000,
+        "business_model": "Entwicklung und Produktion von hochpräzisen mechanischen Komponenten für Medizingeräte und wissenschaftliche Instrumente. Fokus auf komplexe Geometrien mit engen Toleranzen (±0,01mm). Niedrigvolumen (10-500 Stück), hoher Wert pro Teil.",
+        "products_services": "Präzisionsdrehteile/-frästeile, Mikrozerspanung, Baugruppen für Endoskope, chirurgische Roboter, Laborinstrumente",
+        "target_market": "Medizingeräte-OEMs im DACH-Raum (70%), Hersteller wissenschaftlicher Instrumente (20%), Luft- und Raumfahrt-F&E (10%)",
+        "kpis": {
+          "development_cycle_weeks": {
+            "value": 14,
+            "unit": "Wochen",
+            "target": 8,
+            "note": "Von Kundenvorgabe bis Erstmustergenehmigung"
+          },
+          "design_iterations": {
+            "value": 4.2,
+            "unit": "Durchschnitt",
+            "target": 2,
+            "note": "Überarbeitungsschleifen vor Genehmigung"
+          },
+          "material_cost_ratio": {
+            "value": 35,
+            "unit": "%",
+            "target": 25,
+            "note": "Material als % der Teilkosten - Spielraum für Leichtbau"
+          },
+          "engineering_utilization": {
+            "value": 120,
+            "unit": "%",
+            "target": 85,
+            "note": "Ingenieure überlastet, arbeiten Überstunden"
+          },
+          "quote_win_rate": {
+            "value": 28,
+            "unit": "%",
+            "target": 40,
+            "note": "Verlorene Angebote aufgrund langer Lieferzeiten"
+          },
+          "first_article_approval_rate": {
+            "value": 72,
+            "unit": "%",
+            "target": 90,
+            "note": "Erstmuster bestehen Kundeninspektion"
+          },
+          "cad_time_per_part_hours": {
+            "value": 24,
+            "unit": "Stunden",
+            "target": 12,
+            "note": "Konstruktionszeit des Ingenieurs"
+          }
+        },
+        "team_structure": "Inhaber (Ingenieur-Hintergrund), 5 Konstruktionsingenieure, 3 Applikationsingenieure (Kundenschnittstelle), 2 CNC-Programmierer, 15 Zerspaner, 3 QS-/Messtechnikspezialisten, 4 Verwaltung",
+        "strategic_goals": "Entwicklungsvorlaufzeit reduzieren, um mehr Projekte von schnell agierenden Medtech-Startups zu gewinnen, Engineering-Engpass ohne Neueinstellungen reduzieren (Arbeitsmarkt ist angespannt), Leichtbau für Komponenten chirurgischer Roboter erkunden",
+        "digitalization_maturity": {
+          "level": 2,
+          "level_name": "Konnektivität",
+          "acatech_assessment": {
+            "resources": {
+              "score": 2.75,
+              "q1": 3,
+              "q2": 2,
+              "q3": 2,
+              "q4": 4,
+              "notes": "Erfahrene Ingenieure mit CAD/CAM, Präzisionsausrüstung, aber Wissen nicht erfasst"
+            },
+            "information_systems": {
+              "score": 2.25,
+              "q1": 2,
+              "q2": 2,
+              "q3": 2,
+              "q4": 3,
+              "notes": "ERP und CAD-Werkzeuge, aber nicht integriert, kein PDM, CMM-Daten isoliert"
+            },
+            "culture": {
+              "score": 3.0,
+              "q1": 3,
+              "q2": 2,
+              "q3": 3,
+              "q4": 4,
+              "notes": "Ingenieursgetriebene Kultur, offen für Innovation, angespannter Arbeitsmarkt treibt Dringlichkeit"
+            },
+            "organizational_structure": {
+              "score": 2.5,
+              "q1": 2,
+              "q2": 3,
+              "q3": 3,
+              "q4": 2,
+              "notes": "Kleines Team ermöglicht etwas Agilität, aber Ingenieursüberlast begrenzt Reaktionsfähigkeit"
+            }
+          },
+          "details": {
+            "erp": "Kleines ERP-System (SelectLine)",
+            "cad": "SolidWorks Professional, Simulation über manuelle FEA-Einrichtung",
+            "cam": "Mastercam für CNC-Programmierung",
+            "pdm": "Einfache Dateiserver-Struktur, kein formales PDM-System",
+            "quality": "Digitale CMM-Daten, Zertifikate manuell erstellt",
+            "knowledge_management": "Keines - Konstruktionswissen in den Köpfen der Ingenieure"
+          }
+        },
+        "current_challenges": [
+          "Engineering-Engpass - 5 Ingenieure leisten die Arbeit von 7, Angebotsstau wächst",
+          "Lange Entwicklungszyklen verlieren Aufträge an schnellere Wettbewerber",
+          "Konstruktionsiterationen durch spät entdeckte Fertigbarkeitsprobleme",
+          "Keine systematische Wiederverwendung von Konstruktionswissen - jedes Projekt beginnt von vorne"
+        ]
+      },
+      "focus_idea": {
+        "title": "KI-gestützte generative Gestaltung zur Teiloptimierung",
+        "description": "Implementierung von generativen Designwerkzeugen, die automatisch Designalternativen basierend auf funktionalen Anforderungen und Fertigungsbeschränkungen erkunden, die Ingenieurzeit für Konzepte reduzieren und Topologieoptimierung für Gewichtsreduzierung in chirurgischen Komponenten ermöglichen."
+      },
+      "ground_truth": {
+        "value_level": "Projektbeschleunigung + Strategische Skalierung",
+        "expected_kpi_impact": {
+          "development_cycle": "Von 14 Wochen auf ca. 9 Wochen reduzieren",
+          "design_iterations": "Von 4,2 auf ca. 2,5 Durchschnitt reduzieren",
+          "cad_time_per_part": "Von 24h auf ca. 14h für geeignete Teile reduzieren",
+          "material_cost_ratio": "Um 15-30% für topologieoptimierte Teile reduzieren"
+        },
+        "key_metrics_to_identify": [
+          "Prozentsatz der für generatives Design geeigneten Teile",
+          "Zeitaufteilung im aktuellen Konstruktionsprozess",
+          "Grundursachen der Konstruktionsiterationen",
+          "Kundenwert für Leichtbau"
+        ],
+        "critical_questions": [
+          "Welcher Prozentsatz neuer Konstruktionen sind Varianten vs wirklich neue Geometrien?",
+          "Sind Fertigungsbeschränkungen für generative Werkzeuge gut dokumentiert?",
+          "Haben Ingenieure bei aktueller Überlastung Kapazität, neue Werkzeuge zu erlernen?",
+          "Welche Kunden würden einen Aufpreis für topologieoptimierte Teile zahlen?"
+        ],
+        "expected_challenges": [
+          "Lernkurve für generative Designwerkzeuge",
+          "Integration in bestehenden SolidWorks-Workflow",
+          "Fertigbarkeitsvalidierung generativer Ergebnisse",
+          "Identifizierung geeigneter Projekte für generativen Ansatz"
+        ],
+        "realistic_first_step": "Pilot mit 3 Komponenten chirurgischer Roboter, wo Gewichtsreduzierung klaren Kundenwert hat",
+        "implementation_costs": {
+          "currency": "EUR",
+          "software_licenses": {
+            "description": "Generative Design-Software (Fusion 360 Premium + Simulation, oder Altair Inspire) für 5 Ingenieure, Jahreslizenzen",
+            "estimate_range": [
+              15000,
+              25000
+            ]
+          },
+          "simulation_and_workflow_integration": {
+            "description": "Beschränkungsdokumentation (Fertigung, Montage, Toleranzen), Simulations-Setup-Vorlagen, CAD-Workflow-Anpassung",
+            "estimate_range": [
+              8000,
+              15000
+            ]
+          },
+          "training_and_enablement": {
+            "description": "Software-Schulung (40-60 Stunden pro Ingenieur, externer Schulungsanbieter), Workflow-Coaching, Mentoring",
+            "estimate_range": [
+              12000,
+              20000
+            ]
+          },
+          "implementation_consulting": {
+            "description": "Unterstützung bei der Projektauswahl, Konstruktionsvalidierungsprozesse, Fertigbarkeits-Bewertungsrahmen",
+            "estimate_range": [
+              6000,
+              12000
+            ]
+          },
+          "total_initial_investment": {
+            "estimate_range": [
+              41000,
+              72000
+            ],
+            "recommendation": "Planen Sie €50-60k; Schulung und Adoptionsunterstützung werden häufig unterschätzt"
+          },
+          "annual_recurring": {
+            "software_licenses": {
+              "estimate_range": [
+                12000,
+                20000
+              ]
+            },
+            "annual_training_and_support": {
+              "estimate_range": [
+                4000,
+                8000
+              ]
+            },
+            "total_annual": {
+              "estimate_range": [
+                16000,
+                28000
+              ]
+            }
+          }
+        },
+        "realistic_timeline": {
+          "total_project_duration_months": "12-18 Monate bis messbare Produktivitätsgewinne",
+          "phases": [
+            {
+              "phase": "Phase 1: Software-Einrichtung & Schulung (Monate 1-3)",
+              "activities": "Lizenzen beschaffen, Software installieren und konfigurieren, externe Schulung für 5 Ingenieure (3 Tage pro Ingenieur), CAD-Vorlagen und Beschränkungsbibliotheken einrichten",
+              "outcomes": [
+                "Ingenieure haben Software installiert und Grundkenntnisse",
+                "Beschränkungsbibliothek (Fertigung, Montage) dokumentiert",
+                "Design-Workflow-Anpassung begonnen"
+              ]
+            },
+            {
+              "phase": "Phase 2: Pilotprojektauswahl & Schulung (Monate 3-6)",
+              "activities": "3 geeignete Komponenten chirurgischer Roboter für Pilot identifizieren, intensiveres praktisches Training (Coaching), Designbeschränkungen basierend auf Pilotprojekten verfeinern",
+              "outcomes": [
+                "3 generative Designprojekte abgeschlossen",
+                "Ingenieure haben praktische Erfahrung",
+                "Fertigbarkeitsvalidierungsprozess etabliert"
+              ]
+            },
+            {
+              "phase": "Phase 3: Validierung & Effizienzgewinne (Monate 6-10)",
+              "activities": "Ingenieursgetriebenes generatives Design für 3 Roboterkomponenten, Designs validieren, CAD-Zeit und Iterationsreduzierung messen, Kundenfeedback zu Gewicht/Kosten",
+              "outcomes": [
+                "Erste 3 Komponenten abgeschlossen mit 10-20% Zeit-/Kostenverbesserung",
+                "Team-Vertrauen aufbauend",
+                "Skalierbarkeitseinschätzung"
+              ]
+            },
+            {
+              "phase": "Phase 4: Skalierung & laufende Befähigung (Monate 10-16)",
+              "activities": "Auf 5-10 weitere geeignete Projekte anwenden, Coaching fortsetzen, jüngere Ingenieure mentoren, kontinuierliche Verbesserung etablieren",
+              "outcomes": [
+                "Basis 25-30% CAD-Zeitreduzierung bei geeigneten Projekten sichtbar",
+                "Akzeptanz wird selbsttragend"
+              ]
+            },
+            {
+              "phase": "Phase 5: Strategische Auswirkung (Monate 16-18)",
+              "activities": "Gesamte Entwicklungszyklus-Verbesserungen messen, Angebot-zu-Produktion-Zeitplanänderungen, neue Aufträge durch Fähigkeiten gewinnen",
+              "outcomes": [
+                "Messbare Reduzierung der 14-Wochen-Basis (Ziel: 9-11 Wochen)",
+                "Neue Kundenerfolge den Designfähigkeiten zugeschrieben"
+              ]
+            }
+          ],
+          "when_benefits_appear": {
+            "early_signs_months_3_6": "Ingenieure gewinnen Vertrauen mit Software, erste Designs abgeschlossen; Zeit-/Kosteneinsparungen noch nicht sichtbar (Lernkurve kompensiert)",
+            "significant_benefits_months_9_12": "10-15% CAD-Zeitreduzierung bei geeigneten Projekten, Iterationsanzahl sinkend, 2-3 Designs mit Gewichtsreduzierung abgeschlossen",
+            "full_benefit_realization_months_18_24": "Konsistente 25-35% CAD-Zeitreduzierung bei geeigneten Projekten, 15-30% Materialkostenreduzierung bei optimierten Teilen, Entwicklungszyklusverbesserungen"
+          },
+          "critical_timeline_drivers": [
+            "Ingenieurschulung: Lernkurve ist 6-8 Wochen; Werkzeugkompetenz braucht Zeit angesichts Projektüberlastung",
+            "Projektauswahl: Nicht alle Projekte geeignet (nur ca. 30-40% der Designs profitieren von generativem Ansatz); auf richtige Projekte warten",
+            "Validierungsaufwand: Jede generative Ausgabe benötigt Fertigbarkeitsüberprüfung; diese Validierungszeit kann anfängliche Designzeiteinsparungen aufheben"
+          ],
+          "risk_factors": [
+            "Akzeptanzrisiko: HOCH. Überlastete Ingenieure finden möglicherweise keine Zeit für neue Werkzeuge; Werkzeug bleibt ungenutzt.",
+            "ROI-Amortisation: LANG. Mit nur 2-3 geeigneten Projekten pro Jahr verlängert sich der ROI auf 24-36 Monate.",
+            "Workflow-Integration: Integration in bestehenden SolidWorks-Prozess ist nicht trivial; Werkzeug kann sich anfühlen, als würde es Arbeit hinzufügen."
+          ]
+        },
+        "scaling_plan": {
+          "post_pilot_strategy": "Von 3 Roboterkomponenten auf breiteres Designportfolio; Fokus auf Designs mit Gewichts-/Kostensensitivität",
+          "scaling_phases": [
+            {
+              "phase": "Phase 2: Medizingeräte-Portfolio (Monate 10-14)",
+              "scope": "5-10 weitere medizinische Komponenten mit Gewichts- oder Kostenoptimierungswert identifizieren",
+              "effort": "Moderat; jedes Projekt benötigt Beschränkungsdokumentation und Validierungsprozess, aber Piloterkenntnisse nutzen"
+            },
+            {
+              "phase": "Phase 3: Nicht-medizinische Hochwertige Teile (Monate 14-20)",
+              "scope": "Auf Präzisionsmechanik-Designs ausweiten, wo Gewicht oder Materialkosten Kundenprioritäten sind",
+              "effort": "Moderat; andere Beschränkungen als Medizin (Präzision vs Gewicht)"
+            },
+            {
+              "phase": "Phase 4: Nachwuchs-Ingenieur-Befähigung (Monat 18+)",
+              "scope": "Neuere Ingenieure an generativen Werkzeugen schulen, zu Designdenkenwechsel mentoren",
+              "effort": "Niedrig-laufend; Train-the-Trainer-Ansatz"
+            }
+          ],
+          "scaling_success_criteria": [
+            "Ingenieure nutzen generative Werkzeuge bei 2-3 Projekten pro Quartal (nicht ungenutzt)",
+            "Fertigbarkeitsvalidierungszeit <20% der Designzeit (hebt Gewinne nicht auf)",
+            "Kundenfeedback positiv zu generierten Designs (Vertrauen aufbauend)",
+            "Entwicklungszyklusverbesserungen im gesamten Portfolio sichtbar, nicht nur Pilotprojekte"
+          ]
+        },
+        "change_management": {
+          "adoption_risks": [
+            "Ingenieursüberlast: Bei 120% Auslastung hat das Erlernen neuer Werkzeuge niedrigste Priorität; Schulung setzt sich nicht fest",
+            "Werkzeugskepsis: 'KI-Designs berücksichtigen keine echten Fertigungsbeschränkungen'; Ingenieure bevorzugen manuelle Kontrolle",
+            "Validierungsaufwand: Jedes generierte Design benötigt Fertigbarkeitsüberprüfung durch erfahrenen Ingenieur; dies wird zum Engpass",
+            "Ungeeignete Projektauswahl: Versuchen, Werkzeug bei Projekten einzusetzen, wo es keinen Wert schafft; Frustration und Aufgabe"
+          ],
+          "mitigation_strategies": [
+            {
+              "risk": "Ingenieursüberlast verhindert Akzeptanz",
+              "mitigation": "Projektauswahl ist entscheidend. Wählen Sie 3 Pilotprojekte mit klarem Kundenwert (Gewichtsreduzierung = Vertriebsdifferenzierung). Widmen Sie einen Ingenieur (25% Zeit) als generativen Design-Champion. Entlasten Sie ihn 6 Monate von anderer Arbeit. Erfolg des Champions zieht andere an."
+            },
+            {
+              "risk": "Werkzeugskepsis",
+              "mitigation": "Als 'Explorationswerkzeug, kein Ersatz' framen. Generatives Design schlägt Alternativen vor; Ingenieur beurteilt Fertigbarkeit. Werkzeug dient der Ideenbeschleunigung, nicht dem autonomen Design. 2-3 erfolgreiche Designs zeigen, bevor skaliert wird."
+            },
+            {
+              "risk": "Validierung wird zum Engpass",
+              "mitigation": "Früher Fokus auf Beschränkungsdokumentation (Fertigungsfähigkeiten, Montage, Toleranzen). Gut definierte Beschränkungen reduzieren Validierungsaufwand. Simulationsintegration (Spannungs-, Fertigbarkeits-Checks) validiert Ergebnisse vor."
+            },
+            {
+              "risk": "Falsche Projektauswahl",
+              "mitigation": "Klare Auswahlkriterien VOR Pilot: (a) Gewicht oder Materialkosten sind Kundenprioritäten, (b) Design ist mechanisch (nicht Elektronik oder Software), (c) Fertigungsbeschränkungen gut verstanden. Diese Kriterien verwenden, um Pilot- und Skalierungsprojekte zu identifizieren."
+            }
+          ],
+          "stakeholder_engagement_plan": [
+            "Monat 0: Inhaber-/Führungsausrichtung auf strategisches Ziel (schnelleres Design, leichtere Komponenten, Wettbewerbsvorteil)",
+            "Monat 1: Engineering-Champion identifiziert; dedizierte 25%-Zuweisung besprochen",
+            "Monat 2: Team-Briefing zu Werkzeugfähigkeiten und -grenzen. Erwartungen managen.",
+            "Monat 3: Pilotprojekte starten. Champion führt; andere Ingenieure beobachten.",
+            "Monat 6: Erste erfolgreiche Designs abgeschlossen und validiert. Ergebnisse mit gesamtem Team teilen.",
+            "Monat 9: Auf zweite Gruppe von Ingenieuren ausweiten; Champion mentort Übergänge.",
+            "Monat 12: Werkzeugintegrations-Einschätzung. Wird es genutzt? Schafft es Wert? Entscheidungspunkt: Investition fortsetzen oder schwenken?",
+            "Monat 18: Erfolge feiern. Kundenerfolge den Designfähigkeiten zugeschrieben zeigen."
+          ],
+          "required_training": [
+            {
+              "audience": "Design-Engineering-Champion (1 Person, 5 Ingenieure gesamt)",
+              "content": "Tiefe Schulung zu generativem Designwerkzeug, Beschränkungsdefinition, Designiteration, Fertigbarkeitsvalidierung, Mentoring-Ansatz",
+              "duration": "40 Stunden formale Schulung + 20 Stunden praktisches Coaching über 3 Monate"
+            },
+            {
+              "audience": "Konstruktionsingenieure (4 Personen)",
+              "content": "Werkzeuggrundlagen, wann generativen Ansatz einsetzen, Beschränkungsinterpretation, Validierungsbeteiligung",
+              "duration": "16 Stunden formale Schulung (2 Tage) + praktische Arbeit mit Pilotprojekten"
+            },
+            {
+              "audience": "Applikationsingenieure (3 Personen)",
+              "content": "Verständnis generativer Designergebnisse, Kundenkommunikation über optimierte Designs, Gewichts-/Kosten-Wertversprechen",
+              "duration": "8 Stunden, abgestimmt auf Vertriebs-/Kundengespräche"
+            },
+            {
+              "audience": "Inhaber/Management",
+              "content": "Geschäftsfall-Verfolgung (Projektzeit, Kundenerfolg-Zuschreibung), Akzeptanzmetriken, ROI-Einschätzung",
+              "duration": "4 Stunden initial, vierteljährliche Geschäftsreviews"
+            }
+          ]
+        }
+      },
+      "language": "de"
+    },
+    {
+      "persona_id": "mfg_06_visual_quality",
+      "company": {
+        "name": "CNC-Drehteile Brandt GmbH",
+        "sub_industry": "CNC-Drehen / Kleine Chargen-Werkstatt",
+        "size_employees": 12,
+        "size_revenue_eur": 1800000,
+        "business_model": "Kleinstserien-Fertigung von Präzisionsdrehteilen für lokale Maschinenbauer und Instandhaltungsbetriebe. Typische Losgrößen 5-50 Stück, selten über 100. Hohe Variantenvielfalt mit über 500 verschiedenen Teilegeometrien pro Jahr, sehr geringe Wiederholraten. Inhabergeführter Familienbetrieb in zweiter Generation.",
+        "products_services": "CNC-Drehteile aus Stahl, Edelstahl und Aluminium, Durchmesser 5-80mm, Einzelteile und Kleinserien, Express-Fertigung für Maschinenausfälle",
+        "target_market": "Lokale Maschinenbauer im Umkreis 30km (60%), Instandhaltungsabteilungen regionaler Industriebetriebe (30%), Prototypenfertigung für Startups (10%)",
+        "kpis": {
+          "scrap_rate": {
+            "value": 2.1,
+            "unit": "%",
+            "target": 1.5,
+            "note": "Bereits niedrig durch erfahrene Dreher mit 20+ Jahren Erfahrung"
+          },
+          "oee": {
+            "value": 71,
+            "unit": "%",
+            "target": 75,
+            "note": "Gut für Job-Shop mit häufigen Rüstwechseln"
+          },
+          "on_time_delivery": {
+            "value": 94,
+            "unit": "%",
+            "target": 98,
+            "note": "Hohe Liefertreue ist Wettbewerbsvorteil"
+          },
+          "annual_parts_volume": {
+            "value": 15000,
+            "unit": "parts",
+            "note": "Geringe Gesamtstückzahl"
+          },
+          "avg_part_value": {
+            "value": 45,
+            "unit": "EUR",
+            "note": "Niedrig- bis Mittelwert-Teile"
+          },
+          "unique_parts_per_year": {
+            "value": 520,
+            "unit": "count",
+            "note": "Hohe Variantenvielfalt"
+          },
+          "repeat_order_rate": {
+            "value": 15,
+            "unit": "%",
+            "note": "Nur 15% der Teile werden nachbestellt"
+          },
+          "inspection_time_per_part": {
+            "value": 2.5,
+            "unit": "min",
+            "note": "Manuelle Prüfung mit Messschieber/Mikrometer"
+          },
+          "customer_complaints_annual": {
+            "value": 4,
+            "unit": "count",
+            "note": "Sehr wenige Reklamationen"
+          }
+        },
+        "team_structure": "Inhaber (Meister, 58 Jahre, arbeitet selbst an CNC), Sohn (Techniker, 32 Jahre, übernimmt schrittweise), 6 CNC-Dreher (davon 3 mit 20+ Jahren Erfahrung), 2 Auszubildende, 1 Bürokraft (Teilzeit), 1 Fahrer (Teilzeit)",
+        "strategic_goals": "Betriebsübergabe an Sohn in 5 Jahren vorbereiten, Kundenstamm halten, keine großen Investitionen mehr vor Übergabe, Wissen der erfahrenen Dreher dokumentieren",
+        "digitalization_maturity": {
+          "level": 1,
+          "level_name": "Computerisierung",
+          "acatech_assessment": {
+            "resources": {
+              "score": 1.5,
+              "q1": 2,
+              "q2": 1,
+              "q3": 1,
+              "q4": 2,
+              "notes": "Erfahrene Dreher, aber geringe IT-Affinität, Maschinen standalone"
+            },
+            "information_systems": {
+              "score": 1.0,
+              "q1": 1,
+              "q2": 1,
+              "q3": 1,
+              "q4": 1,
+              "notes": "Kein ERP, Excel für Angebote, Papier-Auftragsmappen"
+            },
+            "culture": {
+              "score": 1.75,
+              "q1": 2,
+              "q2": 2,
+              "q3": 1,
+              "q4": 2,
+              "notes": "Traditionell, 'das haben wir immer so gemacht', aber Sohn offen für Neues"
+            },
+            "organizational_structure": {
+              "score": 1.5,
+              "q1": 2,
+              "q2": 1,
+              "q3": 1,
+              "q4": 2,
+              "notes": "Flache Hierarchie, aber Inhaber entscheidet alles, wenig Delegation"
+            }
+          },
+          "details": {
+            "erp": "Keines - Buchhaltung beim Steuerberater, Angebote in Excel",
+            "cad_cam": "Keine CAD-Software, G-Code wird manuell oder per Zyklen programmiert",
+            "machine_connectivity": "Keine - 4 CNC-Drehmaschinen (Okuma, DMG), alle standalone ohne Datenanbindung",
+            "quality_system": "Manuelle Messung mit Messschieber, Mikrometer, Lehren. Messprotokoll auf Papier",
+            "data_collection": "Keine systematische Datenerfassung, keine historischen Prozessdaten"
+          }
+        },
+        "current_challenges": [
+          "Wissenstransfer von erfahrenen Drehern auf jüngere Mitarbeiter - implizites Wissen nicht dokumentiert",
+          "Fachkräftemangel - schwer, qualifizierte Dreher zu finden",
+          "Preisdruck durch günstigere Online-Fertiger für Standardteile",
+          "Inhaber arbeitet 60h/Woche, Sohn will das nicht übernehmen ohne Änderungen"
+        ]
+      },
+      "focus_idea": {
+        "title": "KI-basierte visuelle Qualitätsprüfung für Drehteile",
+        "description": "Implementierung eines Computer-Vision-Systems mit Kamera an der CNC-Maschine zur automatischen Erkennung von Oberflächenfehlern, Maßabweichungen und Gratbildung nach jedem Fertigungsschritt, um die manuelle Qualitätsprüfung zu ersetzen."
+      },
+      "ground_truth": {
+        "value_level": "Prozesseffizienz",
+        "business_case_negative": true,
+        "expected_outcome": "NEGATIVER ROI - Projekt sollte nicht empfohlen werden",
+        "quantitative_analysis": {
+          "current_state": {
+            "annual_scrap_cost_eur": 5670,
+            "inspection_labor_hours_annual": 625,
+            "inspection_labor_cost_eur": 18750,
+            "customer_complaint_cost_eur": 2000,
+            "total_quality_cost_annual": 26420
+          },
+          "cost_estimation": {
+            "cv_hardware_4_machines": 60000,
+            "software_integration": 25000,
+            "training_data_collection": 35000,
+            "implementation_consulting": 20000,
+            "annual_maintenance_license": 8000,
+            "total_initial_investment": 140000,
+            "total_3_year_cost": 164000
+          },
+          "benefit_estimation": {
+            "scrap_reduction_potential_pct": 30,
+            "scrap_savings_annual": 1700,
+            "inspection_time_reduction_pct": 50,
+            "inspection_savings_annual": 9375,
+            "complaint_reduction_pct": 50,
+            "complaint_savings_annual": 1000,
+            "total_annual_benefit": 12075,
+            "total_3_year_benefit": 36225
+          },
+          "roi_calculation": {
+            "net_present_value_3_year": -127775,
+            "roi_3_year_pct": -78,
+            "payback_period_years": 11.6,
+            "break_even": "Nie innerhalb sinnvoller Abschreibungsdauer"
+          }
+        },
+        "why_negative": [
+          "Zu geringe Stückzahlen (15.000/Jahr) für Amortisation der hohen Fixkosten",
+          "Scrap-Rate bereits niedrig (2.1%) durch erfahrene Mitarbeiter - geringer Verbesserungsspielraum",
+          "520 verschiedene Teilegeometrien pro Jahr erfordern enormen Aufwand für Trainingsdaten",
+          "Nur 15% Wiederholaufträge - jedes Teil ist quasi ein Unikat, CV-Modell müsste ständig neu trainiert werden",
+          "Keine digitale Infrastruktur vorhanden - Grundinvestition in Vernetzung käme noch hinzu",
+          "Erfahrene Dreher erkennen Probleme bereits während der Fertigung, nicht erst bei Endkontrolle",
+          "Inhaberalter 58 Jahre - ROI-Horizont passt nicht zur geplanten Übergabe in 5 Jahren"
+        ],
+        "implementation_costs_analysis": {
+          "note": "Vollständige Kostenaufschlüsselung zeigt, warum ROI negativ ist",
+          "currency": "EUR",
+          "hardware_and_infrastructure": {
+            "description": "Kameras, Beleuchtung, Montage für 4 CNC-Maschinen, Vernetzung, Industrie-PC für Edge-Verarbeitung",
+            "estimate": 60000
+          },
+          "software_and_integration": {
+            "description": "CV-Software, Maschinenintegration, Datenprotokollierung, Alarmsystem",
+            "estimate": 25000
+          },
+          "training_data_collection": {
+            "description": "KRITISCHER ENGPASS: Bilder für 520 Teilgeometrien müssen gesammelt werden. Annahme 100-200 Bilder pro Geometrie = 52.000-104.000 Bilder gesamt. Bei 5 Bildern pro Teil pro Tag manueller Erfassung = 10.400-20.800 Teil-Tage. Annahme Werkstatt macht 60 Teile/Tag = 173-347 Produktionstage für Erfassung. Zeitrahmen: 9-14 Monate. Kosten: €35.000 für Arbeit + Erfassungsinfrastruktur.",
+            "estimate": 35000
+          },
+          "implementation_and_consulting": {
+            "description": "Projektmanagement, Integration, Validierungstests",
+            "estimate": 20000
+          },
+          "total_initial_investment": 140000,
+          "annual_maintenance_and_license": {
+            "description": "Softwarelizenz, Systemwartung, Trainingsdaten-Updates (laufend für neue Teilvarianten)",
+            "estimate": 8000
+          }
+        },
+        "realistic_timeline_and_why_it_fails": {
+          "theoretical_timeline_months": 18,
+          "actual_realistic_timeline_months": "24-30+ (or project stalls)",
+          "phases_and_problems": [
+            {
+              "phase": "Phase 1: Datenerfassung (Monate 1-14)",
+              "planned": "Trainingsbilder für 520 Teilgeometrien erfassen",
+              "problem": "ENGPASS: Mit 15.000 Teilen/Jahr und hoher Varianz erfordert das Erfassen beschrifteter Bilder für jede Geometrie enormen Aufwand. Teamkapazität für manuelle Erfassung sehr begrenzt; Produktion stoppt nicht. Typische Realität: Daten für 100-150 Geometrien (20-30% des Portfolios) bis Monat 14 erfassen, dann erkennen, dass vollständige Abdeckung nicht machbar ist.",
+              "timeline_impact": "Monate 1-14 werden zu Monate 1-20+, wenn Realität einsetzt"
+            },
+            {
+              "phase": "Phase 2: Modellentwicklung (Monate 8-12, bei Datenverfügbarkeit)",
+              "planned": "CV-Modell auf erfassten Daten trainieren, Genauigkeit validieren",
+              "problem": "Mit nur 50-100 Bildern pro Geometrie (Ziel 200+) ist Modell schwach. Genauigkeit bei Pilotgeometrien: 70-80%. Genauigkeit bei ungetesteten Geometrien: unbekannt. Team erkennt, dass Modell nicht auf 520 Varianten verallgemeinern kann.",
+              "timeline_impact": "Entscheidungspunkt: Projekt aufgeben ODER Modelle nur für 'Top 100' Teile aufbauen (20% der Produktion) = begrenzter ROI"
+            },
+            {
+              "phase": "Phase 3: Pilotbereitstellung (Monate 12-18)",
+              "planned": "Auf 3-4 Maschinen einsetzen, in Produktion validieren",
+              "problem": "Hohe Falsch-Positiv-Rate (20-30%) bei produktionsfertigen Teilen. Bediener verlieren schnell das Vertrauen. Jedes Falsch-Positiv stoppt die Produktion zur Untersuchung.",
+              "timeline_impact": "Modellverbesserung: Monate 18-24, da Team erkennt, dass Falsch-Positiv-Schwellenwert extrem hoch sein muss (>95% Konfidenz), um Störungen zu vermeiden"
+            }
+          ],
+          "when_benefits_would_appear_if_project_continued": {
+            "month_12": "Datenerfassung nur 25-30% abgeschlossen; noch kein Modell",
+            "month_18": "Pilotmodell eingesetzt, aber unzuverlässig; Falsch-Positive nerven Bediener",
+            "month_24": "Modell verfeinert; deckt jetzt 100-150 Teiltypen ab (20-30% der Produktion); Ausschussreduzierung dort: vielleicht 0,2-0,4% (vs Baseline 2,1%); noch nicht sichtbar",
+            "month_36": "Inhaber erkennt, dass 3-Jahres-Amortisation bereits verfehlt. System deckt vielleicht 40-50% der Produktion ab. Verbleibende 50-60% noch manuell."
+          }
+        },
+        "scaling_plan_infeasible": {
+          "why_scaling_fails": "Projekt kann über den ursprünglichen Umfang nicht skaliert werden weil: (1) Datenerfassungsaufwand skaliert linear mit Teilevielfalt (520 Geometrien = enormer Aufwand für marginalen Wert), (2) Modell kann nicht auf ungesehene Geometrien verallgemeinern (Nachtraining für jeden neuen Teiltyp nötig), (3) Nutzen-Kosten-Verhältnis verschlechtert sich mit zunehmender Abdeckung (ohnehin schmale Margen werden noch dünner)",
+          "failed_scaling_attempt": "Nachdem Pilot 20-30% Abdeckung mit bescheidener 0,2-0,5% Ausschussreduzierung erreicht, würde Team benötigen: (a) 3-6 weitere Monate Datenerfassung für nächste 200 Teiltypen, (b) 2-3 Monate Modell-Nachtraining pro Teilefamilie, (c) Validierung für jeden. Kosten: €35k+ für vielleicht €2-3k zusätzlichen Jahresnutzen. Haltepunkt: Amortisation verlängert sich auf 15+ Jahre. Projekt wird aufgegeben."
+        },
+        "change_management_makes_it_worse": {
+          "adoption_risks_unique_to_negative_case": [
+            "Inspektorakzeptanz: Wenn System 2,1% Baseline zeigt und 'Verbesserungen' auf 1,9% identifiziert, hinterfragen Inspektoren, ob Änderung real oder Rauschen ist. Geringe Glaubwürdigkeit.",
+            "Bedienerfustration: Falsch-Positive bei aktuellen Niveaus (20-30% wenn nicht abgestimmt) = Bediener nutzen System nicht mehr. Hochkonfidenz-Schwellenwert (>95%), der Bedienerfustration vermeidet, verpasst auch echte Fehler.",
+            "Inhabermotivation: Inhaber 58 Jahre alt, plant Übergabe in 5 Jahren. Wird kein großes Investment für unklaren Nutzen in Jahrzehnte+ Zeitrahmen riskieren.",
+            "Team-Moral: 2-3 Jahre Projektarbeit mit sichtbaren Ergebnissen (bis Monat 24 noch nicht) = Team-Zynismus über 'KI-Projekte, die nicht funktionieren'"
+          ],
+          "why_change_management_cannot_save_project": "Veränderungsmanagement adressiert Menschenprobleme, aber dieses Projekt hat ein fundamentales Wirtschaftlichkeitsproblem. Kein Maß an Schulung, Stakeholder-Engagement oder phasenweisem Ansatz kann €140k Investment + €8k jährliche Kosten für €12k Jahresnutzen überwinden (selbst wenn erreicht). Die Einheitsökonomie ist defekt."
+        },
+        "alternative_recommendations": [
+          "Fokus auf Wissensdokumentation: Erfahrung der Dreher in Arbeitsanweisungen/Videos erfassen (cost: €5-10k, payoff: knowledge retention for handover)",
+          "Einfache Maschinendatenerfassung (OEE) als Einstieg in Digitalisierung (cost: €8-15k, payoff: visibility into actual equipment performance)",
+          "Digitalisierung der Auftragsverwaltung und Angebotserstellung (cost: €12-20k, payoff: reduced admin overhead, faster quoting)",
+          "Ggf. einfache Messtechnik-Upgrades (digitale Messschieber mit Datenübertragung) (cost: €3-5k, payoff: faster measurement, digital record)"
+        ],
+        "red_flags_for_consultation": [
+          "Stückzahl < 50.000/Jahr bei hoher Varianz",
+          "Reifegrad < 2 ohne digitale Dateninfrastruktur",
+          "Fehlerrate bereits unter Branchendurchschnitt",
+          "Kurzer ROI-Horizont (< 5 Jahre)",
+          "Keine Wiederholteile für Trainingsdaten"
+        ]
+      },
+      "language": "de"
+    }
+  ]
+}
