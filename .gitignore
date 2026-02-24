@@ -95,6 +95,9 @@ htmlcov/
 # Evaluation — not tracked in git
 evaluation/
 
+# Docs — not tracked in git
+docs/
+
 # Claude Code settings (optional - remove if you want to share settings)
 .claude/
 

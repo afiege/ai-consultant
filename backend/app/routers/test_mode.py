@@ -475,7 +475,7 @@ async def generate_persona_response(
                 {"role": "user", "content": "Please respond to the consultant's message as the client."}
             ],
             "temperature": ua_temperature,
-            "max_tokens": 500,
+            "max_tokens": 1000,
             "timeout": 120  # Increase timeout to 120 seconds
         }
 
@@ -755,7 +755,7 @@ Respond with exactly {ideas_to_generate} ideas, one per line, without numbering 
                 {"role": "user", "content": f"Generate {ideas_to_generate} ideas now."}
             ],
             "temperature": ua_temperature,
-            "max_tokens": 500,
+            "max_tokens": 1000,
             "timeout": 120
         }
 
@@ -1271,7 +1271,7 @@ async def generate_persona_response_stream(
                     {"role": "user", "content": "Please respond to the consultant's message as the client."}
                 ],
                 "temperature": 0.7,
-                "max_tokens": 500,
+                "max_tokens": 1000,
                 "stream": True,
                 "timeout": 120  # Increase timeout to 120 seconds
             }

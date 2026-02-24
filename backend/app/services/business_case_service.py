@@ -534,7 +534,15 @@ class BusinessCaseService:
             self._extract_section(summary, "NUTZENBERECHNUNG") or
             self._extract_section(summary, "BENEFIT CALCULATION") or
             self._extract_section(summary, "ÜBERSCHLAGSBERECHNUNG") or
-            self._extract_section(summary, "KOSTENNUTZEN-ANALYSE")
+            self._extract_section(summary, "KOSTENNUTZEN-ANALYSE") or
+            self._extract_section(summary, "NUTZENKALKULATION") or
+            self._extract_section(summary, "WERTBERECHNUNG") or
+            self._extract_section(summary, "ANNUAL BENEFIT CALCULATION") or
+            self._extract_section(summary, "JAHRESNUTZEN") or
+            self._extract_section(summary, "FINANCIAL CALCULATION") or
+            self._extract_section(summary, "ROI CALCULATION") or
+            self._extract_section(summary, "NUTZEN-KALKULATION") or
+            self._extract_section(summary, "BENEFIT ANALYSIS")
         )
         self._save_finding(db_session.id, "business_case_calculation", calculation)
 
@@ -546,7 +554,15 @@ class BusinessCaseService:
 
         pitch = (
             self._extract_section(summary, "MANAGEMENT PITCH") or
-            self._extract_section(summary, "MANAGEMENT-PITCH")
+            self._extract_section(summary, "MANAGEMENT-PITCH") or
+            self._extract_section(summary, "MANAGEMENT EMPFEHLUNG") or
+            self._extract_section(summary, "MANAGEMENT-EMPFEHLUNG") or
+            self._extract_section(summary, "FÜHRUNGSPRÄSENTATION") or
+            self._extract_section(summary, "EXECUTIVE PITCH") or
+            self._extract_section(summary, "EXECUTIVE SUMMARY") or
+            self._extract_section(summary, "STRATEGISCHE EMPFEHLUNG") or
+            self._extract_section(summary, "STRATEGIC PITCH") or
+            self._extract_section(summary, "C-LEVEL PITCH")
         )
         self._save_finding(db_session.id, "business_case_pitch", pitch)
 

@@ -218,7 +218,7 @@ def extract_company_profile(
         "messages": messages,
         "temperature": 0.1,  # Low temperature for consistent extraction
         "max_tokens": 1500,
-        "timeout": 60
+        "timeout": 120
     }
     if api_key:
         completion_kwargs["api_key"] = api_key

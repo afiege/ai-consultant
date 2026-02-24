@@ -61,8 +61,6 @@ def apply_model_params(completion_kwargs: dict) -> dict:
     if "qwen3" in model.lower():
         completion_kwargs["extra_body"] = {"enable_thinking": False}
         completion_kwargs["enable_thinking"] = False
-    if "magistral" in model.lower():
-        completion_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
     return completion_kwargs
 
 
