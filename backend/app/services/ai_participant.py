@@ -9,6 +9,63 @@ from ..utils.llm import apply_model_params
 
 logger = logging.getLogger(__name__)
 
+# Each of the 6 AI participants gets a distinct strategic perspective to prevent
+# all participants from converging on the same theme (e.g., predictive maintenance).
+PARTICIPANT_PERSPECTIVES = {
+    "en": [
+        {
+            "name": "Operations & Process Automation",
+            "description": "Focus on automating repetitive manual tasks, improving production workflows, scheduling, and operational efficiency using AI and digital tools.",
+        },
+        {
+            "name": "Quality, Safety & Compliance",
+            "description": "Focus on AI-driven quality control, defect detection, inspection automation, compliance monitoring, and error prevention.",
+        },
+        {
+            "name": "Customer Experience & Sales",
+            "description": "Focus on customer-facing AI applications, sales forecasting, personalized offers, order management, and improving the customer journey.",
+        },
+        {
+            "name": "Supply Chain & Procurement",
+            "description": "Focus on inventory optimization, demand forecasting, supplier management, logistics automation, and reducing procurement costs.",
+        },
+        {
+            "name": "Employee Empowerment & Knowledge",
+            "description": "Focus on AI-assisted training, knowledge management systems, employee productivity tools, safety monitoring, and skill development.",
+        },
+        {
+            "name": "Analytics & Business Intelligence",
+            "description": "Focus on KPI dashboards, predictive analytics, data-driven decision-making, reporting automation, and business performance monitoring.",
+        },
+    ],
+    "de": [
+        {
+            "name": "Betrieb & Prozessautomatisierung",
+            "description": "Konzentrieren Sie sich auf die Automatisierung repetitiver manueller Aufgaben, Verbesserung von Produktionsabläufen, Planung und Betriebseffizienz mit KI und digitalen Werkzeugen.",
+        },
+        {
+            "name": "Qualität, Sicherheit & Compliance",
+            "description": "Konzentrieren Sie sich auf KI-gestützte Qualitätskontrolle, Fehlererkennung, Inspektionsautomatisierung, Compliance-Überwachung und Fehlervermeidung.",
+        },
+        {
+            "name": "Kundenerlebnis & Vertrieb",
+            "description": "Konzentrieren Sie sich auf kundenorientierte KI-Anwendungen, Umsatzprognosen, personalisierte Angebote, Auftragsmanagement und Verbesserung der Customer Journey.",
+        },
+        {
+            "name": "Lieferkette & Einkauf",
+            "description": "Konzentrieren Sie sich auf Bestandsoptimierung, Nachfrageprognosen, Lieferantenmanagement, Logistikautomatisierung und Senkung der Beschaffungskosten.",
+        },
+        {
+            "name": "Mitarbeiterempowerment & Wissen",
+            "description": "Konzentrieren Sie sich auf KI-gestützte Schulungen, Wissensmanagement, Mitarbeiterproduktivitätswerkzeuge, Sicherheitsüberwachung und Kompetenzentwicklung.",
+        },
+        {
+            "name": "Analytics & Business Intelligence",
+            "description": "Konzentrieren Sie sich auf KPI-Dashboards, prädiktive Analysen, datengestützte Entscheidungsfindung, Berichtsautomatisierung und Unternehmensleistungsüberwachung.",
+        },
+    ],
+}
+
 
 class AIParticipant:
     """AI participant that generates ideas for 6-3-5 brainstorming using LiteLLM."""
@@ -62,7 +119,7 @@ class AIParticipant:
             List of 3 ideas
         """
         # Build the prompt
-        system_prompt = self._build_system_prompt(company_context)
+        system_prompt = self._build_system_prompt(company_context, participant_number, round_number)
         user_prompt = self._build_user_prompt(
             previous_ideas,
             round_number,
@@ -98,7 +155,10 @@ class AIParticipant:
 
             # Ensure we have exactly 3 ideas
             if len(ideas) < 3:
-                ideas.extend([f"AI Idea {i+1} (unique) for round {round_number}" for i in range(len(ideas), 3)])
+                if self.language == "de":
+                    ideas.extend([f"KI-Idee {i+1} (einzigartig) für Runde {round_number}" for i in range(len(ideas), 3)])
+                else:
+                    ideas.extend([f"AI Idea {i+1} (unique) for round {round_number}" for i in range(len(ideas), 3)])
             elif len(ideas) > 3:
                 ideas = ideas[:3]
 
@@ -107,18 +167,42 @@ class AIParticipant:
         except Exception as e:
             # Fallback to generic ideas if API fails
             logger.error(f"AI participant error: {e}")
+            if self.language == "de":
+                return [f"KI-Teilnehmer {participant_number} - Idee {i+1} für Runde {round_number}" for i in range(3)]
             return [
                 f"AI Participant {participant_number} - Unique Idea {i+1} for round {round_number}" for i in range(3)
             ]
 
-    def _build_system_prompt(self, company_context: str) -> str:
-        """Build the system prompt with company context."""
+    def _build_system_prompt(self, company_context: str, participant_number: int = 1, round_number: int = 1) -> str:
+        """Build the system prompt with company context and participant-specific perspective."""
         template = get_prompt(
             "brainstorming_system",
             self.language,
             self.custom_prompts
         )
-        return template.format(company_context=company_context)
+        base = template.format(company_context=company_context)
+
+        # Round 1 only: inject a unique perspective per participant to seed diversity.
+        # Subsequent rounds freely build on the rotating sheet (that's the 6-3-5 spirit).
+        if round_number == 1:
+            perspectives = PARTICIPANT_PERSPECTIVES.get(self.language, PARTICIPANT_PERSPECTIVES["en"])
+            idx = (participant_number - 1) % len(perspectives)
+            p = perspectives[idx]
+            if self.language == "de":
+                perspective_section = (
+                    f"\n## Ihre Perspektive für Runde 1\n"
+                    f"**{p['name']}**: {p['description']}\n\n"
+                    f"Starten Sie mit Ideen aus diesem Bereich, um thematische Vielfalt "
+                    f"in der Sitzung zu gewährleisten."
+                )
+            else:
+                perspective_section = (
+                    f"\n## Your Perspective for Round 1\n"
+                    f"**{p['name']}**: {p['description']}\n\n"
+                    f"Start with ideas from this domain to ensure thematic diversity across the session."
+                )
+            return base + perspective_section
+        return base
 
     def _build_user_prompt(
         self,
@@ -136,11 +220,13 @@ class AIParticipant:
             if other_ideas:
                 sample = other_ideas[:10]
                 ideas_list = "\n".join([f"  - {idea}" for idea in sample])
-                uniqueness_note = f"""
-Note: These ideas have been suggested by others in this session (avoid duplicating them):
-{ideas_list}
-{f"(and {len(other_ideas) - 10} more)" if len(other_ideas) > 10 else ""}
-"""
+                if self.language == "de":
+                    note_header = "Hinweis: Diese Ideen wurden bereits von anderen in dieser Sitzung vorgeschlagen (Wiederholungen vermeiden):"
+                    more_suffix = f"(und {len(other_ideas) - 10} weitere)" if len(other_ideas) > 10 else ""
+                else:
+                    note_header = "Note: These ideas have been suggested by others in this session (avoid duplicating them):"
+                    more_suffix = f"(and {len(other_ideas) - 10} more)" if len(other_ideas) > 10 else ""
+                uniqueness_note = f"\n{note_header}\n{ideas_list}\n{more_suffix}\n"
 
         if round_number == 1 or not previous_ideas:
             # First round - generate fresh ideas based on company context

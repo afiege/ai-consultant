@@ -70,10 +70,9 @@ As a brainstorming participant, your job is to READ these ideas and get INSPIRED
 - What aspects of these ideas could be expanded or improved?
 - Can you combine two ideas into something better?
 - What's a related idea that complements what's already here?
-- Is there a different angle or approach to the same problem?
 - What would make these ideas even more impactful for this company?
 
-Generate 3 NEW ideas that build upon, complement, or creatively extend the ideas above. Your ideas should feel like a natural continuation of this brainstorming thread.
+Generate 3 NEW ideas. At least 2 should build upon or extend the existing ideas. At least 1 should introduce a fresh angle or application area not yet represented on this sheet — this keeps the brainstorming diverse.
 {uniqueness_note}
 Format your response EXACTLY as (one sentence each, 15-25 words):
 1. [Action verb] [solution] to [do what] that [benefit].
@@ -1338,7 +1337,9 @@ Based on the SWOT, provide:
     },
 
     "de": {
-        "brainstorming_system": """Sie nehmen als kreativer Berater an einer 6-3-5 Brainstorming-Sitzung teil.
+        "brainstorming_system": """WICHTIG: Antworten Sie AUSSCHLIESSLICH auf Deutsch. Alle Ideen müssen auf Deutsch verfasst sein.
+
+Sie nehmen als kreativer Berater an einer 6-3-5 Brainstorming-Sitzung teil.
 
 ## Über die 6-3-5 Methode
 Die 6-3-5 Methode ist eine strukturierte Brainstorming-Technik:
@@ -1368,10 +1369,10 @@ Entwickeln Sie auf Basis der Unternehmensinformationen Ideen für:
 
 ## WICHTIG: Ausgabeformat
 Jede Idee MUSS diesem Format folgen:
-- Beginnen Sie mit einem starken Verb (z.B. "Implementieren", "Einführen", "Entwickeln", "Automatisieren")
+- Beginnen Sie mit einem nominalisierten Verb (z.B. "Implementierung von", "Einführung einer", "Entwicklung von", "Automatisierung der")
 - Genau EIN Satz (15-25 Wörter)
 - Beschreiben Sie, was die Lösung tut UND welchen Nutzen sie bringt
-- Beispielformat: "[Verb] [Lösung], um [Aktion] zu ermöglichen, die [Nutzen für das Unternehmen]."
+- Beispielformat: "[Nominalisierung] [Lösung] zur [Nutzen für das Unternehmen]."
 
 Schreiben Sie KEINE langen Erklärungen. KEINE Unterpunkte oder Details. EIN klarer Satz pro Idee.""",
 
@@ -1388,9 +1389,9 @@ Entwickeln Sie auf Basis der Unternehmensinformationen 3 kreative und praxisnahe
 - Welche Daten sind vermutlich vorhanden und könnten genutzt werden?
 {uniqueness_note}
 Antwortformat (genau ein Satz pro Idee, 15-25 Wörter):
-1. [Verb] [Lösung], um [was zu tun], die [Nutzen].
-2. [Verb] [Lösung], um [was zu tun], die [Nutzen].
-3. [Verb] [Lösung], um [was zu tun], die [Nutzen].""",
+1. [Nominalisierung] [Lösung] zur [Nutzen].
+2. [Nominalisierung] [Lösung] zur [Nutzen].
+3. [Nominalisierung] [Lösung] zur [Nutzen].""",
 
         "brainstorming_subsequent": """## Runde {round_number} – Weiterentwicklung der bisherigen Ideen
 
@@ -1403,15 +1404,14 @@ Als Teilnehmer ist es Ihre Aufgabe, diese Ideen zu LESEN und sich davon INSPIRIE
 - Welche Aspekte dieser Ideen könnten erweitert oder verbessert werden?
 - Lassen sich zwei Ideen zu etwas Besserem kombinieren?
 - Gibt es eine ergänzende Idee, die gut zu den bisherigen passt?
-- Gibt es einen anderen Blickwinkel oder Ansatz für dasselbe Problem?
 - Was würde diese Ideen für das Unternehmen noch wirkungsvoller machen?
 
-Entwickeln Sie 3 NEUE Ideen, die auf den bisherigen aufbauen, diese ergänzen oder kreativ weiterführen. Ihre Ideen sollten sich wie eine natürliche Fortsetzung dieses Ideenaustausches anfühlen.
+Entwickeln Sie 3 NEUE Ideen. Mindestens 2 davon sollen auf den bisherigen aufbauen oder diese weiterführen. Mindestens 1 soll einen frischen Blickwinkel oder Anwendungsbereich einbringen, der auf diesem Blatt noch nicht vertreten ist – das hält das Brainstorming vielfältig.
 {uniqueness_note}
 Antwortformat (genau ein Satz pro Idee, 15-25 Wörter):
-1. [Verb] [Lösung], um [was zu tun], die [Nutzen].
-2. [Verb] [Lösung], um [was zu tun], die [Nutzen].
-3. [Verb] [Lösung], um [was zu tun], die [Nutzen].""",
+1. [Nominalisierung] [Lösung] zur [Nutzen].
+2. [Nominalisierung] [Lösung] zur [Nutzen].
+3. [Nominalisierung] [Lösung] zur [Nutzen].""",
 
         "consultation_system": """# IDENTITÄT & EXPERTISE
 Sie sind ein KI-gestütztes Beratungstool, das Expertenberatung zu KI/Digitalisierung für produzierende KMU bietet. Sie haben tiefes Wissen über bewährte Lösungen:

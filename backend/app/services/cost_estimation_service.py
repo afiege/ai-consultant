@@ -1027,32 +1027,58 @@ class CostEstimationService:
         """Extract a section from formatted text.
 
         Handles multiple header styles:
-        - ## SECTION_NAME  or  ### 1. SECTION_NAME  (markdown headers)
-        - **SECTION_NAME** or **1. SECTION_NAME**   (bold)
-        - SECTION_NAME:    or  1. SECTION_NAME      (plain)
+        - ## SECTION_NAME  or  #### 1. SECTION_NAME  (markdown headers, up to 6 hashes)
+        - **SECTION_NAME** or **1. SECTION_NAME**    (bold)
+        - SECTION_NAME:    or  1. SECTION_NAME       (plain)
+
+        Fixes applied (synced from consultation_service.py):
+        - Supports up to 6 hashes (qwen3/minimax generate #### headers)
+        - Level-aware end detection: subsections (deeper #) do not cut off parent section
+        - Unicode dash normalization: U+2011 non-breaking hyphen → ASCII hyphen before matching
+        - Wiki-link header normalization: [[id|Text]] → Text
+        - Bold next_section guard uses [^a-z*\\n]* to avoid matching inline labels like **Stufe 2 – Text**
         """
         import re
 
         if not text or not section_name:
             return None
 
+        # Normalize Unicode dashes (U+2010–U+2015, U+2212) to ASCII hyphen
+        # Also strip wiki-link wrappers [[id|Display Text]] → Display Text
+        _DASH_RE = re.compile(r'[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]')
+        _WIKI_HEADER_RE = re.compile(r'\[\[[^\]|]*\|([^\]]+)\]\]')
+
+        def norm(s: str) -> str:
+            s = _DASH_RE.sub('-', s)
+            s = _WIKI_HEADER_RE.sub(r'\1', s)  # [[id|Text]] → Text
+            return s
+
+        esc = re.escape(norm(section_name))
+
+        # Patterns: (regex, captures_hash_level)
+        # First pattern captures the leading #+ as group(1) to detect header level
         header_patterns = [
-            rf'^#{{2,3}}\s*\*{{0,2}}(\d+\.\s*)?{re.escape(section_name)}\*{{0,2}}[^\n]*$',  # ## SECTION or ## **SECTION**
-            rf'^\*\*#{{2,3}}\s*(\d+\.\s*)?{re.escape(section_name)}[^\n]*$',                  # **## SECTION** (bold wraps hash — used in prompt examples)
-            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}\*\*[:\s]*$',                         # **SECTION**: (colon outside bold)
-            rf'^\*\*(\d+\.\s*)?{re.escape(section_name)}:\*\*\s*$',                           # **SECTION:** (colon inside bold)
-            rf'^(\d+\.\s*)?{re.escape(section_name)}[:\s]*$',                                 # SECTION: (plain)
+            (rf'^(#{{2,6}})\s*\*{{0,2}}(?:\d+\.\s*)?{esc}\*{{0,2}}[^\n]*$', True),   # ## to ###### SECTION
+            (rf'^\*\*#{{1,3}}\s*(?:\d+\.\s*)?{esc}[^\n]*$', False),                    # **## SECTION (bold wraps hash)
+            (rf'^\*\*(?:\d+\.\s*)?{esc}\*\*[:\s]*$', False),                           # **SECTION**: (colon outside bold)
+            (rf'^\*\*(?:\d+\.\s*)?{esc}:\*\*\s*$', False),                             # **SECTION:** (colon inside bold)
+            (rf'^(?:\d+\.\s*)?{esc}[:\s]*$', False),                                   # SECTION: (plain)
         ]
 
         lines = text.split('\n')
         start_pos = None
         start_line_end = None
+        start_level = 2  # default: treat as ## level
 
         for i, line in enumerate(lines):
-            for pattern in header_patterns:
-                if re.match(pattern, line.strip(), re.IGNORECASE):
+            normed = norm(line.strip())
+            for pattern, captures_level in header_patterns:
+                m = re.match(pattern, normed, re.IGNORECASE)
+                if m:
                     start_pos = i
                     start_line_end = i + 1
+                    if captures_level:
+                        start_level = len(m.group(1))
                     break
             if start_pos is not None:
                 break
@@ -1061,19 +1087,19 @@ class CostEstimationService:
             return None
 
         end_pos = len(lines)
-        # Match next section headers — but NOT inline bold like "**Stufe 2 – Text**: ..."
-        # Bold is only a header if the line ends immediately after the closing ** (optionally with : or spaces)
+        # Level-aware end detection: only stop at headers with depth ≤ start_level
+        # Bold is only a header if ALL-CAPS (no lowercase in bold text — avoids matching inline labels)
         next_section_pattern = (
-            r'^('
-            r'#{2,3}\s+(?:\d+\.\s*)?[A-Z]'                   # ## SECTION or ### 1. SECTION
-            r'|\*\*#{1,3}\s+(?:\d+\.\s*)?[A-Z]'              # **## SECTION (bold wraps hash)
-            r'|\*\*(?:\d+\.\s*)?[A-Z][^*\n]*\*\*\s*:?\s*$'  # **SECTION NAME** or **SECTION NAME**: (full line)
-            r'|[A-Z]{3,}[A-Z\s\-()]*[:\s]*$'                 # PLAIN ALLCAPS (3+ uppercase letters, end of line)
-            r')'
+            rf'^('
+            rf'#{{2,{start_level}}}\s+\*{{0,2}}(?:\d+\.\s*)?[A-Z]'     # ## .. start_level headers
+            rf'|\*\*#{{1,3}}\s+(?:\d+\.\s*)?[A-Z]'                     # **## SECTION (bold wraps hash)
+            rf'|\*\*(?:\d+\.\s*)?[A-Z][^a-z*\n]*\*\*\s*:?\s*$'        # **ALL CAPS** (no lowercase)
+            rf'|[A-Z]{{3,}}[A-Z\s\-()]*[:\s]*$'                        # PLAIN ALLCAPS
+            rf')'
         )
         for i in range(start_line_end, len(lines)):
-            line = lines[i].strip()
-            if line and re.match(next_section_pattern, line):
+            normed = norm(lines[i].strip())
+            if normed and re.match(next_section_pattern, normed):
                 end_pos = i
                 break
 

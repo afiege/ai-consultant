@@ -102,10 +102,11 @@ const HomePage = () => {
 
     try {
       const response = await sessionBackupAPI.restoreBackup(file);
-      const { new_session_uuid, original_company_name } = response.data;
+      const { new_session_uuid, navigate_to_step } = response.data;
 
-      // Navigate to the appropriate step based on restored session state
-      navigate(`/session/${new_session_uuid}/step1`);
+      // Navigate to the step inferred from backup data (defaults to 1)
+      const step = navigate_to_step || 1;
+      navigate(`/session/${new_session_uuid}/step${step}`);
     } catch (err) {
       console.error('Error restoring session:', err);
       setRestoreError(err.response?.data?.detail || t('errors.failedToRestore'));

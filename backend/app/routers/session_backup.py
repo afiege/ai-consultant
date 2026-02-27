@@ -402,10 +402,25 @@ async def restore_session_backup(
 
     db.commit()
 
+    # Infer navigate_to_step from findings when current_step is 1
+    # (test runner and API-driven sessions never advance current_step in the DB)
+    navigate_to_step = session_data.get('current_step', 1)
+    if navigate_to_step <= 1:
+        factor_types = {f['factor_type'] for f in backup.get('consultation_findings', [])}
+        if 'swot_analysis' in factor_types or 'technical_briefing' in factor_types:
+            navigate_to_step = 6
+        elif any(t.startswith('cost_') for t in factor_types):
+            navigate_to_step = 6
+        elif any(t.startswith('business_case') for t in factor_types):
+            navigate_to_step = 5
+        elif factor_types:
+            navigate_to_step = 4
+
     return {
         'success': True,
         'message': 'Session restored successfully',
         'new_session_uuid': new_session_uuid,
         'original_session_uuid': session_data.get('session_uuid'),
         'original_company_name': session_data.get('company_name'),
+        'navigate_to_step': navigate_to_step,
     }
