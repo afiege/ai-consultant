@@ -515,41 +515,80 @@ def get_persona_company_profile(persona_id: str):
         raise HTTPException(status_code=404, detail=f"Persona {persona_id} not found")
 
     company = persona["company"]
+    lang = persona.get("language", "en")
+
+    # Labels depending on persona language
+    if lang == "de":
+        L = {
+            "name":        "Unternehmensname",
+            "industry":    "Branche",
+            "size":        "Größe",
+            "employees":   "Mitarbeiter",
+            "revenue":     "Jahresumsatz",
+            "biz_model":   "Geschäftsmodell",
+            "products":    "Produkte/Dienstleistungen",
+            "market":      "Zielmarkt",
+            "team":        "Teamstruktur",
+            "goals":       "Strategische Ziele",
+            "kpis":        "Kennzahlen (KPIs)",
+            "target":      "Ziel",
+            "challenges":  "Aktuelle Herausforderungen",
+            "it_systems":  "Aktuelle IT-/Digitalisierungssysteme",
+            "focus":       "Projektfokus",
+        }
+    else:
+        L = {
+            "name":        "Company Name",
+            "industry":    "Industry",
+            "size":        "Size",
+            "employees":   "employees",
+            "revenue":     "annual revenue",
+            "biz_model":   "Business Model",
+            "products":    "Products/Services",
+            "market":      "Target Market",
+            "team":        "Team Structure",
+            "goals":       "Strategic Goals",
+            "kpis":        "Key Performance Indicators (KPIs)",
+            "target":      "target",
+            "challenges":  "Current Challenges",
+            "it_systems":  "Current IT/Digitalization Systems",
+            "focus":       "Project Focus/Interest",
+        }
 
     # Build company profile text similar to what a user would enter
     profile_parts = []
 
-    profile_parts.append(f"**Company Name:** {company['name']}")
-    profile_parts.append(f"**Industry:** {company['sub_industry']}")
-    profile_parts.append(f"**Size:** {company['size_employees']} employees, €{company['size_revenue_eur']:,} annual revenue")
+    profile_parts.append(f"**{L['name']}:** {company['name']}")
+    profile_parts.append(f"**{L['industry']}:** {company['sub_industry']}")
+    profile_parts.append(f"**{L['size']}:** {company['size_employees']} {L['employees']}, €{company['size_revenue_eur']:,} {L['revenue']}")
     profile_parts.append("")
 
-    profile_parts.append(f"**Business Model:**\n{company['business_model']}")
+    profile_parts.append(f"**{L['biz_model']}:**\n{company['business_model']}")
     profile_parts.append("")
 
-    profile_parts.append(f"**Products/Services:**\n{company['products_services']}")
+    profile_parts.append(f"**{L['products']}:**\n{company['products_services']}")
     profile_parts.append("")
 
-    profile_parts.append(f"**Target Market:**\n{company['target_market']}")
+    profile_parts.append(f"**{L['market']}:**\n{company['target_market']}")
     profile_parts.append("")
 
-    profile_parts.append(f"**Team Structure:**\n{company['team_structure']}")
+    profile_parts.append(f"**{L['team']}:**\n{company['team_structure']}")
     profile_parts.append("")
 
-    profile_parts.append(f"**Strategic Goals:**\n{company['strategic_goals']}")
+    profile_parts.append(f"**{L['goals']}:**\n{company['strategic_goals']}")
     profile_parts.append("")
 
     # Add KPIs
     if "kpis" in company:
-        profile_parts.append("**Key Performance Indicators (KPIs):**")
+        profile_parts.append(f"**{L['kpis']}:**")
         for kpi_name, kpi_data in company["kpis"].items():
-            target_str = f" (target: {kpi_data['target']}{kpi_data['unit']})" if 'target' in kpi_data else ""
+            target_str = f" ({L['target']}: {kpi_data['target']}{kpi_data['unit']})" if 'target' in kpi_data else ""
             profile_parts.append(f"- {kpi_name.replace('_', ' ').title()}: {kpi_data['value']}{kpi_data['unit']}{target_str} - {kpi_data.get('note', '')}")
         profile_parts.append("")
 
     # Add current challenges
     if "current_challenges" in company:
-        profile_parts.append("**Current Challenges:**")
+        profile_parts.append(f"**{L['challenges']}:**")
         for challenge in company["current_challenges"]:
             profile_parts.append(f"- {challenge}")
         profile_parts.append("")
@@ -557,7 +596,7 @@ def get_persona_company_profile(persona_id: str):
     # Add digitalization details
     digital = company.get("digitalization_maturity", {})
     if "details" in digital:
-        profile_parts.append("**Current IT/Digitalization Systems:**")
+        profile_parts.append(f"**{L['it_systems']}:**")
         for system_name, system_desc in digital["details"].items():
             profile_parts.append(f"- {system_name.upper()}: {system_desc}")
         profile_parts.append("")
@@ -565,7 +604,7 @@ def get_persona_company_profile(persona_id: str):
     # Add focus idea
     focus = persona.get("focus_idea", {})
     if focus:
-        profile_parts.append("**Project Focus/Interest:**")
+        profile_parts.append(f"**{L['focus']}:**")
         profile_parts.append(f"{focus.get('title', '')}: {focus.get('description', '')}")
 
     return {
@@ -675,6 +714,7 @@ async def generate_persona_ideas(
 
     company = persona["company"]
     focus_idea = persona["focus_idea"]
+    lang = persona.get("language", "en")
 
     # Build context from previous ideas if provided
     previous_ideas = body.previous_ideas if body and body.previous_ideas else []
@@ -690,15 +730,6 @@ async def generate_persona_ideas(
         first_idea = None
         ideas_to_generate = 3  # Generate all 3 ideas
 
-    previous_context = ""
-    if previous_ideas and len(previous_ideas) > 0:
-        previous_context = f"""
-## Previous Ideas on this Sheet (build upon these):
-{chr(10).join([f"- {idea}" for idea in previous_ideas])}
-
-Your task is to ADD NEW ideas that build upon or complement these existing ideas.
-"""
-
     # Get maturity information
     digital_maturity = company.get("digitalization_maturity", {})
     maturity_level = digital_maturity.get("level", "Unknown")
@@ -706,7 +737,60 @@ Your task is to ADD NEW ideas that build upon or complement these existing ideas
     maturity_details = digital_maturity.get("details", {})
     maturity_details_text = chr(10).join([f"- {k}: {v}" for k, v in maturity_details.items()]) if maturity_details else "Not specified"
 
-    prompt = f"""You are participating in a 6-3-5 brainwriting session for digitalization ideas.
+    challenges_text = chr(10).join([f"- {c}" for c in company.get("current_challenges", [])])
+
+    if lang == "de":
+        previous_context = ""
+        if previous_ideas:
+            previous_context = f"""
+## Bisherige Ideen auf diesem Blatt (baue darauf auf):
+{chr(10).join([f"- {idea}" for idea in previous_ideas])}
+
+Deine Aufgabe ist es, NEUE Ideen hinzuzufügen, die auf diesen Ideen aufbauen oder sie ergänzen.
+"""
+        prompt = f"""WICHTIG: Antworte AUSSCHLIESSLICH auf Deutsch. Alle Ideen müssen auf Deutsch verfasst sein.
+
+Du nimmst als kreativer Berater an einer 6-3-5 Brainwriting-Sitzung für Digitalisierungsideen teil.
+
+## Unternehmenskontext
+**Unternehmen:** {company['name']}
+**Branche:** {company['sub_industry']}
+**Größe:** {company['size_employees']} Mitarbeiter
+
+**Digitalisierungsreifegrad:** {maturity_level} – {maturity_name}
+{maturity_details_text}
+
+**Aktuelle Herausforderungen:**
+{challenges_text}
+
+**Projektfokus:** {focus_idea['title']}
+{focus_idea['description']}
+
+## Deine Aufgabe
+Generiere genau {ideas_to_generate} kreative, praxisnahe Digitalisierungsideen für dieses Unternehmen.
+{previous_context}
+
+## Richtlinien
+1. Jede Idee MUSS ein einzelner Satz von 30–45 Wörtern sein, aufgebaut wie folgt:
+   [Nominalisierung] [spezifische Lösung] zur [was sie bewirkt] – [wie sie konkret für dieses Unternehmen funktioniert].
+2. Schreibe KEINE kurzen Einzeiler unter 25 Wörtern – jede Idee muss sowohl WAS als auch WIE enthalten
+3. Beziehe dich konkret auf dieses Unternehmen – nenne Branche, Produkte, Prozesse oder Herausforderungen
+4. Ideen sollen zum Reifegrad {maturity_level} ({maturity_name}) passen
+5. Ideen sollen sich auf den Projektfokus beziehen: {focus_idea['title']}
+
+Beispiel: "Einführung eines Computer-Vision-Qualitätsprüfsystems zur Eliminierung manueller Stichprobenkontrollen – Kameras an der Produktionslinie erkennen Oberflächenfehler automatisch in Echtzeit und senken Nacharbeitskosten."
+
+Antworte mit genau {ideas_to_generate} nummerierten Ideen (1. 2. 3.), eine pro Zeile."""
+    else:
+        previous_context = ""
+        if previous_ideas:
+            previous_context = f"""
+## Previous Ideas on this Sheet (build upon these):
+{chr(10).join([f"- {idea}" for idea in previous_ideas])}
+
+Your task is to ADD NEW ideas that build upon or complement these existing ideas.
+"""
+        prompt = f"""You are participating in a 6-3-5 brainwriting session for digitalization ideas.
 
 ## Company Context
 **Company:** {company['name']}
@@ -717,7 +801,7 @@ Your task is to ADD NEW ideas that build upon or complement these existing ideas
 {maturity_details_text}
 
 **Current Challenges:**
-{chr(10).join([f"- {c}" for c in company.get("current_challenges", [])])}
+{challenges_text}
 
 **Project Focus:** {focus_idea['title']}
 {focus_idea['description']}
@@ -727,14 +811,16 @@ Generate exactly {ideas_to_generate} creative, practical digitalization ideas fo
 {previous_context}
 
 ## Guidelines
-1. Each idea should be 1-2 sentences, concise but specific
-2. Focus on practical, implementable solutions
-3. Consider the company's size, industry, challenges, AND maturity level
+1. Each idea MUST be a single sentence of 30–45 words using this structure:
+   [Action verb] [specific solution] to [what it does] — [how it works concretely for this company].
+2. Do NOT write short one-liners under 25 words — every idea must include both WHAT and HOW
+3. Be SPECIFIC to this company — reference their industry, products, processes, or challenges
 4. Ideas should be appropriate for a company at maturity level {maturity_level} ({maturity_name})
 5. Ideas should relate to the project focus: {focus_idea['title']}
-6. Be creative but realistic - don't suggest overly advanced solutions for low-maturity companies
 
-Respond with exactly {ideas_to_generate} ideas, one per line, without numbering or bullet points."""
+Example: "Implement a computer-vision quality inspection system to eliminate manual spot-checks — cameras mounted on the production line automatically flag surface defects in real time, reducing rework costs."
+
+Respond with exactly {ideas_to_generate} numbered ideas (1. 2. 3.), one per line."""
 
     # Determine model and API settings for user agent
     user_agent_config = body.user_agent_config if body else None
@@ -749,14 +835,15 @@ Respond with exactly {ideas_to_generate} ideas, one per line, without numbering 
 
     ua_temperature = user_agent_config.temperature if user_agent_config and user_agent_config.temperature is not None else 0.8
     try:
+        user_trigger = f"Generiere jetzt {ideas_to_generate} Ideen." if lang == "de" else f"Generate {ideas_to_generate} ideas now."
         completion_kwargs = {
             "model": model,
             "messages": [
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Generate {ideas_to_generate} ideas now."}
+                {"role": "user", "content": user_trigger}
             ],
             "temperature": ua_temperature,
-            "max_tokens": 1000,
+            "max_tokens": 1200,
             "timeout": 120
         }
 

@@ -30,8 +30,12 @@ _WIKI_RE = re.compile(r'\[\[([^\]|]+)(?:\|([^\]]+))?\]\]')
 
 
 def strip_think_tokens(text: str) -> str:
-    """Remove <think>…</think> blocks that some models emit despite thinking being disabled."""
-    return _THINK_TAG_RE.sub("", text).strip()
+    """Remove <think>…</think> blocks that some models emit despite thinking being disabled.
+
+    NOTE: Does NOT call .strip() — streaming calls this per-token, and stripping
+    each token would eat the leading whitespace that separates words.
+    """
+    return _THINK_TAG_RE.sub("", text)
 
 
 def normalize_wiki_links(text: str) -> str:
@@ -69,7 +73,7 @@ def extract_content(response) -> str:
             if isinstance(block, dict) and block.get("type") == "text"
         )
 
-    return strip_think_tokens(content)
+    return strip_think_tokens(content).strip()
 
 
 def apply_model_params(completion_kwargs: dict) -> dict:
