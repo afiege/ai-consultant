@@ -22,20 +22,16 @@ PARTICIPANT_PERSPECTIVES = {
             "description": "Focus on AI-driven quality control, defect detection, inspection automation, compliance monitoring, and error prevention.",
         },
         {
-            "name": "Customer Experience & Sales",
-            "description": "Focus on customer-facing AI applications, sales forecasting, personalized offers, order management, and improving the customer journey.",
-        },
-        {
-            "name": "Supply Chain & Procurement",
-            "description": "Focus on inventory optimization, demand forecasting, supplier management, logistics automation, and reducing procurement costs.",
-        },
-        {
             "name": "Employee Empowerment & Knowledge",
             "description": "Focus on AI-assisted training, knowledge management systems, employee productivity tools, safety monitoring, and skill development.",
         },
         {
             "name": "Analytics & Business Intelligence",
             "description": "Focus on KPI dashboards, predictive analytics, data-driven decision-making, reporting automation, and business performance monitoring.",
+        },
+        {
+            "name": "Supply Chain & Procurement",
+            "description": "Focus on inventory optimization, demand forecasting, supplier management, logistics automation, and reducing procurement costs.",
         },
     ],
     "de": [
@@ -48,20 +44,16 @@ PARTICIPANT_PERSPECTIVES = {
             "description": "Konzentrieren Sie sich auf KI-gestützte Qualitätskontrolle, Fehlererkennung, Inspektionsautomatisierung, Compliance-Überwachung und Fehlervermeidung.",
         },
         {
-            "name": "Kundenerlebnis & Vertrieb",
-            "description": "Konzentrieren Sie sich auf kundenorientierte KI-Anwendungen, Umsatzprognosen, personalisierte Angebote, Auftragsmanagement und Verbesserung der Customer Journey.",
-        },
-        {
-            "name": "Lieferkette & Einkauf",
-            "description": "Konzentrieren Sie sich auf Bestandsoptimierung, Nachfrageprognosen, Lieferantenmanagement, Logistikautomatisierung und Senkung der Beschaffungskosten.",
-        },
-        {
             "name": "Mitarbeiterempowerment & Wissen",
             "description": "Konzentrieren Sie sich auf KI-gestützte Schulungen, Wissensmanagement, Mitarbeiterproduktivitätswerkzeuge, Sicherheitsüberwachung und Kompetenzentwicklung.",
         },
         {
             "name": "Analytics & Business Intelligence",
             "description": "Konzentrieren Sie sich auf KPI-Dashboards, prädiktive Analysen, datengestützte Entscheidungsfindung, Berichtsautomatisierung und Unternehmensleistungsüberwachung.",
+        },
+        {
+            "name": "Lieferkette & Einkauf",
+            "description": "Konzentrieren Sie sich auf Bestandsoptimierung, Nachfrageprognosen, Lieferantenmanagement, Logistikautomatisierung und Senkung der Beschaffungskosten.",
         },
     ],
 }
@@ -139,7 +131,7 @@ class AIParticipant:
                 "model": self.model,
                 "messages": messages,
                 "temperature": self.temperature or 0.7,  # Balanced temperature for creativity with consistency
-                "max_tokens": 300  # Reduced to encourage concise responses
+                "max_tokens": 600  # Each idea is 2 sentences; 3 ideas need more room
             }
             if self.api_key:
                 completion_kwargs["api_key"] = self.api_key
@@ -258,26 +250,49 @@ class AIParticipant:
         """
         Parse ideas from AI response.
 
-        Args:
-            content: AI response text
+        Each idea spans two lines: a numbered title line followed by an
+        explanation sentence (possibly indented). Both are concatenated
+        into a single string separated by a space.
 
         Returns:
-            List of ideas
+            List of ideas (each idea = title + " " + explanation)
         """
         ideas = []
         lines = content.strip().split('\n')
-
-        for line in lines:
-            line = line.strip()
-            # Look for numbered ideas (1., 2., 3. or 1), 2), 3))
-            if line and (line[0].isdigit() or line.startswith('-')):
-                # Remove numbering and extract idea
-                for prefix in ['1.', '2.', '3.', '1)', '2)', '3)', '-']:
-                    if line.startswith(prefix):
-                        idea = line[len(prefix):].strip()
-                        if idea:
-                            ideas.append(idea)
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            matched = False
+            for prefix in ['1.', '2.', '3.', '1)', '2)', '3)']:
+                if line.startswith(prefix):
+                    title = line[len(prefix):].strip()
+                    # Look ahead for the explanation sentence (non-empty, non-numbered)
+                    explanation = ''
+                    j = i + 1
+                    while j < len(lines):
+                        next_line = lines[j].strip()
+                        if not next_line:
+                            j += 1
+                            continue
+                        # Stop if we hit the next numbered idea
+                        if next_line and next_line[0].isdigit():
+                            break
+                        explanation = next_line
+                        i = j  # advance past the explanation line
                         break
+                    if title:
+                        idea = f"{title} {explanation}".strip() if explanation else title
+                        ideas.append(idea)
+                    matched = True
+                    break
+            i += 1
+
+        # Fallback: if structured parsing found nothing, grab non-empty lines
+        if not ideas:
+            for line in lines:
+                line = line.strip()
+                if line and not line[0].isdigit():
+                    ideas.append(line)
 
         return ideas
 

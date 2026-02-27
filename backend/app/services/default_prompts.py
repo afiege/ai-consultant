@@ -35,12 +35,14 @@ Based on the company information above, generate ideas for:
 
 ## CRITICAL: Output Format
 Each idea MUST follow this exact format:
-- Start with a bold action verb (e.g., "Implement", "Deploy", "Create", "Automate")
-- Be exactly ONE sentence (15-25 words)
-- Include what the solution does AND what benefit it provides
-- Example format: "Implement [solution] to [action] that [benefit for the company]."
+- Line 1: Start with an action verb — a concise title (10-15 words) naming the solution and its core benefit.
+- Line 2: One sentence (max 30 words) explaining HOW it works for this specific company.
+- Leave a blank line between ideas.
+- Example:
+  "Implement a computer-vision quality inspection system to reduce defect escape rates.
+  Cameras on the production line automatically flag surface defects in real time, replacing manual spot-checks and cutting rework costs."
 
-Do NOT write long explanations. Do NOT add sub-points or details. ONE clear sentence per idea.""",
+Do NOT add bullet sub-points. Each idea is exactly 2 sentences.""",
 
         "brainstorming_round1": """## Round {round_number} - Fresh Start
 
@@ -54,10 +56,15 @@ Think about:
 - How could technology improve their customer experience?
 - What data do they likely have that could be leveraged?
 {uniqueness_note}
-Format your response EXACTLY as (one sentence each, 15-25 words):
+Format your response EXACTLY as (2 sentences per idea, blank line between ideas):
 1. [Action verb] [solution] to [do what] that [benefit].
+   [One sentence explaining how it works specifically for this company.]
+
 2. [Action verb] [solution] to [do what] that [benefit].
-3. [Action verb] [solution] to [do what] that [benefit].""",
+   [One sentence explaining how it works specifically for this company.]
+
+3. [Action verb] [solution] to [do what] that [benefit].
+   [One sentence explaining how it works specifically for this company.]""",
 
         "brainstorming_subsequent": """## Round {round_number} - Build on Previous Ideas
 
@@ -74,10 +81,15 @@ As a brainstorming participant, your job is to READ these ideas and get INSPIRED
 
 Generate 3 NEW ideas. At least 2 should build upon or extend the existing ideas. At least 1 should introduce a fresh angle or application area not yet represented on this sheet — this keeps the brainstorming diverse.
 {uniqueness_note}
-Format your response EXACTLY as (one sentence each, 15-25 words):
+Format your response EXACTLY as (2 sentences per idea, blank line between ideas):
 1. [Action verb] [solution] to [do what] that [benefit].
+   [One sentence explaining how it works specifically for this company.]
+
 2. [Action verb] [solution] to [do what] that [benefit].
-3. [Action verb] [solution] to [do what] that [benefit].""",
+   [One sentence explaining how it works specifically for this company.]
+
+3. [Action verb] [solution] to [do what] that [benefit].
+   [One sentence explaining how it works specifically for this company.]""",
 
         "consultation_system": """# IDENTITY & EXPERTISE
 You are an AI-powered consultation tool that provides expert guidance on AI/digitalization for manufacturing SMEs. You have deep knowledge of proven solutions:
@@ -1369,12 +1381,14 @@ Entwickeln Sie auf Basis der Unternehmensinformationen Ideen für:
 
 ## WICHTIG: Ausgabeformat
 Jede Idee MUSS diesem Format folgen:
-- Beginnen Sie mit einem nominalisierten Verb (z.B. "Implementierung von", "Einführung einer", "Entwicklung von", "Automatisierung der")
-- Genau EIN Satz (15-25 Wörter)
-- Beschreiben Sie, was die Lösung tut UND welchen Nutzen sie bringt
-- Beispielformat: "[Nominalisierung] [Lösung] zur [Nutzen für das Unternehmen]."
+- Zeile 1: Beginnen Sie mit einer Nominalisierung — ein prägnanter Titel (10-15 Wörter), der die Lösung und ihren Kernnutzen nennt.
+- Zeile 2: Ein Satz (max. 30 Wörter), der erklärt WIE es für dieses Unternehmen konkret funktioniert.
+- Leerzeile zwischen den Ideen.
+- Beispiel:
+  "Einführung eines Computer-Vision-Qualitätsprüfsystems zur Reduzierung von Fehlerquoten.
+  Kameras an der Produktionslinie erkennen Oberflächenfehler automatisch in Echtzeit und ersetzen manuelle Stichprobenkontrollen, wodurch Nacharbeitskosten sinken."
 
-Schreiben Sie KEINE langen Erklärungen. KEINE Unterpunkte oder Details. EIN klarer Satz pro Idee.""",
+KEINE Aufzählungspunkte. Jede Idee besteht aus genau 2 Sätzen.""",
 
         "brainstorming_round1": """## Runde {round_number} – Neubeginn
 
@@ -1388,10 +1402,15 @@ Entwickeln Sie auf Basis der Unternehmensinformationen 3 kreative und praxisnahe
 - Wie könnte Technologie das Kundenerlebnis verbessern?
 - Welche Daten sind vermutlich vorhanden und könnten genutzt werden?
 {uniqueness_note}
-Antwortformat (genau ein Satz pro Idee, 15-25 Wörter):
+Antwortformat (2 Sätze pro Idee, Leerzeile zwischen den Ideen):
 1. [Nominalisierung] [Lösung] zur [Nutzen].
+   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]
+
 2. [Nominalisierung] [Lösung] zur [Nutzen].
-3. [Nominalisierung] [Lösung] zur [Nutzen].""",
+   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]
+
+3. [Nominalisierung] [Lösung] zur [Nutzen].
+   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]""",
 
         "brainstorming_subsequent": """## Runde {round_number} – Weiterentwicklung der bisherigen Ideen
 
@@ -1408,10 +1427,15 @@ Als Teilnehmer ist es Ihre Aufgabe, diese Ideen zu LESEN und sich davon INSPIRIE
 
 Entwickeln Sie 3 NEUE Ideen. Mindestens 2 davon sollen auf den bisherigen aufbauen oder diese weiterführen. Mindestens 1 soll einen frischen Blickwinkel oder Anwendungsbereich einbringen, der auf diesem Blatt noch nicht vertreten ist – das hält das Brainstorming vielfältig.
 {uniqueness_note}
-Antwortformat (genau ein Satz pro Idee, 15-25 Wörter):
+Antwortformat (2 Sätze pro Idee, Leerzeile zwischen den Ideen):
 1. [Nominalisierung] [Lösung] zur [Nutzen].
+   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]
+
 2. [Nominalisierung] [Lösung] zur [Nutzen].
-3. [Nominalisierung] [Lösung] zur [Nutzen].""",
+   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]
+
+3. [Nominalisierung] [Lösung] zur [Nutzen].
+   [Ein Satz, der erklärt, wie es für dieses Unternehmer konkret funktioniert.]""",
 
         "consultation_system": """# IDENTITÄT & EXPERTISE
 Sie sind ein KI-gestütztes Beratungstool, das Expertenberatung zu KI/Digitalisierung für produzierende KMU bietet. Sie haben tiefes Wissen über bewährte Lösungen:
