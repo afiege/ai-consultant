@@ -262,7 +262,7 @@
         "q1": "Wie digital kompetent ist Ihre Belegschaft? (1 = grundlegende Computernutzung, 6 = KI/Data-Science-Fähigkeiten)",
         "q2": "Wie vernetzt und intelligent sind Ihre Anlagen und Maschinen? (1 = manuell, 6 = vollständig autonom)",
         "q3": "Wie gut werden Ihre Materialien und Bestände digital erfasst? (1 = papierbasiert, 6 = Echtzeit-IoT-Tracking)",
-        "q4": "Wie fortschrittlich sind Ihre digitalen Tools und Software? (1 = einfache Office-Anwendungen, 6 = KI-gestützte Enterprise-Systeme)"
+        "q4": "Wie ausgereift sind Ihre digitalen Tools und Software? (1 = einfache Office-Anwendungen, 6 = KI-gestützte Enterprise-Systeme)"
       },
       "informationSystems": {
         "title": "Informationssysteme",
@@ -270,12 +270,12 @@
         "q1": "Wie integriert sind Ihre IT-Systeme? (1 = isolierte Silos, 6 = vollständig integriertes Ökosystem)",
         "q2": "Wie zugänglich sind Ihre Geschäftsdaten? (1 = schwer zu finden, 6 = Echtzeit-Dashboards überall)",
         "q3": "Wie automatisiert ist Ihre Datenerfassung? (1 = manuelle Eingabe, 6 = automatisch aus allen Quellen)",
-        "q4": "Wie fortschrittlich ist Ihre Datenanalyse? (1 = Tabellenkalkulationen, 6 = KI/ML-prädiktive Analytik)"
+        "q4": "Wie ausgereift ist Ihre Datenanalyse? (1 = Tabellenkalkulationen, 6 = KI/ML-prädiktive Analytik)"
       },
       "culture": {
         "title": "Kultur",
         "description": "Organisatorische Bereitschaft für die digitale Transformation",
-        "q1": "Wie offen ist Ihre Organisation für Veränderungen? (1 = widerstandsfähig, 6 = aktiv nach Innovationen suchend)",
+        "q1": "Wie offen ist Ihre Organisation für Veränderungen? (1 = veränderungsresistent, 6 = aktiv nach Innovationen suchend)",
         "q2": "Wie gut fließt Wissen zwischen Abteilungen? (1 = in Silos, 6 = offene Kollaborationskultur)",
         "q3": "Wie wird mit Fehlern umgegangen? (1 = bestraft, 6 = als Lernmöglichkeit gesehen)",
         "q4": "Wie engagiert ist die Führung für Digitalisierung? (1 = skeptisch, 6 = strategische Priorität)"
@@ -285,7 +285,7 @@
         "description": "Agilität, Zusammenarbeit und Entscheidungsprozesse",
         "q1": "Wie agil sind Ihre Teams? (1 = starre Hierarchien, 6 = selbstorganisierende Teams)",
         "q2": "Wie schnell können Sie Entscheidungen treffen? (1 = Wochen/Monate, 6 = Echtzeit-datengetrieben)",
-        "q3": "Wie arbeiten Teams funktionsübergreifend zusammen? (1 = selten, 6 = standardmäßig cross-funktional)",
+        "q3": "Wie gut ist die funktionsübergreifende Zusammenarbeit Ihrer Teams? (1 = selten, 6 = standardmäßig cross-funktional)",
         "q4": "Wie schnell können Sie sich an Marktveränderungen anpassen? (1 = sehr langsam, 6 = sofortige Pivots möglich)"
       }
     }
