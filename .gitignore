@@ -87,8 +87,9 @@ htmlcov/
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
 
-# Evaluation — not tracked in git
+# Evaluation — not tracked in git (except benchmark runner)
 evaluation/
+!evaluation/run_test_persona1.py
 
 # Docs — not tracked in git
 docs/
