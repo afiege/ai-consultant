@@ -15,13 +15,15 @@ Models match the full benchmark matrix:
   - 7 models from r1/r2/r3 (ScaDS + SAIA)
   - DeepSeek-R1-Distill-Llama-70B from r4/r4b/r4c
 
+--skip-ideation and --no-pdf are ON by default (benchmark only needs the
+consultation + analysis steps, not the 6-3-5 ideation or PDF export).
+
 Usage:
     python run_benchmark_mfg00.py
     python run_benchmark_mfg00.py --dry-run
     python run_benchmark_mfg00.py --resume
     python run_benchmark_mfg00.py --consultant saia_qwen3_235b
     python run_benchmark_mfg00.py --rep 2
-    python run_benchmark_mfg00.py --skip-ideation --no-pdf
 """
 
 import subprocess
@@ -357,8 +359,8 @@ def main():
                         help="Run only this repetition number (1, 2, or 3)")
     parser.add_argument("--language",      default="de", choices=["en", "de"])
     parser.add_argument("--base-url",      default="http://localhost:8000")
-    parser.add_argument("--skip-ideation", action="store_true")
-    parser.add_argument("--no-pdf",        action="store_true")
+    parser.add_argument("--skip-ideation", action="store_true", default=True)
+    parser.add_argument("--no-pdf",        action="store_true", default=True)
     parser.add_argument("--verbose",       action="store_true")
     args = parser.parse_args()
 
