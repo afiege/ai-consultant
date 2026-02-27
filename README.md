@@ -583,6 +583,62 @@ See [DEPLOY.md](DEPLOY.md) for deployment instructions including:
 - Docker deployment
 - Manual VPS deployment
 
+## Evaluation Benchmark
+
+The benchmark evaluates how well different LLMs perform as the AI consultant across a set of manufacturing SME personas. The study's B1 matrix ran **8 models × 6 personas × 3 repetitions = 144 runs**.
+
+### Personas
+
+Persona definitions are stored in `evaluation/benchmark_personas.json` (not included in this repository). Each persona contains a company profile, acatech maturity assessment, focus idea, and ground truth expectations (key metrics, critical questions, implementation challenges, business case direction). To run your own benchmark you need to provide this file or create your own personas following the same schema.
+
+### User-Agent Concept
+
+During the consultation the runner needs a counterpart that responds to the consultant's questions. A **user-agent** — a separate LLM instance — role-plays as the SME manager described in the persona. It receives a system prompt built from the persona profile and answers in character throughout the full consultation dialogue. The user-agent model can differ from the consultant model under evaluation.
+
+### Running a Single Benchmark
+
+```bash
+# Ensure the backend is running (http://localhost:8000)
+python evaluation/run_test_persona1.py \
+  --persona mfg_02_plastics_maintenance \
+  --consultant-model openai/your-model \
+  --consultant-base https://your-api-endpoint/v1 \
+  --api-key $YOUR_API_KEY \
+  --user-agent-model openai/gemma-3-27b-it \
+  --user-agent-base https://your-ua-endpoint/v1 \
+  --user-agent-api-keys $UA_API_KEY \
+  --language de \
+  --no-pdf
+```
+
+#### Key Flags
+
+| Flag | Description |
+|---|---|
+| `--persona` | Persona ID from `benchmark_personas.json` |
+| `--consultant-model` | Model ID for the AI consultant under test |
+| `--consultant-base` | Base URL of the consultant model's API |
+| `--api-key` | API key for the consultant model |
+| `--user-agent-model` | Model that simulates the SME user |
+| `--user-agent-base` | Base URL of the user-agent model's API |
+| `--user-agent-api-keys` | Comma-separated keys for the user-agent (round-robin) |
+| `--language` | Consultation language: `de` or `en` (default: `de`) |
+| `--run-id` | Optional identifier embedded in output filenames |
+| `--no-pdf` | Skip PDF generation (JSON exports are always saved) |
+| `--skip-ideation` | Skip the 6-3-5 brainstorming phase |
+
+### Output Files
+
+Results are written to `evaluation/test_runs/` with the naming pattern `{persona_id}_{timestamp}_{uuid8}_*`:
+
+| File | Content |
+|---|---|
+| `*_findings.json` | Structured findings extracted from each pipeline phase |
+| `*_backup.json` | Full conversation history and raw model responses |
+| `*_ground_truth.json` | Ground truth snapshot from the persona definition |
+
+---
+
 ## License
 
 BSD 3-Clause License - see [LICENSE](LICENSE) file.
