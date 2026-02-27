@@ -247,52 +247,19 @@ class AIParticipant:
             )
 
     def _parse_ideas(self, content: str) -> List[str]:
-        """
-        Parse ideas from AI response.
-
-        Each idea spans two lines: a numbered title line followed by an
-        explanation sentence (possibly indented). Both are concatenated
-        into a single string separated by a space.
-
-        Returns:
-            List of ideas (each idea = title + " " + explanation)
-        """
+        """Parse 3 numbered ideas from AI response."""
         ideas = []
         lines = content.strip().split('\n')
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-            matched = False
-            for prefix in ['1.', '2.', '3.', '1)', '2)', '3)']:
-                if line.startswith(prefix):
-                    title = line[len(prefix):].strip()
-                    # Look ahead for the explanation sentence (non-empty, non-numbered)
-                    explanation = ''
-                    j = i + 1
-                    while j < len(lines):
-                        next_line = lines[j].strip()
-                        if not next_line:
-                            j += 1
-                            continue
-                        # Stop if we hit the next numbered idea
-                        if next_line and next_line[0].isdigit():
-                            break
-                        explanation = next_line
-                        i = j  # advance past the explanation line
-                        break
-                    if title:
-                        idea = f"{title} {explanation}".strip() if explanation else title
-                        ideas.append(idea)
-                    matched = True
-                    break
-            i += 1
 
-        # Fallback: if structured parsing found nothing, grab non-empty lines
-        if not ideas:
-            for line in lines:
-                line = line.strip()
-                if line and not line[0].isdigit():
-                    ideas.append(line)
+        for line in lines:
+            line = line.strip()
+            if line and (line[0].isdigit() or line.startswith('-')):
+                for prefix in ['1.', '2.', '3.', '1)', '2)', '3)', '-']:
+                    if line.startswith(prefix):
+                        idea = line[len(prefix):].strip()
+                        if idea:
+                            ideas.append(idea)
+                        break
 
         return ideas
 

@@ -34,15 +34,12 @@ Based on the company information above, generate ideas for:
 - Think creatively but practically - what would genuinely help THIS business?
 
 ## CRITICAL: Output Format
-Each idea MUST follow this exact format:
-- Line 1: Start with an action verb — a concise title (10-15 words) naming the solution and its core benefit.
-- Line 2: One sentence (max 30 words) explaining HOW it works for this specific company.
-- Leave a blank line between ideas.
-- Example:
-  "Implement a computer-vision quality inspection system to reduce defect escape rates.
-  Cameras on the production line automatically flag surface defects in real time, replacing manual spot-checks and cutting rework costs."
+Each idea MUST be a single sentence of 30–45 words using this structure:
+[Action verb] [specific solution] to [what it does] — [how it works concretely for this company].
 
-Do NOT add bullet sub-points. Each idea is exactly 2 sentences.""",
+Example: "Implement a computer-vision quality inspection system to eliminate manual spot-checks — cameras mounted on the production line automatically flag surface defects in real time, reducing rework costs by catching errors before assembly."
+
+Do NOT write short one-liners under 25 words. Every idea must include both WHAT the solution does AND HOW it works for this specific company.""",
 
         "brainstorming_round1": """## Round {round_number} - Fresh Start
 
@@ -56,15 +53,10 @@ Think about:
 - How could technology improve their customer experience?
 - What data do they likely have that could be leveraged?
 {uniqueness_note}
-Format your response EXACTLY as (2 sentences per idea, blank line between ideas):
-1. [Action verb] [solution] to [do what] that [benefit].
-   [One sentence explaining how it works specifically for this company.]
-
-2. [Action verb] [solution] to [do what] that [benefit].
-   [One sentence explaining how it works specifically for this company.]
-
-3. [Action verb] [solution] to [do what] that [benefit].
-   [One sentence explaining how it works specifically for this company.]""",
+Format your response as 3 numbered ideas, each a single sentence of 30–45 words:
+1. [Action verb] [specific solution] to [what it does] — [how it works for this company].
+2. [Action verb] [specific solution] to [what it does] — [how it works for this company].
+3. [Action verb] [specific solution] to [what it does] — [how it works for this company].""",
 
         "brainstorming_subsequent": """## Round {round_number} - Build on Previous Ideas
 
@@ -81,15 +73,10 @@ As a brainstorming participant, your job is to READ these ideas and get INSPIRED
 
 Generate 3 NEW ideas. At least 2 should build upon or extend the existing ideas. At least 1 should introduce a fresh angle or application area not yet represented on this sheet — this keeps the brainstorming diverse.
 {uniqueness_note}
-Format your response EXACTLY as (2 sentences per idea, blank line between ideas):
-1. [Action verb] [solution] to [do what] that [benefit].
-   [One sentence explaining how it works specifically for this company.]
-
-2. [Action verb] [solution] to [do what] that [benefit].
-   [One sentence explaining how it works specifically for this company.]
-
-3. [Action verb] [solution] to [do what] that [benefit].
-   [One sentence explaining how it works specifically for this company.]""",
+Format your response as 3 numbered ideas, each a single sentence of 30–45 words:
+1. [Action verb] [specific solution] to [what it does] — [how it works for this company].
+2. [Action verb] [specific solution] to [what it does] — [how it works for this company].
+3. [Action verb] [specific solution] to [what it does] — [how it works for this company].""",
 
         "consultation_system": """# IDENTITY & EXPERTISE
 You are an AI-powered consultation tool that provides expert guidance on AI/digitalization for manufacturing SMEs. You have deep knowledge of proven solutions:
@@ -1380,15 +1367,12 @@ Entwickeln Sie auf Basis der Unternehmensinformationen Ideen für:
 - Denken Sie kreativ, aber praxisnah – was würde DIESEM Unternehmen wirklich helfen?
 
 ## WICHTIG: Ausgabeformat
-Jede Idee MUSS diesem Format folgen:
-- Zeile 1: Beginnen Sie mit einer Nominalisierung — ein prägnanter Titel (10-15 Wörter), der die Lösung und ihren Kernnutzen nennt.
-- Zeile 2: Ein Satz (max. 30 Wörter), der erklärt WIE es für dieses Unternehmen konkret funktioniert.
-- Leerzeile zwischen den Ideen.
-- Beispiel:
-  "Einführung eines Computer-Vision-Qualitätsprüfsystems zur Reduzierung von Fehlerquoten.
-  Kameras an der Produktionslinie erkennen Oberflächenfehler automatisch in Echtzeit und ersetzen manuelle Stichprobenkontrollen, wodurch Nacharbeitskosten sinken."
+Jede Idee MUSS ein einzelner Satz von 30–45 Wörtern sein, aufgebaut wie folgt:
+[Nominalisierung] [spezifische Lösung] zur [was sie bewirkt] – [wie sie konkret für dieses Unternehmen funktioniert].
 
-KEINE Aufzählungspunkte. Jede Idee besteht aus genau 2 Sätzen.""",
+Beispiel: "Einführung eines Computer-Vision-Qualitätsprüfsystems zur Eliminierung manueller Stichprobenkontrollen – Kameras an der Produktionslinie erkennen Oberflächenfehler automatisch in Echtzeit und senken Nacharbeitskosten, indem Fehler vor der Montage erkannt werden."
+
+Schreiben Sie KEINE kurzen Einzeiler unter 25 Wörtern. Jede Idee muss sowohl WAS die Lösung bewirkt als auch WIE sie für dieses Unternehmen konkret funktioniert, enthalten.""",
 
         "brainstorming_round1": """## Runde {round_number} – Neubeginn
 
@@ -1402,15 +1386,10 @@ Entwickeln Sie auf Basis der Unternehmensinformationen 3 kreative und praxisnahe
 - Wie könnte Technologie das Kundenerlebnis verbessern?
 - Welche Daten sind vermutlich vorhanden und könnten genutzt werden?
 {uniqueness_note}
-Antwortformat (2 Sätze pro Idee, Leerzeile zwischen den Ideen):
-1. [Nominalisierung] [Lösung] zur [Nutzen].
-   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]
-
-2. [Nominalisierung] [Lösung] zur [Nutzen].
-   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]
-
-3. [Nominalisierung] [Lösung] zur [Nutzen].
-   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]""",
+Antwortformat – 3 nummerierte Ideen, jede ein einzelner Satz von 30–45 Wörtern:
+1. [Nominalisierung] [spezifische Lösung] zur [was sie bewirkt] – [wie sie für dieses Unternehmen funktioniert].
+2. [Nominalisierung] [spezifische Lösung] zur [was sie bewirkt] – [wie sie für dieses Unternehmen funktioniert].
+3. [Nominalisierung] [spezifische Lösung] zur [was sie bewirkt] – [wie sie für dieses Unternehmen funktioniert].""",
 
         "brainstorming_subsequent": """## Runde {round_number} – Weiterentwicklung der bisherigen Ideen
 
@@ -1427,15 +1406,10 @@ Als Teilnehmer ist es Ihre Aufgabe, diese Ideen zu LESEN und sich davon INSPIRIE
 
 Entwickeln Sie 3 NEUE Ideen. Mindestens 2 davon sollen auf den bisherigen aufbauen oder diese weiterführen. Mindestens 1 soll einen frischen Blickwinkel oder Anwendungsbereich einbringen, der auf diesem Blatt noch nicht vertreten ist – das hält das Brainstorming vielfältig.
 {uniqueness_note}
-Antwortformat (2 Sätze pro Idee, Leerzeile zwischen den Ideen):
-1. [Nominalisierung] [Lösung] zur [Nutzen].
-   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]
-
-2. [Nominalisierung] [Lösung] zur [Nutzen].
-   [Ein Satz, der erklärt, wie es für dieses Unternehmen konkret funktioniert.]
-
-3. [Nominalisierung] [Lösung] zur [Nutzen].
-   [Ein Satz, der erklärt, wie es für dieses Unternehmer konkret funktioniert.]""",
+Antwortformat – 3 nummerierte Ideen, jede ein einzelner Satz von 30–45 Wörtern:
+1. [Nominalisierung] [spezifische Lösung] zur [was sie bewirkt] – [wie sie für dieses Unternehmen funktioniert].
+2. [Nominalisierung] [spezifische Lösung] zur [was sie bewirkt] – [wie sie für dieses Unternehmen funktioniert].
+3. [Nominalisierung] [spezifische Lösung] zur [was sie bewirkt] – [wie sie für dieses Unternehmen funktioniert].""",
 
         "consultation_system": """# IDENTITÄT & EXPERTISE
 Sie sind ein KI-gestütztes Beratungstool, das Expertenberatung zu KI/Digitalisierung für produzierende KMU bietet. Sie haben tiefes Wissen über bewährte Lösungen:
